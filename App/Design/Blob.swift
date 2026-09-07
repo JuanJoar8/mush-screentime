@@ -151,7 +151,7 @@ struct BlobView: View {
         let palette = Palette(stage: stage, gloss: p.gloss)
 
         let cx = size.width / 2
-        let radius = min(size.width, size.height) * 0.30
+        let radius = min(size.width, size.height) * 0.33
         // Idle breathing: slow, small, and the only thing that moves at rest.
         let breathe = CGFloat(sin(time * 0.9)) * radius * 0.014
         let tremor = p.jitter > 0 ? CGFloat(sin(time * 17)) * radius * p.jitter * 0.5 : 0
@@ -262,12 +262,12 @@ struct BlobView: View {
         for side in [-1.0, 1.0] as [CGFloat] {
             let shoulder = CGPoint(x: center.x + side * bodyW * 0.80, y: center.y + bodyH * 0.28)
             let elbow = CGPoint(
-                x: center.x + side * bodyW * (1.06 - drop * 0.06),
-                y: shoulder.y + radius * (0.06 + drop * 0.26)
+                x: center.x + side * bodyW * (1.20 - drop * 0.10),
+                y: shoulder.y + radius * (0.04 + drop * 0.28)
             )
             let wrist = CGPoint(
-                x: center.x + side * bodyW * (1.02 + drop * 0.10),
-                y: shoulder.y + radius * (0.30 + drop * 0.52 + sway)
+                x: center.x + side * bodyW * (1.34 - drop * 0.14),
+                y: shoulder.y + radius * (0.30 + drop * 0.60 + sway)
             )
 
             limb(&context, points: [shoulder, elbow, wrist], width: radius * 0.175,
@@ -398,7 +398,7 @@ struct BlobView: View {
         let round = StrokeStyle(lineWidth: tube, lineCap: .round, lineJoin: .round)
 
         for side in [-1.0, 1.0] as [CGFloat] {
-            for ring in 0..<3 {
+            for ring in 0..<4 {
                 let count = 3 + ring
                 for index in 0..<count {
                     let seed = ring * 17 + index * 5 + (side > 0 ? 101 : 3)
@@ -407,11 +407,11 @@ struct BlobView: View {
 
                     // Polar position inside the hemisphere. `radial` 0 is the fissure,
                     // 1 the outer edge; `arc` sweeps from crown to base.
-                    let radial = 0.30 + CGFloat(ring) * 0.28 + j1 * 0.10
+                    let radial = 0.26 + CGFloat(ring) * 0.22 + j1 * 0.09
                     let arc = (CGFloat(index) + 0.5) / CGFloat(count) * 1.7 - 0.35 + j2 * 0.14
 
                     let px = center.x + side * bodyW * radial * CGFloat(cos(Double(arc) - 0.35))
-                    let py = center.y - bodyH * 0.72 + bodyH * 1.30 * arc / 1.7 + bodyH * j2 * 0.06
+                    let py = center.y - bodyH * 0.74 + bodyH * 1.92 * arc / 1.7 + bodyH * j2 * 0.06
 
                     // Tangential: perpendicular to the line out from the centre, so folds
                     // wrap the dome rather than cutting across it.
@@ -492,8 +492,12 @@ struct BlobView: View {
         let ry = rx * 1.06 * p.open
 
         // Blink. Cheap, and most of what makes something read as alive.
+        //
+        // Guarded on `time > 0` because a static render passes zero, and zero sits inside
+        // the blink window — which had every widget and Dynamic Island drawing the
+        // creature with its eyes shut.
         let cycle = time.truncatingRemainder(dividingBy: p.blinkInterval)
-        let blink: CGFloat = cycle < 0.12 ? 0.08 : 1
+        let blink: CGFloat = (time > 0 && cycle < 0.12) ? 0.08 : 1
 
         for side in [-1.0, 1.0] as [CGFloat] {
             let ex = center.x + side * eyeX
