@@ -59,7 +59,10 @@
     "stage-foggy": "#E7A7BE",
     "stage-buzzed": "#FFC24D",
     "stage-melting": "#B08A94",
-    "stage-mush": "#7A7391"
+    "stage-mush": "#7A7391",
+    "eye-iris": "#4FA8DF",
+    "eye-iris-deep": "#1B5E93",
+    "eye-pupil": "#0B1A2A"
   },
   "typography": {
     "display": "Bricolage Grotesque",
@@ -99,7 +102,8 @@
     "blob": "Ilustracion propia dibujada en Canvas, sin assets. Contorno relleno, sin borde. El color sale de stage-*, jamas se escribe a mano.",
     "provenance-chip": "Todo dato que venga del report de Apple lleva un chip diminuto. Es obligatorio: son las unicas cifras cuya derivacion no podemos explicar.",
     "focus": "Contorno de 2px en el color de estado con 2px de separacion. Visible siempre.",
-    "specular": "Brillo especular y realce de los giros. Es el unico blanco puro del sistema y solo se usa con alpha, nunca en plano."
+    "specular": "Brillo especular y realce de los giros. Es el unico blanco puro del sistema y solo se usa con alpha, nunca en plano.",
+    "eyes": "Iris azul con anillo limbal y un punto especular. Es el unico azul del sistema y existe solo en la cara del personaje: da vida sin competir con el acento."
   },
   "anti_slop": {
     "forbidden_patterns": [

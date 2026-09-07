@@ -51,6 +51,12 @@ public enum Token {
         public static let stageMelting = SwiftUI.Color(red: 0.6902, green: 0.5412, blue: 0.5804)
         /// #7A7391
         public static let stageMush = SwiftUI.Color(red: 0.4784, green: 0.4510, blue: 0.5686)
+        /// #4FA8DF
+        public static let eyeIris = SwiftUI.Color(red: 0.3098, green: 0.6588, blue: 0.8745)
+        /// #1B5E93
+        public static let eyeIrisDeep = SwiftUI.Color(red: 0.1059, green: 0.3686, blue: 0.5765)
+        /// #0B1A2A
+        public static let eyePupil = SwiftUI.Color(red: 0.0431, green: 0.1020, blue: 0.1647)
     }
 
     // MARK: Radius - three values, and only three
