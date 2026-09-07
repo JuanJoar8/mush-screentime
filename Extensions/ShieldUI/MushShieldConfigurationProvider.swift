@@ -1,6 +1,7 @@
 import ManagedSettings
 import ManagedSettingsUI
 import MushKit
+import MushScreenTime
 import UIKit
 
 /// The block screen.

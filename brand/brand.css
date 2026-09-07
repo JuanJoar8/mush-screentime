@@ -1,0 +1,77 @@
+/* Generated from brand.json. Single source of truth - never inline tokens.
+   For the iOS app this file is the middle link of the chain:
+     brand/brand.json -> brand/brand.css -> App/Design/DesignTokens.swift -> screen
+   Regenerate the Swift with:  python scripts/gen-tokens.py
+   The CSS exists so the anti-slop gate can run animated_props_safe against a real
+   stylesheet, and so the tokens have one canonical textual form. */
+
+:root {
+  /* surfaces - a drawer, not a void */
+  --color-ground: #1B2016;
+  --color-panel: #242A1D;
+  --color-panel-raised: #2E3625;
+  --color-line: #3A4230;
+
+  /* the one lit window */
+  --color-viewport: #E7E4D3;
+
+  /* text */
+  --color-ink: #EDEFE6;
+  --color-ink-dim: #8E9880;
+  --color-ink-on-viewport: #1B2016;
+
+  /* the accent is the creature: these are semantic, the stage tokens below are real */
+  --color-primary: #F2789F;
+  --color-accent: #F2B705;
+  --color-good: #6E9E4A;
+  --color-warn: #F2B705;
+  --color-bad: #C8503A;
+
+  /* the character, by state */
+  --color-stage-crisp: #F2789F;
+  --color-stage-foggy: #D9A0AE;
+  --color-stage-buzzed: #F2B705;
+  --color-stage-melting: #B58A6A;
+  --color-stage-mush: #7C7A6B;
+
+  /* type */
+  --font-display: "Bricolage Grotesque";
+  --font-body: "SF Pro Text";
+  --font-data: "SF Mono";
+
+  /* three radii, and only three */
+  --radius-viewport: 28px;
+  --radius-panel: 12px;
+  --radius-pill: 999px;
+
+  /* motion */
+  --duration-instant: 80ms;
+  --duration-fast: 160ms;
+  --duration-base: 240ms;
+  --duration-slow: 360ms;
+}
+
+/* Only compositor-friendly properties are ever animated: transform, opacity and colour.
+   Never width, height, top, left, padding or margin. */
+.settle {
+  transition: transform var(--duration-base) cubic-bezier(0.2, 0.9, 0.3, 1),
+              opacity var(--duration-base) ease-out;
+}
+
+.pill {
+  border-radius: var(--radius-pill);
+  transition: background-color var(--duration-fast) ease-out,
+              color var(--duration-fast) ease-out;
+}
+
+.viewport {
+  border-radius: var(--radius-viewport);
+  background: var(--color-viewport);
+  color: var(--color-ink-on-viewport);
+}
+
+.panel {
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+  border: 1px solid var(--color-line);
+}

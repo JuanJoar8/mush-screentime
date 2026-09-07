@@ -14,15 +14,77 @@ struct MushApp: App {
     }
 }
 
+/// What the primary action does right now. Contextual rather than fixed: the button
+/// that matters changes with the state of the day.
+enum PrimaryActionKind {
+    case fixAccess
+    case endFocus
+    case blockEverything
+    case startFocus
+
+    var title: String {
+        switch self {
+        case .fixAccess: "Fix Screen Time access"
+        case .endFocus: "End focus session"
+        case .blockEverything: "Block everything for an hour"
+        case .startFocus: "Start a focus session"
+        }
+    }
+}
+
+/// How restrictions are actually enforced on this build. Named honestly, because Path A
+/// and Path B do genuinely different things (docs/09-PATH-B-NO-ENTITLEMENT.md).
+enum Enforcement {
+    case shielded       // Path A: the app will not open
+    case interrupted    // Path B: friction only
+    case simulated      // mock provider
+
+    var label: String {
+        switch self {
+        case .shielded: "blocking"
+        case .interrupted: "interrupting"
+        case .simulated: "simulated"
+        }
+    }
+
+    var tint: Color {
+        switch self {
+        case .shielded: Token.Color.good
+        case .interrupted: Token.Color.warn
+        case .simulated: Token.Color.inkDim
+        }
+    }
+
+    var explanation: String {
+        switch self {
+        case .shielded:
+            "Selected apps will not open. A block screen appears instead."
+        case .interrupted:
+            "We cannot stop an app from opening without Screen Time access, so we interrupt it instead. You can always continue — this is friction, not a lock."
+        case .simulated:
+            "Running on synthetic data. Family Controls does not work in the Simulator, so nothing here is enforcing anything."
+        }
+    }
+}
+
 /// Composition root.
 ///
 /// The provider is chosen at launch, never by a user-facing setting. On the Simulator —
 /// and on any build without the Family Controls entitlement — the live provider cannot
-/// work at all, so the mock is used and the UI says so plainly rather than showing
-/// invented numbers as if they were real.
+/// work at all, so the mock is used and the UI says so plainly rather than presenting
+/// invented numbers as real.
 @Observable
 @MainActor
 final class AppModel {
+    struct Totals {
+        var shields = 0
+        var overrides = 0
+        var focusSessions = 0
+        var focusMinutes = 0
+        var measuredDays = 0
+        var blindDays = 0
+    }
+
     private(set) var provider: any ScreenTimeProviding
     private(set) var ledgerStore: LedgerStoring
     private(set) var ledger: UsageLedger
@@ -37,7 +99,12 @@ final class AppModel {
     private(set) var lastEntry: HealthEntry?
     private(set) var history: [DayRecord] = []
     private(set) var improvement: Double?
+    private(set) var totals = Totals()
+    private(set) var activeFocus: FocusSession?
     private(set) var loadError: String?
+
+    var strictness: Strictness = .standard
+    var budgetMinutes: Int = 60
 
     init() {
         let mocked = AppModel.shouldUseMock
@@ -56,6 +123,22 @@ final class AppModel {
         #endif
     }
 
+    var enforcement: Enforcement {
+        if isMocked { return .simulated }
+        return authorization == .approved ? .shielded : .interrupted
+    }
+
+    var primaryAction: PrimaryActionKind {
+        if authorization != .approved && !isMocked { return .fixAccess }
+        if activeFocus != nil { return .endFocus }
+        if let today, today.hasSignal, let ratio = today.budgetRatio, ratio > 1 {
+            return .blockEverything
+        }
+        return .startFocus
+    }
+
+    // MARK: Lifecycle
+
     func bootstrap() async {
         if isMocked {
             try? MockScreenTimeProvider.seed(.realisticFortnight, into: ledgerStore)
@@ -66,19 +149,63 @@ final class AppModel {
     func refresh() async {
         authorization = await provider.authorizationStatus
         do {
+            try ledger.rollover()
             let state = try ledgerStore.load()
             health = state.health
             stage = state.stage
             streak = state.streak
             lastEntry = state.entries.last
             history = state.days
+            activeFocus = state.focusSessions.first { $0.outcome == .running }
+
             let provisional = try ledger.provisionalToday()
             today = provisional.record
             provisionalDelta = provisional.delta
             improvement = try ledger.improvement()
+            totals = Self.totals(from: state)
             loadError = nil
         } catch {
             loadError = String(describing: error)
+        }
+    }
+
+    private static func totals(from state: LedgerState) -> Totals {
+        var t = Totals()
+        for day in state.days {
+            t.shields += day.shieldsShown
+            t.overrides += day.overridesTaken
+            t.focusSessions += day.focusSessionsCompleted
+            t.focusMinutes += day.focusMinutes
+            if day.hasSignal { t.measuredDays += 1 } else { t.blindDays += 1 }
+        }
+        return t
+    }
+
+    // MARK: Actions
+
+    func performPrimaryAction() async {
+        switch primaryAction {
+        case .fixAccess:
+            await requestAuthorization()
+        case .startFocus:
+            let session = FocusSession(startedAt: Date(), plannedMinutes: 25)
+            try? ledger.recordFocus(session: session)
+            try? await provider.applyShield(.all, store: StoreName.focus.rawValue)
+            await refresh()
+        case .endFocus:
+            if var session = activeFocus {
+                session.endedAt = Date()
+                // Anything past 80% of the plan counts. Rounding a near-miss down to
+                // nothing punishes the wrong behaviour.
+                let ratio = Double(session.elapsedMinutes(now: Date())) / Double(session.plannedMinutes)
+                session.outcome = ratio >= 0.8 ? .completed : .abandoned
+                try? ledger.recordFocus(session: session)
+            }
+            try? await provider.clearShield(store: StoreName.focus.rawValue)
+            await refresh()
+        case .blockEverything:
+            try? await provider.applyShield(.all, store: StoreName.manual.rawValue)
+            await refresh()
         }
     }
 
@@ -89,5 +216,12 @@ final class AppModel {
             loadError = String(describing: error)
         }
         await refresh()
+    }
+
+    func setStrictness(_ level: Strictness) { strictness = level }
+
+    func setBudget(_ minutes: Int) {
+        budgetMinutes = minutes
+        Task { await refresh() }
     }
 }

@@ -1,0 +1,108 @@
+{
+  "name": "Mush",
+  "archetype": "jester",
+  "direction": "Un especimen vivo en el cajon de un laboratorio. El fondo entero es verde oliva profundo y plano, y hay UNA sola ventana iluminada color hueso donde vive la criatura. Un objeto brillante, un numero, un bicho. Todo lo demas es panel de instrumentos: etiquetas diminutas en versalita sobre filete de 1px, cifras en mono alineadas a la derecha.",
+
+  "referencias": {
+    "estilo": "cajon de especimenes / consola de instrumentos de campo: una ventana iluminada rodeada de panel mate",
+    "no_es": "no es un panel de bienestar, no es un cerebro anatomico, no es una mascota de productividad con lanyard"
+  },
+
+  "axes": {
+    "hype": 1,
+    "warmth": 3,
+    "provocation": 3,
+    "density": 2,
+    "craft": 5,
+    "playfulness": 5
+  },
+
+  "dials": {
+    "design_variance": 5,
+    "motion_intensity": 3,
+    "visual_density": 2
+  },
+
+  "siete_ejes": {
+    "tema": "oscuro por defecto, pero verde oliva y no negro: es un cajon, no un vacio. Sin modo claro en v1.",
+    "fondo": "liso, mate, sin gradiente y sin grano. Todo el interes visual lo aporta la unica ventana iluminada.",
+    "tipografia": "grotesca ancha y pesada para el numero y los titulares; sistema neutro para leer; mono solo para instrumentos y cifras",
+    "hero": "la ventana: criatura y numero de salud son UN objeto, no dos filas. El numero flota sobre el blob.",
+    "seccion": "etiqueta de instrumento - versalita diminuta a la izquierda sobre filete de 1px, valor en mono a la derecha",
+    "componentes_firma": ["viewport", "blob", "receipt-row", "state-pill"],
+    "motion": {
+      "wobble": "ondulacion continua del contorno del blob; amplitud, frecuencia y caida se derivan del BrainStage, no se eligen a mano",
+      "settle": "un valor que cambia aterriza con escala 1.04 a 1.0 y opacidad en 240ms"
+    },
+    "anterior": "dojo-ad fue Sage, vitrina blanca, Archivo Black, radio 0, rejilla densa (density 4). Mush es lo opuesto en cada eje: Jester, cajon oliva oscuro, radios blandos, density 2, y el acento no es fijo sino que lo dicta el modelo de datos."
+  },
+
+  "colors": {
+    "ground": "#1B2016",
+    "panel": "#242A1D",
+    "panel-raised": "#2E3625",
+    "line": "#3A4230",
+    "viewport": "#E7E4D3",
+    "ink": "#EDEFE6",
+    "ink-dim": "#8E9880",
+    "ink-on-viewport": "#1B2016",
+    "primary": "#F2789F",
+    "accent": "#F2B705",
+    "good": "#6E9E4A",
+    "warn": "#F2B705",
+    "bad": "#C8503A",
+
+    "stage-crisp": "#F2789F",
+    "stage-foggy": "#D9A0AE",
+    "stage-buzzed": "#F2B705",
+    "stage-melting": "#B58A6A",
+    "stage-mush": "#7C7A6B"
+  },
+
+  "typography": {
+    "display": "Bricolage Grotesque",
+    "body": "SF Pro Text",
+    "data": "SF Mono"
+  },
+
+  "radius": ["28", "12", "999"],
+
+  "motion": {
+    "durations": { "instant": 80, "fast": 160, "base": 240, "slow": 360 },
+    "safe_properties": ["transform", "opacity", "color", "background-color", "border-color", "clip-path"],
+    "languages": {
+      "wobble": "contorno del blob por senos desfasados; amplitud/frecuencia/caida derivadas del estado",
+      "settle": "escala 1.04 a 1.0 + opacidad en 240ms cuando una cifra cambia"
+    }
+  },
+
+  "component_rules": {
+    "viewport": "Radio 28. Es el UNICO rectangulo claro de la app. Lleva sombra interior de 1px para leerse iluminado desde dentro. Nunca se usa para nada que no sea la criatura.",
+    "panel": "Radio 12. Superficie mate para agrupar instrumentos. Sin sombra, se separa por color y por filete.",
+    "pill": "Radio 999. Solo para estado y racha: lo que esta encendido ahora.",
+    "receipt-row": "Fila de recibo: razon a la izquierda en texto normal, valor con signo a la derecha en mono. Es la pantalla que hace creible el numero, no una vista de debug.",
+    "blob": "Ilustracion propia dibujada en Canvas, sin assets. Contorno relleno, sin borde. El color sale de stage-*, jamas se escribe a mano.",
+    "provenance-chip": "Todo dato que venga del report de Apple lleva un chip diminuto. Es obligatorio: son las unicas cifras cuya derivacion no podemos explicar.",
+    "focus": "Contorno de 2px en el color de estado con 2px de separacion. Visible siempre."
+  },
+
+  "anti_slop": {
+    "forbidden_patterns": [
+      "Llamar 'bloqueado' a lo que solo es friccion. En Path B nada bloquea, y decirlo seria mentir.",
+      "Alimentar Brain Health con cifras de Apple. Van marcadas, separadas y jamas entran al modelo.",
+      "Cerebro anatomico, surcos, imagineria medica o clinica. Es un blob, no un diagnostico.",
+      "Tono de coach: 'Great job', 'You've got this', 'journey', 'mindful', 'supercharge'.",
+      "Dibujar un dia sin señal como cero. Se dibuja hueco, siempre.",
+      "Barra de progreso circular alrededor del personaje.",
+      "Gradiente en el fondo. El interes lo pone la ventana iluminada.",
+      "Emojis como iconos de interfaz.",
+      "Culpar al usuario por perder la racha.",
+      "Morado o indigo como acento, y el fondo crema con un unico acento brillante."
+    ]
+  },
+
+  "validation": {
+    "max_fonts": 3,
+    "max_radius_values": 3
+  }
+}
