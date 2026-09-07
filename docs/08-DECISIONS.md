@@ -83,3 +83,34 @@ generated in CI and git-ignored. A hand-maintained `.pbxproj` across 7 targets e
 an agent that cannot compile it is a guaranteed source of silent corruption.
 **Rules out:** Tuist (heavier, needs its own toolchain install) and checked-in project
 files.
+
+### D13 · Path B — ship without Family Controls, and say what it costs
+**Decided 2026-09-07.** The owner is on a free Apple ID, so Path A cannot run at all.
+Path B measures usage with Shortcuts automations driving background `AppIntent`s
+(`openAppWhenRun = false`), and intervenes by foregrounding the app from the same
+trigger. Verified: no entitlement required, works on a free Personal Team.
+**Rules out:** true blocking. Nothing on iOS can stop an app from opening without
+Family Controls — network extensions and personal VPN are gated by the same paid tier.
+Every restriction under Path B is friction, and the UI says "interrupting", never
+"blocking" (`Enforcement` enum). Also ruled out: DNS-over-HTTPS profiles, which would
+work but require us to run a server that sees every domain the user visits.
+**Cost:** two manual automations per app, trivially bypassable, and a 7-day provisioning
+expiry requiring Sideloadly refresh from Windows.
+
+### D14 · The accent is the creature
+**Decided 2026-09-07.** There is no fixed brand accent colour. The character's tint is
+`stage-crisp` through `stage-mush` and is selected by `BrainStage`, so the palette is an
+output of the model rather than a decoration applied over it. The blob's motion
+parameters — amplitude, frequency, sag, squish, jitter, blink interval — are likewise
+derived from the stage.
+**Rules out:** a brand colour used for emphasis anywhere. Emphasis comes from the one lit
+viewport and from the state tint. `buzzed` is deliberately the most agitated state rather
+than a midpoint, so the progression is not a dimmer switch.
+
+### D15 · Token contract is generated, not maintained
+**Decided 2026-09-07.** `scripts/gen-tokens.py` reads `brand/brand.json` and emits
+`App/Design/DesignTokens.swift`. Hand-copying values between a design file and code is
+how the two drift apart.
+**One documented exception:** `MushShieldConfigurationProvider` hard-codes its colours,
+because a shield extension is woken cold by the system and cannot load the app's asset
+catalog. That file carries a comment saying so.

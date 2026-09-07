@@ -18,7 +18,12 @@ relationship with distracting apps.
 > the iOS Simulator on a GitHub Actions `macos-26` runner. Simulator builds need no
 > account and no signing.
 
-Second thing: **Screen Time data cannot leave the report extension.** This is confirmed
+Second thing: **there are two runtime paths.** Path A (Family Controls) is written and
+correct but cannot run without the $99 membership. **Path B** measures usage with
+Shortcuts automations and needs no entitlement at all — but it can only *interrupt*, never
+*block*. See `09-PATH-B-NO-ENTITLEMENT.md`. The UI never calls Path B "blocking".
+
+Third thing: **Screen Time data cannot leave the report extension.** This is confirmed
 by Apple DTS, it is not a bug, and it dictates the entire two-plane architecture. If you
 find yourself designing a feature that reads Apple's numbers in app code, stop and read
 `01-FEASIBILITY.md` section 3.
@@ -37,15 +42,15 @@ find yourself designing a feature that reads Apple's numbers in app code, stop a
 
 | Phase | State |
 |---|---|
-| 0 · Foundation | in progress |
-| 1 · Domain core + mock | not started |
+| 0 · Foundation | **done** — 6 targets, XcodeGen, CI green on tests |
+| 1 · Domain core + mock | **done** — 30 golden tests passing on CI |
 | 2 · Authorization + selection | **blocked** — needs paid membership |
 | 3 · Shield one app | **blocked** — needs paid membership |
 | 4 · Monitoring + ladder | **blocked** — needs paid membership |
-| 5 · Limits, schedules, focus | not started (logic buildable, enforcement blocked) |
-| 6 · Statistics | not started |
-| 7 · Brain system + UI | not started |
-| 8 · Interventions | not started |
+| 5 · Limits, schedules, focus | partial — focus sessions work against the mock |
+| 6 · Statistics | **done** for our ledger; Apple plane needs a device |
+| 7 · Brain system + UI | **done** — design system, creature, 4 screens |
+| 8 · Interventions | next — Path B Shortcuts onboarding |
 | 9 · Feed Quarantine | not started |
 | 10 · Device hardening | **blocked** — needs device |
 
@@ -63,6 +68,7 @@ find yourself designing a feature that reads Apple's numbers in app code, stop a
 | `06-APPLE-REQUIREMENTS.md` | Signing, entitlements, the exact steps only the owner can do |
 | `07-ROADMAP.md` | Phases, exit criteria, ordering rationale |
 | `08-DECISIONS.md` | Decision log — what was chosen and what it ruled out |
+| `09-PATH-B-NO-ENTITLEMENT.md` | Running with no entitlements: what survives, what does not |
 
 ## Housekeeping rules for this repo
 
