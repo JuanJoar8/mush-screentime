@@ -41,7 +41,9 @@ struct TotalActivityReport: DeviceActivityReportScene {
     let context: DeviceActivityReport.Context = .totalActivity
     let content: (ActivitySummary) -> TotalActivityView
 
-    func makeConfiguration(
+    // nonisolated: the scene is main-actor inferred through its View content, but
+    // DeviceActivityResults is non-Sendable and is handed to us off the main actor.
+    nonisolated func makeConfiguration(
         representing data: DeviceActivityResults<DeviceActivityData>
     ) async -> ActivitySummary {
         var summary = ActivitySummary()
@@ -87,7 +89,7 @@ struct AppBreakdownReport: DeviceActivityReportScene {
     let context: DeviceActivityReport.Context = .appBreakdown
     let content: ([AppRow]) -> AppBreakdownView
 
-    func makeConfiguration(
+    nonisolated func makeConfiguration(
         representing data: DeviceActivityResults<DeviceActivityData>
     ) async -> [AppRow] {
         var totals: [String: (name: String, duration: TimeInterval)] = [:]

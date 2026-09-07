@@ -180,7 +180,10 @@ func improvementIgnoresBlindDays() throws {
     }
     try store.save(state)
 
-    let improvement = try #require(ledger.improvement(days: 7, now: t0))
+    // Computed outside the macro: #require expands its argument into a closure, which
+    // strands the `try`.
+    let measured = try ledger.improvement(days: 7, now: t0)
+    let improvement = try #require(measured)
     #expect(abs(improvement - (-0.5)) < 0.0001)
 }
 
