@@ -19,7 +19,7 @@ struct StageGalleryView: View {
                 ForEach(BrainStage.allCases.reversed(), id: \.self) { stage in
                     Viewport {
                         HStack(spacing: 0) {
-                            BlobView(stage: stage)
+                            BlobView(stage: stage, isStatic: true)
                                 .frame(width: 140, height: 130)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(stage.title)

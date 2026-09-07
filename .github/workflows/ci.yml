@@ -157,9 +157,34 @@ jobs:
           for SCREEN in home blocks stats brain gallery setup; do
             xcrun simctl terminate "$UDID" com.mush.app || true
             xcrun simctl launch "$UDID" com.mush.app -MushScreen "$SCREEN"
-            sleep 6
+            sleep 8
             xcrun simctl io "$UDID" screenshot "screenshots/$SCREEN.png"
           done
+
+      # A screen that renders nothing still screenshots fine, and the build stays green
+      # while the app is visibly broken - which is exactly what happened to the stage
+      # gallery: five animated canvases never presented a frame inside the six seconds
+      # below, and CI called it a success. Measure the pixels instead of trusting them.
+      - name: Screens actually rendered
+        run: |
+          set -euo pipefail
+          FAILED=0
+          for SHOT in screenshots/*.png; do
+            # Standard deviation over the whole image. A blank or single-colour screen
+            # sits near zero; any real UI is far above it.
+            SIGMA=$(magick "$SHOT" -colorspace Gray -format "%[fx:standard_deviation*100]" info: 2>/dev/null || echo "-1")
+            printf "%-28s sigma=%s
+" "$(basename "$SHOT")" "$SIGMA"
+            if [ "$SIGMA" = "-1" ]; then
+              echo "  (could not measure - skipping)"
+              continue
+            fi
+            if awk "BEGIN{exit !($SIGMA < 2.0)}"; then
+              echo "  BLANK: $(basename "$SHOT") rendered nothing."
+              FAILED=1
+            fi
+          done
+          exit $FAILED
 
       - name: Upload screenshots
         if: always()

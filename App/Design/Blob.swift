@@ -161,11 +161,16 @@ struct BlobView: View {
         let bodyH = radius * (1.06 - p.spread * 0.30)
         let center = CGPoint(x: cx + tremor, y: cy)
 
+        // Level of detail. Every blurred layer is an offscreen render, and there are
+        // thirty of them; in the Dynamic Island at 20pt each blur is sub-pixel and pure
+        // waste. Below this size the softening is dropped and the offsets do the work.
+        let detail = min(size.width, size.height) >= 96
+
         drawShadow(&context, center: center, size: size, bodyW: bodyW, radius: radius)
         drawLegs(&context, center: center, bodyW: bodyW, bodyH: bodyH, radius: radius, palette: palette)
         drawArms(&context, center: center, bodyW: bodyW, bodyH: bodyH, radius: radius,
                  palette: palette, time: time)
-        drawBody(&context, center: center, bodyW: bodyW, bodyH: bodyH, palette: palette)
+        drawBody(&context, center: center, bodyW: bodyW, bodyH: bodyH, palette: palette, detail: detail)
         drawFace(&context, center: center, bodyW: bodyW, bodyH: bodyH, radius: radius,
                  palette: palette, time: time)
     }
@@ -223,7 +228,7 @@ struct BlobView: View {
             let x0 = center.x + side * bodyW * 0.20
             let x1 = center.x + side * spread
             limb(&context, points: [CGPoint(x: x0, y: hipY), CGPoint(x: x1, y: footY)],
-                 width: radius * 0.115, colour: palette.base,
+                 width: radius * 0.155, colour: palette.base,
                  highlight: palette.light.opacity(0.75))
 
             // Shoe: a squat wedge plus a darker sole, tilted outward.
@@ -231,13 +236,13 @@ struct BlobView: View {
                 layer.translateBy(x: x1, y: footY)
                 layer.rotate(by: .radians(Double(side) * 0.12))
                 let upper = CGRect(
-                    x: side * radius * 0.07 - radius * 0.20, y: radius * 0.045 - radius * 0.115,
-                    width: radius * 0.40, height: radius * 0.23
+                    x: side * radius * 0.07 - radius * 0.25, y: radius * 0.045 - radius * 0.145,
+                    width: radius * 0.50, height: radius * 0.29
                 )
                 layer.fill(Path(ellipseIn: upper), with: .color(palette.shell))
                 let sole = CGRect(
-                    x: side * radius * 0.07 - radius * 0.20, y: radius * 0.10 - radius * 0.045,
-                    width: radius * 0.40, height: radius * 0.09
+                    x: side * radius * 0.07 - radius * 0.25, y: radius * 0.11 - radius * 0.050,
+                    width: radius * 0.50, height: radius * 0.10
                 )
                 layer.fill(
                     Path(ellipseIn: sole),
@@ -265,21 +270,21 @@ struct BlobView: View {
                 y: shoulder.y + radius * (0.30 + drop * 0.52 + sway)
             )
 
-            limb(&context, points: [shoulder, elbow, wrist], width: radius * 0.105,
+            limb(&context, points: [shoulder, elbow, wrist], width: radius * 0.140,
                  colour: palette.base, highlight: palette.light.opacity(0.7))
 
             // Glove: a ball and a thumb. Two circles is all it takes to stop reading as
             // a dot on the end of a stick.
             let palm = CGRect(
-                x: wrist.x - radius * 0.135, y: wrist.y - radius * 0.135,
-                width: radius * 0.27, height: radius * 0.27
+                x: wrist.x - radius * 0.175, y: wrist.y - radius * 0.175,
+                width: radius * 0.35, height: radius * 0.35
             )
             context.fill(Path(ellipseIn: palm), with: .color(palette.shell))
 
             let thumb = CGRect(
-                x: wrist.x - side * radius * 0.10 - radius * 0.058,
-                y: wrist.y - radius * 0.06 - radius * 0.058,
-                width: radius * 0.116, height: radius * 0.116
+                x: wrist.x - side * radius * 0.135 - radius * 0.075,
+                y: wrist.y - radius * 0.075 - radius * 0.075,
+                width: radius * 0.15, height: radius * 0.15
             )
             context.fill(Path(ellipseIn: thumb), with: .color(palette.shell))
         }
@@ -287,43 +292,45 @@ struct BlobView: View {
 
     // MARK: Body
 
-    /// Two hemispheres under one skin: an ellipse with a shallow dip at the crown, so the
-    /// silhouette says "brain" before a single fold is drawn.
+    /// The silhouette, sampled rather than drawn with four beziers.
+    ///
+    /// The first version was a smooth ellipse with a dip at the crown, and in a shipped
+    /// screenshot it read as a bread roll. A brain's outline is *lumpy* — the folds reach
+    /// the edge and push it out — so the radius carries two small harmonics on top of the
+    /// ellipse. Amplitudes stay under 5%: any more and it turns into a cloud.
     private func bodyPath(center c: CGPoint, bodyW w: CGFloat, bodyH h: CGFloat) -> Path {
         var path = Path()
-        path.move(to: CGPoint(x: c.x - w, y: c.y))
-        path.addCurve(
-            to: CGPoint(x: c.x - w * 0.16, y: c.y - h * 1.00),
-            control1: CGPoint(x: c.x - w, y: c.y - h * 1.02),
-            control2: CGPoint(x: c.x - w * 0.52, y: c.y - h * 1.16)
-        )
-        path.addCurve(
-            to: CGPoint(x: c.x + w * 0.16, y: c.y - h * 1.00),
-            control1: CGPoint(x: c.x - w * 0.06, y: c.y - h * 0.94),
-            control2: CGPoint(x: c.x + w * 0.06, y: c.y - h * 0.94)
-        )
-        path.addCurve(
-            to: CGPoint(x: c.x + w, y: c.y),
-            control1: CGPoint(x: c.x + w * 0.52, y: c.y - h * 1.16),
-            control2: CGPoint(x: c.x + w, y: c.y - h * 1.02)
-        )
-        path.addCurve(
-            to: CGPoint(x: c.x, y: c.y + h * 1.02),
-            control1: CGPoint(x: c.x + w, y: c.y + h * 0.86),
-            control2: CGPoint(x: c.x + w * 0.56, y: c.y + h * 1.02)
-        )
-        path.addCurve(
-            to: CGPoint(x: c.x - w, y: c.y),
-            control1: CGPoint(x: c.x - w * 0.56, y: c.y + h * 1.02),
-            control2: CGPoint(x: c.x - w, y: c.y + h * 0.86)
-        )
+        let steps = 96
+
+        for step in 0...steps {
+            let angle = Double(step) / Double(steps) * 2 * .pi - .pi / 2
+
+            // Lumps. Harmonics 7 and 11 are mutually prime, so the bumps never line up
+            // into a regular rosette the way 4-and-8 would.
+            let lumps = 1
+                + 0.040 * sin(angle * 7 + 0.9)
+                + 0.022 * sin(angle * 11 - 0.4)
+
+            // Crown dip: the longitudinal fissure pulls the top centre down. Narrow, so
+            // it reads as a cleft rather than a flat top.
+            let fromTop = abs(atan2(sin(angle + .pi / 2), cos(angle + .pi / 2)))
+            let dip = 1 - 0.085 * exp(-pow(fromTop / 0.30, 2))
+
+            let rx = w * CGFloat(lumps * dip)
+            let ry = h * CGFloat(lumps * dip)
+            let point = CGPoint(
+                x: c.x + rx * CGFloat(cos(angle)),
+                y: c.y + ry * CGFloat(sin(angle))
+            )
+            if step == 0 { path.move(to: point) } else { path.addLine(to: point) }
+        }
         path.closeSubpath()
         return path
     }
 
     private func drawBody(
         _ context: inout GraphicsContext, center: CGPoint,
-        bodyW: CGFloat, bodyH: CGFloat, palette: Palette
+        bodyW: CGFloat, bodyH: CGFloat, palette: Palette, detail: Bool
     ) {
         let silhouette = bodyPath(center: center, bodyW: bodyW, bodyH: bodyH)
 
@@ -339,12 +346,13 @@ struct BlobView: View {
 
         context.drawLayer { layer in
             layer.clip(to: silhouette)
-            drawGyri(&layer, center: center, bodyW: bodyW, bodyH: bodyH, palette: palette)
+            drawGyri(&layer, center: center, bodyW: bodyW, bodyH: bodyH,
+                     palette: palette, detail: detail)
 
             // Rim occlusion: a thick blurred stroke *inside* the silhouette, so the volume
             // does not end at a flat edge.
             layer.drawLayer { rim in
-                rim.addFilter(.blur(radius: bodyW * 0.07))
+                if detail { rim.addFilter(.blur(radius: bodyW * 0.07)) }
                 rim.stroke(
                     silhouette, with: .color(palette.darker.opacity(0.5)),
                     style: StrokeStyle(lineWidth: bodyW * 0.20)
@@ -358,7 +366,7 @@ struct BlobView: View {
                     width: bodyW * 0.44, height: bodyH * 0.28
                 )
                 layer.drawLayer { highlight in
-                    highlight.addFilter(.blur(radius: bodyW * 0.05))
+                    if detail { highlight.addFilter(.blur(radius: bodyW * 0.05)) }
                     highlight.opacity = 0.30 * p.gloss
                     highlight.fill(Path(ellipseIn: spec), with: .color(Token.Color.specular))
                 }
@@ -373,50 +381,84 @@ struct BlobView: View {
         return CGFloat(x - x.rounded(.down))
     }
 
+    /// The folds.
+    ///
+    /// **The first version drew long strokes across each hemisphere and it was wrong.** In
+    /// a shipped screenshot they flattened into horizontal bands and the creature read as
+    /// a bread roll. A brain surface is not striped — it is covered in many *short* lobes,
+    /// each curving around the dome.
+    ///
+    /// So: short arcs on a jittered polar grid, each angled tangentially to the radius, so
+    /// the pattern wraps the volume instead of cutting across it.
     private func drawGyri(
         _ context: inout GraphicsContext, center: CGPoint,
-        bodyW: CGFloat, bodyH: CGFloat, palette: Palette
+        bodyW: CGFloat, bodyH: CGFloat, palette: Palette, detail: Bool
     ) {
-        let tube = bodyW * 0.20
+        let tube = bodyW * 0.155
+        let round = StrokeStyle(lineWidth: tube, lineCap: .round, lineJoin: .round)
 
         for side in [-1.0, 1.0] as [CGFloat] {
-            for k in 0..<5 {
-                let r1 = rnd(k * 3 + (side > 0 ? 41 : 7))
-                let r2 = rnd(k * 5 + (side > 0 ? 73 : 19))
+            for ring in 0..<3 {
+                let count = 3 + ring
+                for index in 0..<count {
+                    let seed = ring * 17 + index * 5 + (side > 0 ? 101 : 3)
+                    let j1 = rnd(seed) - 0.5
+                    let j2 = rnd(seed + 41) - 0.5
 
-                let y = center.y - bodyH * (0.74 - CGFloat(k) * 0.32) + bodyH * r1 * 0.10
-                var fold = Path()
-                fold.move(to: CGPoint(x: center.x + side * bodyW * 0.06, y: y))
-                fold.addCurve(
-                    to: CGPoint(x: center.x + side * bodyW * (0.98 + r2 * 0.10),
-                                y: y + bodyH * (0.02 + r1 * 0.10)),
-                    control1: CGPoint(x: center.x + side * bodyW * (0.42 + r1 * 0.18),
-                                      y: y - bodyH * (0.16 + r1 * 0.12)),
-                    control2: CGPoint(x: center.x + side * bodyW * (0.58 + r1 * 0.18),
-                                      y: y + bodyH * (0.14 + r2 * 0.10))
-                )
+                    // Polar position inside the hemisphere. `radial` 0 is the fissure,
+                    // 1 the outer edge; `arc` sweeps from crown to base.
+                    let radial = 0.30 + CGFloat(ring) * 0.28 + j1 * 0.10
+                    let arc = (CGFloat(index) + 0.5) / CGFloat(count) * 1.7 - 0.35 + j2 * 0.14
 
-                let round = StrokeStyle(lineWidth: tube, lineCap: .round, lineJoin: .round)
+                    let px = center.x + side * bodyW * radial * CGFloat(cos(Double(arc) - 0.35))
+                    let py = center.y - bodyH * 0.72 + bodyH * 1.30 * arc / 1.7 + bodyH * j2 * 0.06
 
-                // Groove shadow, offset down.
-                context.drawLayer { layer in
-                    layer.translateBy(x: 0, y: tube * 0.30)
-                    layer.addFilter(.blur(radius: tube * 0.16))
-                    layer.stroke(fold, with: .color(palette.darker.opacity(0.55)), style: round)
-                }
+                    // Tangential: perpendicular to the line out from the centre, so folds
+                    // wrap the dome rather than cutting across it.
+                    let theta = atan2(Double(py - center.y), Double(px - center.x)) + .pi / 2
+                    let length = bodyW * (0.30 + rnd(seed + 7) * 0.14)
 
-                // The fold itself.
-                context.stroke(fold, with: .color(palette.base.opacity(0.92)), style: round)
+                    let ax = px - CGFloat(cos(theta)) * length / 2
+                    let ay = py - CGFloat(sin(theta)) * length / 2
+                    let bx = px + CGFloat(cos(theta)) * length / 2
+                    let by = py + CGFloat(sin(theta)) * length / 2
+                    // Bow the arc outward from the centre, which is the direction a fold
+                    // bulges on a curved surface.
+                    let bow = length * (0.26 + rnd(seed + 13) * 0.16)
+                    let cxp = px + CGFloat(cos(theta - .pi / 2)) * bow * CGFloat(side)
+                    let cyp = py + CGFloat(sin(theta - .pi / 2)) * bow * CGFloat(side)
 
-                // Crest highlight, offset up. This is the stroke that makes it rubber.
-                context.drawLayer { layer in
-                    layer.translateBy(x: 0, y: -tube * 0.26)
-                    layer.addFilter(.blur(radius: tube * 0.10))
-                    layer.stroke(
-                        fold,
-                        with: .color(palette.lighter.opacity(0.30 + 0.42 * p.gloss)),
-                        style: StrokeStyle(lineWidth: tube * 0.42, lineCap: .round)
-                    )
+                    var fold = Path()
+                    fold.move(to: CGPoint(x: ax, y: ay))
+                    fold.addQuadCurve(to: CGPoint(x: bx, y: by), control: CGPoint(x: cxp, y: cyp))
+
+                    if detail {
+                        // Groove shadow, offset down and softened.
+                        context.drawLayer { layer in
+                            layer.translateBy(x: 0, y: tube * 0.34)
+                            layer.addFilter(.blur(radius: tube * 0.20))
+                            layer.stroke(fold, with: .color(palette.darker.opacity(0.55)), style: round)
+                        }
+                    } else {
+                        context.drawLayer { layer in
+                            layer.translateBy(x: 0, y: tube * 0.34)
+                            layer.stroke(fold, with: .color(palette.darker.opacity(0.40)), style: round)
+                        }
+                    }
+
+                    // The fold itself.
+                    context.stroke(fold, with: .color(palette.base.opacity(0.95)), style: round)
+
+                    // Crest highlight, offset up. This is the stroke that makes it rubber.
+                    context.drawLayer { layer in
+                        layer.translateBy(x: 0, y: -tube * 0.28)
+                        if detail { layer.addFilter(.blur(radius: tube * 0.12)) }
+                        layer.stroke(
+                            fold,
+                            with: .color(palette.lighter.opacity(0.34 + 0.40 * p.gloss)),
+                            style: StrokeStyle(lineWidth: tube * 0.40, lineCap: .round)
+                        )
+                    }
                 }
             }
         }
@@ -430,7 +472,7 @@ struct BlobView: View {
             control2: CGPoint(x: center.x - bodyW * 0.03, y: center.y - bodyH * 0.10)
         )
         context.drawLayer { layer in
-            layer.addFilter(.blur(radius: bodyW * 0.020))
+            if detail { layer.addFilter(.blur(radius: bodyW * 0.020)) }
             layer.stroke(
                 fissure, with: .color(palette.darker.opacity(0.62)),
                 style: StrokeStyle(lineWidth: bodyW * 0.045, lineCap: .round)
