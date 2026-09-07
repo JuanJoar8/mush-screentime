@@ -131,3 +131,10 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).report
         INFOPLIST_FILE: Extensions/Report/Info.plist
         CODE_SIGN_ENTITLEMENTS: Extensions/Report/Report.entitlements
+        # Swift 5 language mode for this target only. DeviceActivityReportScene requires
+        # a `content` closure returning a View, which is @MainActor, while the protocol
+        # requirement is nonisolated - the conformance cannot satisfy Swift 6 strict
+        # concurrency. Contained on purpose: this extension links no shared code and
+        # holds no logic, it only renders (docs/01-FEASIBILITY.md section 3).
+        SWIFT_VERSION: "5.0"
+        SWIFT_STRICT_CONCURRENCY: minimal

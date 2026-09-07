@@ -34,6 +34,11 @@ public struct DayRecord: Codable, Sendable, Equatable, Identifiable {
     /// never counted as green (docs/08-DECISIONS.md D8).
     public var hasSignal: Bool
 
+    /// True when we saw *some* activity but know the picture is incomplete — under
+    /// Path B, an app that was opened and never reported closed. The day still scores,
+    /// but the UI marks it, because the real number can only be higher than what we show.
+    public var isPartial: Bool
+
     public init(
         date: Date,
         distractingMinutes: Int = 0,
@@ -45,7 +50,8 @@ public struct DayRecord: Codable, Sendable, Equatable, Identifiable {
         grantsIssued: Int = 0,
         scheduledWindowsExpected: Int = 0,
         scheduledWindowsHonored: Int = 0,
-        hasSignal: Bool = true
+        hasSignal: Bool = true,
+        isPartial: Bool = false
     ) {
         self.date = date
         self.distractingMinutes = distractingMinutes
@@ -58,6 +64,7 @@ public struct DayRecord: Codable, Sendable, Equatable, Identifiable {
         self.scheduledWindowsExpected = scheduledWindowsExpected
         self.scheduledWindowsHonored = scheduledWindowsHonored
         self.hasSignal = hasSignal
+        self.isPartial = isPartial
     }
 
     /// `distractingMinutes / budgetMinutes`. Nil when there is no usable budget, which
