@@ -16,7 +16,10 @@ import PackageDescription
 
 let package = Package(
     name: "MushKit",
-    platforms: [.iOS(.v26), .macOS(.v14)],
+    // String form on purpose: the `.v26` enum case does not exist in the
+    // swift-tools-version 6.0 PackageDescription, and pinning a newer tools version
+    // would tie the package to one Xcode release for no benefit.
+    platforms: [.iOS("26.0"), .macOS("14.0")],
     products: [
         .library(name: "MushKit", targets: ["MushKit"]),
         .library(name: "MushScreenTime", targets: ["MushScreenTime"]),
