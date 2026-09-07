@@ -5,17 +5,19 @@ import WidgetKit
 
 /// Shortcuts entry points.
 ///
-/// Two jobs in one file, because they are the same mechanism:
+/// Three jobs in one file, because they are the same mechanism:
 ///
 /// 1. **Opal parity** — "Focus Mode integration". Start and end a session from a
 ///    Shortcut, a Focus filter, or the Action button.
 /// 2. **Path B measurement** — with no Family Controls entitlement, a pair of personal
 ///    automations ("when Instagram is opened / closed") is the only way we can observe
 ///    usage at all (docs/09-PATH-B-NO-ENTITLEMENT.md).
+/// 3. **Path B intervention** — `InterruptIntent`, the one that foregrounds us.
 ///
-/// Every intent here sets `openAppWhenRun = false`. An automation that yanked you into
-/// our app each time you opened Instagram would be a worse interruption than the one it
-/// is measuring.
+/// Everything except `InterruptIntent` sets `openAppWhenRun = false`. An automation that
+/// yanked you into our app every time it merely *measured* something would be a worse
+/// interruption than the one it is measuring. The interrupt intent is the deliberate
+/// exception: being seen is its entire job.
 
 // MARK: - Measurement
 
@@ -57,6 +59,42 @@ struct LogAppCloseIntent: AppIntent {
 
     func perform() async throws -> some IntentResult {
         try PathBRecorder.shared.close(appKey: appKey, at: Date())
+        return .result()
+    }
+}
+
+// MARK: - Interruption
+
+/// The one intent here that deliberately opens the app.
+///
+/// This is Path B's whole intervention, and the mechanism is `one sec`'s: a Shortcuts
+/// personal automation on "App → Instagram → Is Opened", with *Ask Before Running* off,
+/// running this. iOS foregrounds us, the user sees a pause instead of the feed, and
+/// decides again.
+///
+/// It is friction, not a block. Nothing here prevents the app from opening, and the
+/// screen it presents says so (`docs/09-PATH-B-NO-ENTITLEMENT.md`).
+struct InterruptIntent: AppIntent {
+    static let title: LocalizedStringResource = "Pause before this app"
+    static let description = IntentDescription(
+        "Opens Mush with a short pause, so you decide again before the feed loads.",
+        categoryName: "Interruption"
+    )
+    /// The exception. Every other intent in this file stays in the background on purpose;
+    /// this one has to foreground us, because being seen *is* the intervention.
+    static let openAppWhenRun = true
+    static let isDiscoverable = true
+
+    @Parameter(title: "App name")
+    var appName: String
+
+    init() {}
+    init(appName: String) { self.appName = appName }
+
+    func perform() async throws -> some IntentResult {
+        let key = appName.lowercased().replacingOccurrences(of: " ", with: "-")
+        InterruptionInbox().post(PendingInterruption(appKey: key, appName: appName))
+        try PathBRecorder.shared.open(appKey: key, at: Date())
         return .result()
     }
 }
@@ -117,6 +155,12 @@ struct MushShortcuts: AppShortcutsProvider {
             phrases: ["End my \(.applicationName) session"],
             shortTitle: "End focus",
             systemImageName: "stop.circle"
+        )
+        AppShortcut(
+            intent: InterruptIntent(),
+            phrases: ["Pause with \(.applicationName)"],
+            shortTitle: "Pause",
+            systemImageName: "hand.raised"
         )
     }
 }

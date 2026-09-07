@@ -7,6 +7,7 @@ import MushKit
 /// things and calling both of them "blocking" would be a lie (docs/09-PATH-B-NO-ENTITLEMENT.md).
 struct BlocksView: View {
     @Environment(AppModel.self) private var model
+    @State private var showSetup = false
 
     var body: some View {
         ScrollView {
@@ -20,6 +21,10 @@ struct BlocksView: View {
             .padding(.vertical, 16)
         }
         .background(Token.Color.ground)
+        .sheet(isPresented: $showSetup) {
+            PathBSetupView()
+                .presentationDragIndicator(.visible)
+        }
     }
 
     private var capability: some View {
@@ -40,6 +45,21 @@ struct BlocksView: View {
                     }
                     .padding(.top, 4)
                 }
+
+                // Always offered, not only as a fallback. Without the entitlement it is
+                // the only thing that works; with it, the pause still catches the opens
+                // that happen before a limit is reached.
+                Button { showSetup = true } label: {
+                    HStack(spacing: 6) {
+                        Text("Set up the pause")
+                            .font(.system(size: 14, weight: .medium))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 11, weight: .bold))
+                    }
+                    .foregroundStyle(model.stage.tint)
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 2)
             }
         }
     }

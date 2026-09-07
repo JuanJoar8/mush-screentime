@@ -113,6 +113,10 @@ final class AppModel {
     private(set) var digest: WeeklyDigest?
     private(set) var milestone: MilestoneCrossing?
 
+    /// Set when a Shortcuts automation just foregrounded us. Drives the pause screen.
+    private(set) var pendingInterruption: PendingInterruption?
+
+    private let inbox = InterruptionInbox()
     private let milestoneWatcher = MilestoneWatcher()
     private let snapshots = WidgetSnapshotStore()
 
@@ -161,6 +165,38 @@ final class AppModel {
             seedExampleRules()
         }
         await refresh()
+    }
+
+    /// Called on every foreground. The inbox clears itself on read, so an interruption
+    /// is shown once and a stale one is dropped rather than queued.
+    func checkInterruption() {
+        pendingInterruption = inbox.take()
+    }
+
+    /// Record what the user chose. Both outcomes are written: an app that only counted
+    /// its wins would be lying to the one person it exists to inform.
+    func resolveInterruption(_ outcome: InterruptionOutcome) {
+        guard let pending = pendingInterruption else { return }
+        pendingInterruption = nil
+        do {
+            var state = try ledgerStore.load()
+            if let index = state.pathBSessions.lastIndex(where: {
+                $0.appKey == pending.appKey && $0.isOpen
+            }) {
+                state.pathBSessions[index].wasInterrupted = true
+                state.pathBSessions[index].dismissedIntervention = outcome == .continued
+                // Turning back ends the session here. Continuing leaves it open for the
+                // close automation, because we genuinely do not know how long they stay.
+                if outcome == .turnedBack {
+                    state.pathBSessions[index].closedAt = Date()
+                }
+            }
+            try ledgerStore.save(state)
+            try ledger.recordShieldEvent(shown: 1, overrides: outcome == .continued ? 1 : 0)
+        } catch {
+            loadError = String(describing: error)
+        }
+        Task { await refresh() }
     }
 
     func refresh() async {

@@ -125,6 +125,27 @@ jobs:
             echo "No compiler warnings."
           fi
 
+      # Path B's whole measurement path is a Shortcuts automation calling an App Intent.
+      # An intent that fails to register produces no error and no log line — the
+      # automation simply does nothing, and usage silently reads as zero. Assert the
+      # metadata exists and names our intents, so that failure is a red build.
+      - name: App Intents are registered
+        run: |
+          set -euo pipefail
+          META="build/Build/Products/Debug-iphonesimulator/Mush.app/Metadata.appintents"
+          if [ ! -d "$META" ]; then
+            echo "Mush.app has no Metadata.appintents — no intent would be callable."
+            exit 1
+          fi
+          for INTENT in LogAppOpenIntent LogAppCloseIntent InterruptIntent StartFocusIntent EndFocusIntent; do
+            if grep -rqs "$INTENT" "$META"; then
+              echo "ok  $INTENT"
+            else
+              echo "MISSING  $INTENT"
+              exit 1
+            fi
+          done
+
       - name: Launch and capture every screen
         run: |
           set -euo pipefail
@@ -133,7 +154,7 @@ jobs:
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" "$APP"
           mkdir -p screenshots
-          for SCREEN in home blocks stats brain gallery; do
+          for SCREEN in home blocks stats brain gallery setup; do
             xcrun simctl terminate "$UDID" com.mush.app || true
             xcrun simctl launch "$UDID" com.mush.app -MushScreen "$SCREEN"
             sleep 6
