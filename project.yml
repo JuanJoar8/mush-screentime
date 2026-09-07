@@ -52,6 +52,7 @@ targets:
     platform: iOS
     sources:
       - path: App
+      - path: Shared          # also compiled into MushWidget; see that target
     dependencies:
       - package: MushKit
         product: MushKit
@@ -61,6 +62,7 @@ targets:
       - target: MushShieldUI
       - target: MushShieldAction
       - target: MushReport
+      - target: MushWidget
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)
@@ -138,3 +140,28 @@ targets:
         # holds no logic, it only renders (docs/01-FEASIBILITY.md section 3).
         SWIFT_VERSION: "5.0"
         SWIFT_STRICT_CONCURRENCY: minimal
+
+  # ── WidgetKit: Home Screen creature + the focus Live Activity ──────────────
+  # The only target here that needs NO Family Controls entitlement. That is the
+  # point: on a free Apple ID this is the part of the product that still runs
+  # (docs/09-PATH-B-NO-ENTITLEMENT.md).
+  MushWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Extensions/Widget
+      - path: Shared
+      # The character and the tokens are shared with the app rather than redrawn.
+      # A second copy of the creature would drift from the first within a week.
+      - path: App/Design/DesignTokens.swift
+      - path: App/Design/Blob.swift
+      - path: App/Resources/Fonts
+        buildPhase: resources
+    dependencies:
+      - package: MushKit
+        product: MushKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).widget
+        INFOPLIST_FILE: Extensions/Widget/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Extensions/Widget/Widget.entitlements

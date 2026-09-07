@@ -47,6 +47,14 @@ achievements. **This is where the design system gets built** — aesthetic direc
 committed to `brand/brand.json` first, then tokens, then screens. Never inline values.
 *Exit: anti-slop gate and the deterministic detector both pass; screenshots from CI.*
 
+### Phase 7.5 — Competitive parity
+Scrape Opal and Brainrot feature by feature, classify every one, build the missing
+ones that public APIs allow: rule groups, allow-list mode, frequency limits, gems,
+milestone nudges, the weekly digest, the widget, the Live Activity, Shortcuts intents
+and the maintenance repairs. Recorded in `10-FEATURE-PARITY.md`.
+*Exit: no competitor feature is unaccounted for — every one is HAVE, ADDED, SPEC,
+LATER, NO or IMPOSSIBLE, with the reason written down.*
+
 ### Phase 8 — Interventions
 Shield-based intervention copy per strictness level; Shortcuts automation onboarding
 (App Intent + guided setup); the local-notification fallback with its caveats surfaced.
@@ -85,6 +93,6 @@ Two things are deliberately early:
 
 ## Current position
 
-Phase 0 in progress. Phases 2, 3, 4 and 10 are **blocked** on the Apple Developer
+Phases 0, 1, 6, 7 and 7.5 are done. Phases 2, 3, 4 and 10 are **blocked** on the Apple Developer
 membership; everything up to and including Phase 9 can be built and demonstrated in the
 Simulator without it.

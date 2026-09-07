@@ -1,81 +1,96 @@
 {
   "name": "Mush",
   "archetype": "jester",
-  "direction": "Un especimen vivo en el cajon de un laboratorio. El fondo entero es verde oliva profundo y plano, y hay UNA sola ventana iluminada color hueso donde vive la criatura. Un objeto brillante, un numero, un bicho. Todo lo demas es panel de instrumentos: etiquetas diminutas en versalita sobre filete de 1px, cifras en mono alineadas a la derecha.",
-
+  "direction": "Objeto vivo suspendido en la noche. Fondo indigo profundo con degradado y una criatura iluminada desde dentro que flota sobre su propia sombra. La referencia de acabado es Opal: profundidad, glow, un solo objeto heroico; la referencia de caracter es el genero del cerebro antropomorfico. Todo lo demas es panel translucido sobre la noche.",
   "referencias": {
-    "estilo": "cajon de especimenes / consola de instrumentos de campo: una ventana iluminada rodeada de panel mate",
-    "no_es": "no es un panel de bienestar, no es un cerebro anatomico, no es una mascota de productividad con lanyard"
+    "estilo": "Opal para el acabado (indigo nocturno, objeto heroico con glow y sombra de suelo, cifra grande, fila de metricas, curva del dia)",
+    "caracter": "genero del cerebro antropomorfico con surcos, extremidades y cara expresiva - dibujo propio, no calcado",
+    "no_es": "no es un panel de bienestar plano; no es una mascota de productividad con lanyard"
   },
-
   "axes": {
     "hype": 1,
-    "warmth": 3,
+    "warmth": 4,
     "provocation": 3,
     "density": 2,
     "craft": 5,
     "playfulness": 5
   },
-
   "dials": {
     "design_variance": 5,
     "motion_intensity": 3,
-    "visual_density": 2
+    "visual_density": 3
   },
-
   "siete_ejes": {
-    "tema": "oscuro por defecto, pero verde oliva y no negro: es un cajon, no un vacio. Sin modo claro en v1.",
-    "fondo": "liso, mate, sin gradiente y sin grano. Todo el interes visual lo aporta la unica ventana iluminada.",
+    "tema": "noche indigo con degradado; la luz la pone la criatura y su glow, no el fondo",
+    "fondo": "degradado indigo muy oscuro con un halo radial detras del personaje; paneles translucidos encima",
     "tipografia": "grotesca ancha y pesada para el numero y los titulares; sistema neutro para leer; mono solo para instrumentos y cifras",
-    "hero": "la ventana: criatura y numero de salud son UN objeto, no dos filas. El numero flota sobre el blob.",
+    "hero": "objeto heroico al estilo Opal: la criatura flotando sobre su sombra, con la cifra de salud grande debajo",
     "seccion": "etiqueta de instrumento - versalita diminuta a la izquierda sobre filete de 1px, valor en mono a la derecha",
-    "componentes_firma": ["viewport", "blob", "receipt-row", "state-pill"],
+    "componentes_firma": [
+      "hero-glow",
+      "brain-character",
+      "stat-tile",
+      "day-curve",
+      "receipt-row"
+    ],
     "motion": {
       "wobble": "ondulacion continua del contorno del blob; amplitud, frecuencia y caida se derivan del BrainStage, no se eligen a mano",
       "settle": "un valor que cambia aterriza con escala 1.04 a 1.0 y opacidad en 240ms"
     },
     "anterior": "dojo-ad fue Sage, vitrina blanca, Archivo Black, radio 0, rejilla densa (density 4). Mush es lo opuesto en cada eje: Jester, cajon oliva oscuro, radios blandos, density 2, y el acento no es fijo sino que lo dicta el modelo de datos."
   },
-
   "colors": {
-    "ground": "#1B2016",
-    "panel": "#242A1D",
-    "panel-raised": "#2E3625",
-    "line": "#3A4230",
-    "viewport": "#E7E4D3",
-    "ink": "#EDEFE6",
-    "ink-dim": "#8E9880",
-    "ink-on-viewport": "#1B2016",
-    "primary": "#F2789F",
-    "accent": "#F2B705",
-    "good": "#6E9E4A",
-    "warn": "#F2B705",
-    "bad": "#C8503A",
-
-    "stage-crisp": "#F2789F",
-    "stage-foggy": "#D9A0AE",
-    "stage-buzzed": "#F2B705",
-    "stage-melting": "#B58A6A",
-    "stage-mush": "#7C7A6B"
+    "ground": "#140B2E",
+    "ground-deep": "#0C0620",
+    "panel": "#1E1240",
+    "panel-raised": "#2A1B55",
+    "line": "#3B2A70",
+    "viewport": "#241552",
+    "ink": "#F1ECFF",
+    "ink-dim": "#A093CC",
+    "ink-on-viewport": "#F1ECFF",
+    "specular": "#FFFFFF",
+    "primary": "#7C5CFA",
+    "accent": "#22D3C6",
+    "good": "#34D399",
+    "warn": "#FBBF24",
+    "bad": "#F4436B",
+    "stage-crisp": "#FFB3C1",
+    "stage-foggy": "#E7A7BE",
+    "stage-buzzed": "#FFC24D",
+    "stage-melting": "#B08A94",
+    "stage-mush": "#7A7391"
   },
-
   "typography": {
     "display": "Bricolage Grotesque",
     "body": "SF Pro Text",
     "data": "SF Mono"
   },
-
-  "radius": ["28", "12", "999"],
-
+  "radius": [
+    "28",
+    "12",
+    "999"
+  ],
   "motion": {
-    "durations": { "instant": 80, "fast": 160, "base": 240, "slow": 360 },
-    "safe_properties": ["transform", "opacity", "color", "background-color", "border-color", "clip-path"],
+    "durations": {
+      "instant": 80,
+      "fast": 160,
+      "base": 240,
+      "slow": 360
+    },
+    "safe_properties": [
+      "transform",
+      "opacity",
+      "color",
+      "background-color",
+      "border-color",
+      "clip-path"
+    ],
     "languages": {
       "wobble": "contorno del blob por senos desfasados; amplitud/frecuencia/caida derivadas del estado",
       "settle": "escala 1.04 a 1.0 + opacidad en 240ms cuando una cifra cambia"
     }
   },
-
   "component_rules": {
     "viewport": "Radio 28. Es el UNICO rectangulo claro de la app. Lleva sombra interior de 1px para leerse iluminado desde dentro. Nunca se usa para nada que no sea la criatura.",
     "panel": "Radio 12. Superficie mate para agrupar instrumentos. Sin sombra, se separa por color y por filete.",
@@ -83,26 +98,28 @@
     "receipt-row": "Fila de recibo: razon a la izquierda en texto normal, valor con signo a la derecha en mono. Es la pantalla que hace creible el numero, no una vista de debug.",
     "blob": "Ilustracion propia dibujada en Canvas, sin assets. Contorno relleno, sin borde. El color sale de stage-*, jamas se escribe a mano.",
     "provenance-chip": "Todo dato que venga del report de Apple lleva un chip diminuto. Es obligatorio: son las unicas cifras cuya derivacion no podemos explicar.",
-    "focus": "Contorno de 2px en el color de estado con 2px de separacion. Visible siempre."
+    "focus": "Contorno de 2px en el color de estado con 2px de separacion. Visible siempre.",
+    "specular": "Brillo especular y realce de los giros. Es el unico blanco puro del sistema y solo se usa con alpha, nunca en plano."
   },
-
   "anti_slop": {
     "forbidden_patterns": [
       "Llamar 'bloqueado' a lo que solo es friccion. En Path B nada bloquea, y decirlo seria mentir.",
       "Alimentar Brain Health con cifras de Apple. Van marcadas, separadas y jamas entran al modelo.",
-      "Cerebro anatomico, surcos, imagineria medica o clinica. Es un blob, no un diagnostico.",
+      "Inventar metricas que iOS no nos da: pickups y notificaciones no existen fuera del report extension.",
       "Tono de coach: 'Great job', 'You've got this', 'journey', 'mindful', 'supercharge'.",
-      "Dibujar un dia sin señal como cero. Se dibuja hueco, siempre.",
+      "Dibujar un dia sin senal como cero. Se dibuja hueco, siempre.",
       "Barra de progreso circular alrededor del personaje.",
-      "Gradiente en el fondo. El interes lo pone la ventana iluminada.",
       "Emojis como iconos de interfaz.",
       "Culpar al usuario por perder la racha.",
-      "Morado o indigo como acento, y el fondo crema con un unico acento brillante."
+      "Calcar la ilustracion de Brainrot. Mismo genero y mismo nivel de craft, dibujo propio.",
+      "Fondo crema con un unico acento brillante."
     ]
   },
-
   "validation": {
     "max_fonts": 3,
-    "max_radius_values": 3
+    "max_radius_values": 3,
+    "accepted_exceptions": {
+      "restricted_hues": "Aceptada por el usuario el 2026-09-07. Pidio explicitamente el indigo de Opal como referencia. El gate sigue reportando este hallazgo y NO se declara PASS limpio: se declara '1 hallazgo, aceptado'."
+    }
   }
 }

@@ -18,7 +18,48 @@ public struct LedgerState: Codable, Sendable, Equatable {
     /// Day the last rollover committed, so we never double-commit.
     public var lastRollover: Date?
 
+    /// The user's rules. Empty until they create one.
+    public var rules: RuleSet = RuleSet()
+    /// Raw open/close events from the Path B automations, before assembly.
+    public var pathBSessions: [AppSession] = []
+    public var gems: GemState = GemState()
+    public var milestones: MilestoneState = MilestoneState()
+
     public init() {}
+
+    // MARK: Lenient decoding
+    //
+    // Synthesised `Decodable` does **not** fall back to a property's default value when
+    // its key is missing — it throws. So every field added after the first release would
+    // make an existing ledger file undecodable, and the user would lose their history on
+    // update. Since history *is* the product, decoding is written by hand and every key
+    // is optional. Adding a field below means adding one `decodeIfPresent` line, not a
+    // migration.
+
+    private enum CodingKeys: String, CodingKey {
+        case days, entries, ladderLogs, activeGrants, focusSessions
+        case health, stage, streak, lastRollover
+        case rules, pathBSessions, gems, milestones
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        days = try container.decodeIfPresent([DayRecord].self, forKey: .days) ?? []
+        entries = try container.decodeIfPresent([HealthEntry].self, forKey: .entries) ?? []
+        ladderLogs = try container.decodeIfPresent([Date: LadderLog].self, forKey: .ladderLogs) ?? [:]
+        activeGrants = try container.decodeIfPresent([Grant].self, forKey: .activeGrants) ?? []
+        focusSessions = try container.decodeIfPresent([FocusSession].self, forKey: .focusSessions) ?? []
+        health = try container.decodeIfPresent(Double.self, forKey: .health)
+            ?? BrainHealthConfig().startingHealth
+        stage = try container.decodeIfPresent(BrainStage.self, forKey: .stage) ?? .foggy
+        streak = try container.decodeIfPresent(Int.self, forKey: .streak) ?? 0
+        lastRollover = try container.decodeIfPresent(Date.self, forKey: .lastRollover)
+        rules = try container.decodeIfPresent(RuleSet.self, forKey: .rules) ?? RuleSet()
+        pathBSessions = try container.decodeIfPresent([AppSession].self, forKey: .pathBSessions) ?? []
+        gems = try container.decodeIfPresent(GemState.self, forKey: .gems) ?? GemState()
+        milestones = try container.decodeIfPresent(MilestoneState.self, forKey: .milestones)
+            ?? MilestoneState()
+    }
 }
 
 /// Where `LedgerState` lives. Abstracted so tests and the mock provider can run entirely

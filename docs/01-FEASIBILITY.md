@@ -140,4 +140,9 @@ Genuinely unknown to me. Must not be assumed:
 - **Q3.** Exact severity of the iOS 26.x threshold regressions on this device's build.
 - **Q4.** Whether `Label(token)` renders reliably inside extension UI or only in-app.
 
+- **Q5.** Does `ActivityCategoryPolicy.all(except:)` really exempt the apps passed to
+  it? Multiple developer-forum reports describe exempted apps still being shielded,
+  with a generic shield rather than none. If true, the Allow Only mode ships broken
+  and has to be withdrawn, not worked around. **UNVERIFIED.**
+
 Every one of these needs the $99 membership before it can be answered.

@@ -34,24 +34,40 @@ struct BlobParameters: Equatable {
     var mouth: CGFloat
     /// How far apart the eyes sit, as a fraction of radius. They drift apart as it melts.
     var eyeSpread: CGFloat
+    /// Eyes sink and squash as structure goes.
+    var eyeDroop: CGFloat
+    /// Weights of harmonics 1, 2 and 3. This is what separates the silhouettes: a firm
+    /// creature carries its deviation in the higher harmonics (small, even ripples),
+    /// a collapsing one in harmonic 1 (one big lopsided mass).
+    var weights: (CGFloat, CGFloat, CGFloat)
+
+    static func == (a: BlobParameters, b: BlobParameters) -> Bool {
+        a.amplitude == b.amplitude && a.frequency == b.frequency && a.sag == b.sag
+            && a.squish == b.squish && a.jitter == b.jitter && a.mouth == b.mouth
+    }
 
     static func forStage(_ stage: BrainStage) -> BlobParameters {
         switch stage {
         case .crisp:
-            .init(amplitude: 0.10, frequency: 0.50, sag: 0.00, squish: 0.00,
-                  jitter: 0.000, blinkInterval: 3.4, mouth: 0.55, eyeSpread: 0.30)
+            .init(amplitude: 0.16, frequency: 0.50, sag: 0.00, squish: 0.00,
+                  jitter: 0.000, blinkInterval: 3.4, mouth: 0.55, eyeSpread: 0.30,
+                  eyeDroop: 0.00, weights: (0.34, 0.42, 0.24))
         case .foggy:
-            .init(amplitude: 0.14, frequency: 0.34, sag: 0.05, squish: 0.04,
-                  jitter: 0.000, blinkInterval: 5.0, mouth: 0.10, eyeSpread: 0.31)
+            .init(amplitude: 0.19, frequency: 0.34, sag: 0.05, squish: 0.04,
+                  jitter: 0.000, blinkInterval: 5.0, mouth: 0.08, eyeSpread: 0.31,
+                  eyeDroop: 0.02, weights: (0.46, 0.34, 0.20))
         case .buzzed:
-            .init(amplitude: 0.17, frequency: 1.70, sag: 0.03, squish: 0.02,
-                  jitter: 0.022, blinkInterval: 1.0, mouth: -0.15, eyeSpread: 0.33)
+            .init(amplitude: 0.21, frequency: 1.75, sag: 0.02, squish: 0.02,
+                  jitter: 0.048, blinkInterval: 0.9, mouth: -0.18, eyeSpread: 0.33,
+                  eyeDroop: 0.00, weights: (0.28, 0.30, 0.42))
         case .melting:
-            .init(amplitude: 0.22, frequency: 0.22, sag: 0.20, squish: 0.14,
-                  jitter: 0.000, blinkInterval: 6.8, mouth: -0.45, eyeSpread: 0.36)
+            .init(amplitude: 0.27, frequency: 0.22, sag: 0.24, squish: 0.16,
+                  jitter: 0.000, blinkInterval: 6.8, mouth: -0.45, eyeSpread: 0.36,
+                  eyeDroop: 0.10, weights: (0.56, 0.30, 0.14))
         case .mush:
-            .init(amplitude: 0.27, frequency: 0.13, sag: 0.34, squish: 0.28,
-                  jitter: 0.000, blinkInterval: 9.5, mouth: -0.65, eyeSpread: 0.40)
+            .init(amplitude: 0.32, frequency: 0.13, sag: 0.42, squish: 0.34,
+                  jitter: 0.000, blinkInterval: 9.5, mouth: -0.62, eyeSpread: 0.41,
+                  eyeDroop: 0.16, weights: (0.66, 0.24, 0.10))
         }
     }
 }
@@ -70,16 +86,28 @@ extension BrainStage {
 
 struct BlobView: View {
     let stage: BrainStage
+    /// Draw one frame and stop. Widgets and Live Activities are static snapshots —
+    /// `TimelineView(.animation)` does nothing there, so asking for it would burn a
+    /// render pass to produce the same pixels.
+    var isStatic: Bool = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var parameters: BlobParameters { .forStage(stage) }
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: reduceMotion)) { timeline in
-            Canvas { context, size in
-                let time = reduceMotion ? 0 : timeline.date.timeIntervalSinceReferenceDate
-                draw(context: context, size: size, time: time)
+        Group {
+            if isStatic {
+                Canvas { context, size in
+                    draw(context: context, size: size, time: 0)
+                }
+            } else {
+                TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: reduceMotion)) { timeline in
+                    Canvas { context, size in
+                        let time = reduceMotion ? 0 : timeline.date.timeIntervalSinceReferenceDate
+                        draw(context: context, size: size, time: time)
+                    }
+                }
             }
         }
         .animation(.easeInOut(duration: Token.Duration.slow), value: stage)
@@ -103,9 +131,9 @@ struct BlobView: View {
             // Low harmonics with unequal weights and mutually irrational phase speeds.
             // Harmonic 1 is what makes it lopsided rather than radially symmetric.
             let wave =
-                sin(angle * 1 + time * p.frequency * 0.73) * 0.50
-                + sin(angle * 2 - time * p.frequency * 0.41) * 0.32
-                + sin(angle * 3 + time * p.frequency * 0.97) * 0.18
+                sin(angle * 1 + time * p.frequency * 0.73) * Double(p.weights.0)
+                + sin(angle * 2 - time * p.frequency * 0.41) * Double(p.weights.1)
+                + sin(angle * 3 + time * p.frequency * 0.97) * Double(p.weights.2)
 
             let tremor = p.jitter > 0
                 ? sin(angle * 7 + time * 11.0) * Double(p.jitter)
@@ -145,7 +173,7 @@ struct BlobView: View {
         p: BlobParameters
     ) {
         let ink = Token.Color.inkOnViewport
-        let faceY = center.y - base * 0.06 + base * p.sag * 0.45
+        let faceY = center.y - base * 0.06 + base * (p.sag * 0.45 + p.eyeDroop)
         let eyeX = base * p.eyeSpread
         let eyeR = base * 0.075
 
@@ -161,7 +189,7 @@ struct BlobView: View {
                 x: center.x + side * eyeX - eyeR + drift,
                 y: faceY - eyeR * openness,
                 width: eyeR * 2,
-                height: eyeR * 2 * openness
+                height: eyeR * 2 * openness * (1 - p.eyeDroop * 1.6)
             )
             context.fill(Path(ellipseIn: rect), with: .color(ink))
         }

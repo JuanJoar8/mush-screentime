@@ -114,3 +114,36 @@ how the two drift apart.
 **One documented exception:** `MushShieldConfigurationProvider` hard-codes its colours,
 because a shield extension is woken cold by the system and cannot load the app's asset
 catalog. That file carries a comment saying so.
+
+### D16 · Allow-list mode is exclusive, and the UI says so before it switches on
+
+`ShieldSettings.ActivityCategoryPolicy.all(except:)` is real, so Opal's "Allow Only" is
+buildable. But a `ManagedSettingsStore` cannot make another store *less* restrictive: once
+any store shields everything, no second store can carve an exception back out.
+
+That is incompatible with D4's one-store-per-concern arrangement. Rather than pretend the
+groups compose, `RuleSet.resolve` suspends every other group while an allow-list group is
+live and reports `SuspensionReason.allowlistExclusive`, which the UI shows on the switch
+itself. Two live allow-lists resolve by list order — we do not silently merge two
+contradictory ones.
+
+**Rejected:** merging every allow-list into one union. It would look like it worked and
+quietly widen what the user allowed, which is the wrong direction for a self-control app
+to fail in.
+
+### D17 · The widget and the Live Activity are self-driving, and timestamp themselves
+
+`Activity.request` needs the app in the foreground, an app extension cannot reliably reach
+the activity list, and `WidgetCenter.reloadAllTimelines()` from an extension is budgeted
+and may be deferred. So neither surface can be kept current by pushing updates to it.
+
+Both are therefore built to need no updates. The Live Activity ships its end date and
+renders `Text(timerInterval:)`, which the system ticks. The widget's timeline carries an
+hour of future entries whose only job is to re-render `WidgetSnapshot.freshness`, so an
+old figure reads "as of 09:14" instead of posing as live.
+
+**Rejected:** a background task that wakes to refresh them. It would spend battery to make
+the same pixels, and would still be wrong the moment iOS declined to run it.
+
+**Consequence worth stating:** the widget needs no Family Controls entitlement at all, so
+it is the one part of the product that works today on a free Apple ID.

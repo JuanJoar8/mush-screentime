@@ -11,42 +11,46 @@ public enum Token {
     // MARK: Colour
 
     public enum Color {
-        /// #1B2016
-        public static let ground = SwiftUI.Color(red: 0.1059, green: 0.1255, blue: 0.0863)
-        /// #242A1D
-        public static let panel = SwiftUI.Color(red: 0.1412, green: 0.1647, blue: 0.1137)
-        /// #2E3625
-        public static let panelRaised = SwiftUI.Color(red: 0.1804, green: 0.2118, blue: 0.1451)
-        /// #3A4230
-        public static let line = SwiftUI.Color(red: 0.2275, green: 0.2588, blue: 0.1882)
-        /// #E7E4D3
-        public static let viewport = SwiftUI.Color(red: 0.9059, green: 0.8941, blue: 0.8275)
-        /// #EDEFE6
-        public static let ink = SwiftUI.Color(red: 0.9294, green: 0.9373, blue: 0.9020)
-        /// #8E9880
-        public static let inkDim = SwiftUI.Color(red: 0.5569, green: 0.5961, blue: 0.5020)
-        /// #1B2016
-        public static let inkOnViewport = SwiftUI.Color(red: 0.1059, green: 0.1255, blue: 0.0863)
-        /// #F2789F
-        public static let primary = SwiftUI.Color(red: 0.9490, green: 0.4706, blue: 0.6235)
-        /// #F2B705
-        public static let accent = SwiftUI.Color(red: 0.9490, green: 0.7176, blue: 0.0196)
-        /// #6E9E4A
-        public static let good = SwiftUI.Color(red: 0.4314, green: 0.6196, blue: 0.2902)
-        /// #F2B705
-        public static let warn = SwiftUI.Color(red: 0.9490, green: 0.7176, blue: 0.0196)
-        /// #C8503A
-        public static let bad = SwiftUI.Color(red: 0.7843, green: 0.3137, blue: 0.2275)
-        /// #F2789F
-        public static let stageCrisp = SwiftUI.Color(red: 0.9490, green: 0.4706, blue: 0.6235)
-        /// #D9A0AE
-        public static let stageFoggy = SwiftUI.Color(red: 0.8510, green: 0.6275, blue: 0.6824)
-        /// #F2B705
-        public static let stageBuzzed = SwiftUI.Color(red: 0.9490, green: 0.7176, blue: 0.0196)
-        /// #B58A6A
-        public static let stageMelting = SwiftUI.Color(red: 0.7098, green: 0.5412, blue: 0.4157)
-        /// #7C7A6B
-        public static let stageMush = SwiftUI.Color(red: 0.4863, green: 0.4784, blue: 0.4196)
+        /// #140B2E
+        public static let ground = SwiftUI.Color(red: 0.0784, green: 0.0431, blue: 0.1804)
+        /// #0C0620
+        public static let groundDeep = SwiftUI.Color(red: 0.0471, green: 0.0235, blue: 0.1255)
+        /// #1E1240
+        public static let panel = SwiftUI.Color(red: 0.1176, green: 0.0706, blue: 0.2510)
+        /// #2A1B55
+        public static let panelRaised = SwiftUI.Color(red: 0.1647, green: 0.1059, blue: 0.3333)
+        /// #3B2A70
+        public static let line = SwiftUI.Color(red: 0.2314, green: 0.1647, blue: 0.4392)
+        /// #241552
+        public static let viewport = SwiftUI.Color(red: 0.1412, green: 0.0824, blue: 0.3216)
+        /// #F1ECFF
+        public static let ink = SwiftUI.Color(red: 0.9451, green: 0.9255, blue: 1.0000)
+        /// #A093CC
+        public static let inkDim = SwiftUI.Color(red: 0.6275, green: 0.5765, blue: 0.8000)
+        /// #F1ECFF
+        public static let inkOnViewport = SwiftUI.Color(red: 0.9451, green: 0.9255, blue: 1.0000)
+        /// #FFFFFF
+        public static let specular = SwiftUI.Color(red: 1.0000, green: 1.0000, blue: 1.0000)
+        /// #7C5CFA
+        public static let primary = SwiftUI.Color(red: 0.4863, green: 0.3608, blue: 0.9804)
+        /// #22D3C6
+        public static let accent = SwiftUI.Color(red: 0.1333, green: 0.8275, blue: 0.7765)
+        /// #34D399
+        public static let good = SwiftUI.Color(red: 0.2039, green: 0.8275, blue: 0.6000)
+        /// #FBBF24
+        public static let warn = SwiftUI.Color(red: 0.9843, green: 0.7490, blue: 0.1412)
+        /// #F4436B
+        public static let bad = SwiftUI.Color(red: 0.9569, green: 0.2627, blue: 0.4196)
+        /// #FFB3C1
+        public static let stageCrisp = SwiftUI.Color(red: 1.0000, green: 0.7020, blue: 0.7569)
+        /// #E7A7BE
+        public static let stageFoggy = SwiftUI.Color(red: 0.9059, green: 0.6549, blue: 0.7451)
+        /// #FFC24D
+        public static let stageBuzzed = SwiftUI.Color(red: 1.0000, green: 0.7608, blue: 0.3020)
+        /// #B08A94
+        public static let stageMelting = SwiftUI.Color(red: 0.6902, green: 0.5412, blue: 0.5804)
+        /// #7A7391
+        public static let stageMush = SwiftUI.Color(red: 0.4784, green: 0.4510, blue: 0.5686)
     }
 
     // MARK: Radius - three values, and only three

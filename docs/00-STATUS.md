@@ -23,6 +23,10 @@ correct but cannot run without the $99 membership. **Path B** measures usage wit
 Shortcuts automations and needs no entitlement at all — but it can only *interrupt*, never
 *block*. See `09-PATH-B-NO-ENTITLEMENT.md`. The UI never calls Path B "blocking".
 
+Fourth thing: **the widget and the Live Activity need no entitlement at all.** They are
+the one part of the product that runs today on a free Apple ID, which is why the
+creature reaches the Home Screen before it reaches a shield (`08-DECISIONS.md` D17).
+
 Third thing: **Screen Time data cannot leave the report extension.** This is confirmed
 by Apple DTS, it is not a bug, and it dictates the entire two-plane architecture. If you
 find yourself designing a feature that reads Apple's numbers in app code, stop and read
@@ -42,7 +46,7 @@ find yourself designing a feature that reads Apple's numbers in app code, stop a
 
 | Phase | State |
 |---|---|
-| 0 · Foundation | **done** — 6 targets, XcodeGen, CI green on tests |
+| 0 · Foundation | **done** — 7 targets, XcodeGen, CI green on tests |
 | 1 · Domain core + mock | **done** — 30 golden tests passing on CI |
 | 2 · Authorization + selection | **blocked** — needs paid membership |
 | 3 · Shield one app | **blocked** — needs paid membership |
@@ -50,7 +54,8 @@ find yourself designing a feature that reads Apple's numbers in app code, stop a
 | 5 · Limits, schedules, focus | partial — focus sessions work against the mock |
 | 6 · Statistics | **done** for our ledger; Apple plane needs a device |
 | 7 · Brain system + UI | **done** — design system, creature, 4 screens |
-| 8 · Interventions | next — Path B Shortcuts onboarding |
+| 7.5 · Competitive parity | **done** — every Opal/Brainrot feature classified in `10-FEATURE-PARITY.md`; the missing ones built |
+| 8 · Interventions | next — Path B Shortcuts onboarding, soundscapes |
 | 9 · Feed Quarantine | not started |
 | 10 · Device hardening | **blocked** — needs device |
 
@@ -69,6 +74,7 @@ find yourself designing a feature that reads Apple's numbers in app code, stop a
 | `07-ROADMAP.md` | Phases, exit criteria, ordering rationale |
 | `08-DECISIONS.md` | Decision log — what was chosen and what it ruled out |
 | `09-PATH-B-NO-ENTITLEMENT.md` | Running with no entitlements: what survives, what does not |
+| `10-FEATURE-PARITY.md` | Every Opal and Brainrot feature, with a status. The gap analysis |
 
 ## Housekeeping rules for this repo
 
