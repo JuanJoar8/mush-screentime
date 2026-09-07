@@ -45,7 +45,25 @@ jobs:
               | grep -vE "@available\((macOS|tvOS|watchOS|visionOS|macCatalyst|iOS)" \
               | grep -E "(func|var|case|init|struct|enum|protocol|typealias) " \
               | head -120 || echo "(none)"
+            cp "$IFACE" "interface-$FRAMEWORK.swiftinterface"
           done
+
+      # DeviceActivity is where this architecture is decided. iOS 26 added
+      # `activityData(filteredBy:using:)` returning an AsyncSequence with a `.live` policy
+      # and an `.unauthorized` error - which is exactly what an API for reading usage
+      # *outside* the report extension would look like. Section 3 of 01-FEASIBILITY.md
+      # says that is impossible. Print the declarations before believing either version.
+      - name: DeviceActivity, in full
+        run: |
+          grep -nE "^(@available\(iOS|public|  public|  @available\(iOS|})"             interface-DeviceActivity.swiftinterface | head -220
+
+      - name: Keep the interfaces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screen-time-interfaces
+          path: interface-*.swiftinterface
+
       - name: Test
         working-directory: Packages/MushKit
         run: swift test --enable-code-coverage

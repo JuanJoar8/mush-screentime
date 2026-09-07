@@ -347,8 +347,12 @@ func milestoneSeedIsRecorded() {
 @Test("A ledger saved before a field existed still decodes")
 func ledgerDecodesLeniently() throws {
     // Exactly what an older build would have written: no rules, gems or milestones.
+    //
+    // `ladderLogs` is `[Date: LadderLog]`, and a dictionary whose key is neither String
+    // nor Int is encoded by `JSONEncoder` as a flat array of alternating keys and values,
+    // not an object. Writing `{}` here would test a file shape the app never produces.
     let legacy = Data("""
-    {"days":[],"entries":[],"ladderLogs":{},"activeGrants":[],
+    {"days":[],"entries":[],"ladderLogs":[],"activeGrants":[],
      "focusSessions":[],"health":64.5,"stage":1,"streak":2}
     """.utf8)
 
