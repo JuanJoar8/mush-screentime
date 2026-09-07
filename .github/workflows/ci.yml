@@ -173,8 +173,7 @@ jobs:
             # Standard deviation over the whole image. A blank or single-colour screen
             # sits near zero; any real UI is far above it.
             SIGMA=$(magick "$SHOT" -colorspace Gray -format "%[fx:standard_deviation*100]" info: 2>/dev/null || echo "-1")
-            printf "%-28s sigma=%s
-" "$(basename "$SHOT")" "$SIGMA"
+            echo "$(basename "$SHOT")  sigma=$SIGMA"
             if [ "$SIGMA" = "-1" ]; then
               echo "  (could not measure - skipping)"
               continue
