@@ -76,18 +76,20 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO
 
-      - name: Launch and capture
+      - name: Launch and capture every screen
         run: |
           set -euo pipefail
           UDID="${{ steps.sim.outputs.udid }}"
           APP="build/Build/Products/Debug-iphonesimulator/Mush.app"
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" "$APP"
-          xcrun simctl launch "$UDID" com.mush.app
-          sleep 8
           mkdir -p screenshots
-          xcrun simctl io "$UDID" screenshot screenshots/home.png
-          xcrun simctl io "$UDID" screenshot --type=png screenshots/home@2.png
+          for SCREEN in home blocks stats brain gallery; do
+            xcrun simctl terminate "$UDID" com.mush.app || true
+            xcrun simctl launch "$UDID" com.mush.app -MushScreen "$SCREEN"
+            sleep 6
+            xcrun simctl io "$UDID" screenshot "screenshots/$SCREEN.png"
+          done
 
       - name: Upload screenshots
         if: always()

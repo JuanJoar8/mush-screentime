@@ -47,27 +47,30 @@ struct HomeView: View {
     private var creature: some View {
         Viewport {
             VStack(spacing: 0) {
-                ZStack {
-                    BlobView(stage: model.stage)
-                        .frame(height: 230)
-                    VStack(spacing: -6) {
-                        Text("\(Int(model.health.rounded()))")
-                            .font(.mushDisplay(84))
-                            .foregroundStyle(Token.Color.inkOnViewport)
-                            .settle(on: Int(model.health.rounded()))
+                // The creature gets its face to itself. Nothing overlaps it.
+                BlobView(stage: model.stage)
+                    .frame(height: 210)
+
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Text("\(Int(model.health.rounded()))")
+                        .font(.mushDisplay(66))
+                        .foregroundStyle(Token.Color.inkOnViewport)
+                        .settle(on: Int(model.health.rounded()))
+                    VStack(alignment: .leading, spacing: 1) {
                         Text(model.stage.title.uppercased())
                             .font(.mushLabel())
                             .tracking(2.0)
+                            .foregroundStyle(Token.Color.inkOnViewport)
+                        Text(model.stage.mood)
+                            .font(.system(size: 13))
                             .foregroundStyle(Token.Color.inkOnViewport.opacity(0.55))
                     }
-                    .allowsHitTesting(false)
+                    Spacer()
                 }
-                Text(model.stage.mood)
-                    .font(.system(size: 14))
-                    .foregroundStyle(Token.Color.inkOnViewport.opacity(0.6))
-                    .padding(.bottom, 22)
+                .padding(.horizontal, 22)
+                .padding(.bottom, 20)
             }
-            .padding(.top, 12)
+            .padding(.top, 4)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(
