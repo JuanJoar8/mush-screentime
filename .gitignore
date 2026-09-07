@@ -1,0 +1,13 @@
+Mush.xcodeproj/
+*.xcworkspace/
+DerivedData/
+.build/
+build/
+*.ipa
+*.dSYM.zip
+.DS_Store
+xcuserdata/
+*.p12
+*.mobileprovision
+*.cer
+*.key

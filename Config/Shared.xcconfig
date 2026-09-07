@@ -1,0 +1,11 @@
+// Single place to change identity. Everything else derives from these.
+// After enrolling in the Apple Developer Program, set DEVELOPMENT_TEAM to your
+// 10-character Team ID and pick a bundle prefix you own.
+
+APP_BUNDLE_ID = com.mush.app
+APP_GROUP_ID = group.com.mush.app
+DEVELOPMENT_TEAM =
+
+// Simulator builds need no signing at all. CI overrides these on device builds.
+CODE_SIGNING_ALLOWED[sdk=iphonesimulator*] = NO
+CODE_SIGNING_REQUIRED[sdk=iphonesimulator*] = NO

@@ -1,0 +1,133 @@
+# XcodeGen spec — the source of truth for the Xcode project.
+# Mush.xcodeproj is GENERATED and git-ignored (see docs/08-DECISIONS.md D12).
+#   Regenerate with:  xcodegen generate
+name: Mush
+
+options:
+  bundleIdPrefix: com.mush
+  deploymentTarget:
+    iOS: "26.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+  groupSortPosition: top
+
+configFiles:
+  Debug: Config/Shared.xcconfig
+  Release: Config/Shared.xcconfig
+
+packages:
+  MushKit:
+    path: Packages/MushKit
+
+schemes:
+  Mush:
+    build:
+      targets:
+        Mush: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    archive:
+      config: Release
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    TARGETED_DEVICE_FAMILY: "1"          # iPhone only
+    IPHONEOS_DEPLOYMENT_TARGET: "26.0"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    GENERATE_INFOPLIST_FILE: NO
+    DEVELOPMENT_TEAM: $(DEVELOPMENT_TEAM)
+    CODE_SIGN_STYLE: Manual
+
+targets:
+
+  # ── The app ────────────────────────────────────────────────────────────────
+  Mush:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+    dependencies:
+      - package: MushKit
+        product: MushKit
+      - package: MushKit
+        product: MushScreenTime
+      - target: MushMonitor
+      - target: MushShieldUI
+      - target: MushShieldAction
+      - target: MushReport
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)
+        INFOPLIST_FILE: App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: App/Mush.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_PREVIEWS: YES
+
+  # ── DeviceActivityMonitor: applies/removes shields, records the ladder ─────
+  MushMonitor:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Extensions/Monitor
+    dependencies:
+      - package: MushKit
+        product: MushKit
+      - package: MushKit
+        product: MushScreenTime
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).monitor
+        INFOPLIST_FILE: Extensions/Monitor/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Extensions/Monitor/Monitor.entitlements
+
+  # ── ShieldConfiguration: how the block screen looks ────────────────────────
+  MushShieldUI:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Extensions/ShieldUI
+    dependencies:
+      - package: MushKit
+        product: MushKit
+      - package: MushKit
+        product: MushScreenTime
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).shieldui
+        INFOPLIST_FILE: Extensions/ShieldUI/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Extensions/ShieldUI/ShieldUI.entitlements
+
+  # ── ShieldAction: block-screen buttons, grants, counters ───────────────────
+  MushShieldAction:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Extensions/ShieldAction
+    dependencies:
+      - package: MushKit
+        product: MushKit
+      - package: MushKit
+        product: MushScreenTime
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).shieldaction
+        INFOPLIST_FILE: Extensions/ShieldAction/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Extensions/ShieldAction/ShieldAction.entitlements
+
+  # ── DeviceActivityReport: Apple's ground-truth stats (sandboxed, view-only)─
+  MushReport:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Extensions/Report
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).report
+        INFOPLIST_FILE: Extensions/Report/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Extensions/Report/Report.entitlements

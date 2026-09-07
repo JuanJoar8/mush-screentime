@@ -1,0 +1,74 @@
+# 00 · Status — read this first
+
+**Project:** MUSH — an iOS Screen Time app whose brain-blob character reflects your
+relationship with distracting apps.
+**Target:** iPhone 16 Pro, iOS 26. Native Swift 6 / SwiftUI.
+**Last updated:** 2026-09-07
+
+---
+
+## The one thing a new session must know
+
+> **The app cannot run on the owner's iPhone right now.** `com.apple.developer.family-controls`
+> is unavailable to a free Apple Developer Personal Team, and the owner has not enrolled
+> in the $99/year program. Every Screen Time call fails without it. Details and the exact
+> unblock sequence: `06-APPLE-REQUIREMENTS.md`.
+>
+> Development continues against `MockScreenTimeProvider`, which runs the full product in
+> the iOS Simulator on a GitHub Actions `macos-26` runner. Simulator builds need no
+> account and no signing.
+
+Second thing: **Screen Time data cannot leave the report extension.** This is confirmed
+by Apple DTS, it is not a bug, and it dictates the entire two-plane architecture. If you
+find yourself designing a feature that reads Apple's numbers in app code, stop and read
+`01-FEASIBILITY.md` section 3.
+
+---
+
+## Environment
+
+- Owner is on **Windows 11**. No Mac, no Xcode locally.
+- Builds happen on **GitHub Actions `macos-26`** (Xcode 26, iOS 26 SDK).
+- Device installs, once unblocked, happen from Windows via `ideviceinstaller`.
+
+---
+
+## Progress
+
+| Phase | State |
+|---|---|
+| 0 · Foundation | in progress |
+| 1 · Domain core + mock | not started |
+| 2 · Authorization + selection | **blocked** — needs paid membership |
+| 3 · Shield one app | **blocked** — needs paid membership |
+| 4 · Monitoring + ladder | **blocked** — needs paid membership |
+| 5 · Limits, schedules, focus | not started (logic buildable, enforcement blocked) |
+| 6 · Statistics | not started |
+| 7 · Brain system + UI | not started |
+| 8 · Interventions | not started |
+| 9 · Feed Quarantine | not started |
+| 10 · Device hardening | **blocked** — needs device |
+
+---
+
+## Document map
+
+| File | Contains |
+|---|---|
+| `01-FEASIBILITY.md` | What iOS 26 allows, every confirmed limitation, open questions |
+| `02-PRODUCT.md` | Identity, voice, loop, information architecture, MVP scope |
+| `03-ARCHITECTURE.md` | Targets, two-plane data flow, threshold ladder, stores |
+| `04-BRAIN-HEALTH.md` | The scoring model, fully specified and tuneable |
+| `05-SHORTS-REELS.md` | Why native Reels blocking is impossible; Feed Quarantine |
+| `06-APPLE-REQUIREMENTS.md` | Signing, entitlements, the exact steps only the owner can do |
+| `07-ROADMAP.md` | Phases, exit criteria, ordering rationale |
+| `08-DECISIONS.md` | Decision log — what was chosen and what it ruled out |
+
+## Housekeeping rules for this repo
+
+1. Update this file and `08-DECISIONS.md` whenever a phase changes state.
+2. **Delete replaced approaches.** No parallel experiments left lying around.
+3. Never add an API call that is not confirmed in `01-FEASIBILITY.md`. If it is new,
+   research it, then add it to that table with a source.
+4. No hardcoded colours, radii, fonts or durations in views — tokens only, per
+   `brand/brand.json`.

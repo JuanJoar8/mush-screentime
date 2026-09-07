@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Pure-Swift domain logic. No simulator, no signing, no Apple account. Fast, and it is
+  # where the brain-health model is actually proven correct.
+  kit:
+    name: MushKit tests
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show toolchain
+        run: swift --version && xcodebuild -version
+      - name: Test
+        working-directory: Packages/MushKit
+        run: swift test --enable-code-coverage
+
+  # Full app + all five extensions, built for the Simulator. Simulator builds are not
+  # code-signed, so this needs no certificate, no provisioning profile and no paid
+  # membership (docs/06-APPLE-REQUIREMENTS.md).
+  app:
+    name: Build + screenshot
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Pick a simulator
+        id: sim
+        run: |
+          set -euo pipefail
+          RUNTIME=$(xcrun simctl list runtimes --json \
+            | jq -r '[.runtimes[] | select(.platform=="iOS" and .isAvailable)] | last | .identifier')
+          DEVTYPE=$(xcrun simctl list devicetypes --json \
+            | jq -r '[.devicetypes[] | select(.name|test("^iPhone 1[6-9] Pro$"))] | last | .identifier')
+          if [ -z "$DEVTYPE" ] || [ "$DEVTYPE" = "null" ]; then
+            DEVTYPE=$(xcrun simctl list devicetypes --json \
+              | jq -r '[.devicetypes[] | select(.name|test("^iPhone"))] | last | .identifier')
+          fi
+          echo "Runtime: $RUNTIME"
+          echo "Device type: $DEVTYPE"
+          UDID=$(xcrun simctl create MushSim "$DEVTYPE" "$RUNTIME")
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project Mush.xcodeproj \
+            -scheme Mush \
+            -configuration Debug \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            | xcbeautify || xcodebuild build \
+            -project Mush.xcodeproj \
+            -scheme Mush \
+            -configuration Debug \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Launch and capture
+        run: |
+          set -euo pipefail
+          UDID="${{ steps.sim.outputs.udid }}"
+          APP="build/Build/Products/Debug-iphonesimulator/Mush.app"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl launch "$UDID" com.mush.app
+          sleep 8
+          mkdir -p screenshots
+          xcrun simctl io "$UDID" screenshot screenshots/home.png
+          xcrun simctl io "$UDID" screenshot --type=png screenshots/home@2.png
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulator-screenshots
+          path: screenshots/
+
+      - name: Tear down
+        if: always()
+        run: xcrun simctl delete "${{ steps.sim.outputs.udid }}" || true
