@@ -221,14 +221,14 @@ struct BlobView: View {
         bodyW: CGFloat, bodyH: CGFloat, radius: CGFloat, palette: Palette
     ) {
         let hipY = center.y + bodyH * 0.80
-        let footY = hipY + radius * (0.62 - p.sag * 0.9)
+        let footY = hipY + radius * (0.46 - p.sag * 0.7)
         let spread = bodyW * (0.30 + p.spread * 1.1)
 
         for side in [-1.0, 1.0] as [CGFloat] {
             let x0 = center.x + side * bodyW * 0.20
             let x1 = center.x + side * spread
             limb(&context, points: [CGPoint(x: x0, y: hipY), CGPoint(x: x1, y: footY)],
-                 width: radius * 0.155, colour: palette.base,
+                 width: radius * 0.185, colour: palette.base,
                  highlight: palette.light.opacity(0.75))
 
             // Shoe: a squat wedge plus a darker sole, tilted outward.
@@ -236,13 +236,13 @@ struct BlobView: View {
                 layer.translateBy(x: x1, y: footY)
                 layer.rotate(by: .radians(Double(side) * 0.12))
                 let upper = CGRect(
-                    x: side * radius * 0.07 - radius * 0.25, y: radius * 0.045 - radius * 0.145,
-                    width: radius * 0.50, height: radius * 0.29
+                    x: side * radius * 0.08 - radius * 0.30, y: radius * 0.045 - radius * 0.170,
+                    width: radius * 0.60, height: radius * 0.34
                 )
                 layer.fill(Path(ellipseIn: upper), with: .color(palette.shell))
                 let sole = CGRect(
-                    x: side * radius * 0.07 - radius * 0.25, y: radius * 0.11 - radius * 0.050,
-                    width: radius * 0.50, height: radius * 0.10
+                    x: side * radius * 0.08 - radius * 0.30, y: radius * 0.12 - radius * 0.055,
+                    width: radius * 0.60, height: radius * 0.11
                 )
                 layer.fill(
                     Path(ellipseIn: sole),
@@ -270,21 +270,21 @@ struct BlobView: View {
                 y: shoulder.y + radius * (0.30 + drop * 0.52 + sway)
             )
 
-            limb(&context, points: [shoulder, elbow, wrist], width: radius * 0.140,
+            limb(&context, points: [shoulder, elbow, wrist], width: radius * 0.175,
                  colour: palette.base, highlight: palette.light.opacity(0.7))
 
             // Glove: a ball and a thumb. Two circles is all it takes to stop reading as
             // a dot on the end of a stick.
             let palm = CGRect(
-                x: wrist.x - radius * 0.175, y: wrist.y - radius * 0.175,
-                width: radius * 0.35, height: radius * 0.35
+                x: wrist.x - radius * 0.215, y: wrist.y - radius * 0.215,
+                width: radius * 0.43, height: radius * 0.43
             )
             context.fill(Path(ellipseIn: palm), with: .color(palette.shell))
 
             let thumb = CGRect(
-                x: wrist.x - side * radius * 0.135 - radius * 0.075,
-                y: wrist.y - radius * 0.075 - radius * 0.075,
-                width: radius * 0.15, height: radius * 0.15
+                x: wrist.x - side * radius * 0.160 - radius * 0.090,
+                y: wrist.y - radius * 0.090 - radius * 0.090,
+                width: radius * 0.18, height: radius * 0.18
             )
             context.fill(Path(ellipseIn: thumb), with: .color(palette.shell))
         }
@@ -487,8 +487,8 @@ struct BlobView: View {
         bodyW: CGFloat, bodyH: CGFloat, radius: CGFloat, palette: Palette, time: TimeInterval
     ) {
         let eyeY = center.y + bodyH * 0.06
-        let eyeX = bodyW * 0.36
-        let rx = radius * 0.185
+        let eyeX = bodyW * 0.31
+        let rx = radius * 0.255
         let ry = rx * 1.06 * p.open
 
         // Blink. Cheap, and most of what makes something read as alive.
@@ -554,7 +554,7 @@ struct BlobView: View {
             context.drawLayer { layer in
                 layer.translateBy(x: ex, y: eyeY - ry - radius * (0.10 + p.browLift))
                 layer.rotate(by: .radians(Double(side * p.browTilt)))
-                let bw = rx * 1.22
+                let bw = rx * 1.02
                 var brow = Path()
                 brow.move(to: CGPoint(x: -bw * 0.5, y: radius * 0.02))
                 brow.addQuadCurve(
@@ -563,14 +563,14 @@ struct BlobView: View {
                 )
                 layer.stroke(
                     brow, with: .color(palette.brow),
-                    style: StrokeStyle(lineWidth: radius * 0.062, lineCap: .round)
+                    style: StrokeStyle(lineWidth: radius * 0.088, lineCap: .round)
                 )
             }
         }
 
         // Mouth: one curve, and the control point carries the whole mood.
         let my = eyeY + radius * 0.46
-        let mw = radius * 0.24
+        let mw = radius * 0.20
         var mouth = Path()
         mouth.move(to: CGPoint(x: center.x - mw, y: my))
         mouth.addQuadCurve(
@@ -579,7 +579,7 @@ struct BlobView: View {
         )
         context.stroke(
             mouth, with: .color(palette.darker.opacity(0.85)),
-            style: StrokeStyle(lineWidth: radius * 0.038, lineCap: .round)
+            style: StrokeStyle(lineWidth: radius * 0.052, lineCap: .round)
         )
     }
 }

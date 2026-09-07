@@ -163,27 +163,15 @@ jobs:
 
       # A screen that renders nothing still screenshots fine, and the build stays green
       # while the app is visibly broken - which is exactly what happened to the stage
-      # gallery: five animated canvases never presented a frame inside the six seconds
-      # below, and CI called it a success. Measure the pixels instead of trusting them.
+      # gallery: five animated canvases never presented a frame inside the wait below, and
+      # CI called it a success. Measure the pixels instead of trusting them.
+      #
+      # The first version of this shelled out to ImageMagick, which is not on the runner.
+      # It reported -1 for every image, skipped them all, and passed - a guard that guards
+      # nothing is worse than none, because it also removes the suspicion. CoreGraphics is
+      # here by definition: this job builds an iOS app with Xcode.
       - name: Screens actually rendered
-        run: |
-          set -euo pipefail
-          FAILED=0
-          for SHOT in screenshots/*.png; do
-            # Standard deviation over the whole image. A blank or single-colour screen
-            # sits near zero; any real UI is far above it.
-            SIGMA=$(magick "$SHOT" -colorspace Gray -format "%[fx:standard_deviation*100]" info: 2>/dev/null || echo "-1")
-            echo "$(basename "$SHOT")  sigma=$SIGMA"
-            if [ "$SIGMA" = "-1" ]; then
-              echo "  (could not measure - skipping)"
-              continue
-            fi
-            if awk "BEGIN{exit !($SIGMA < 2.0)}"; then
-              echo "  BLANK: $(basename "$SHOT") rendered nothing."
-              FAILED=1
-            fi
-          done
-          exit $FAILED
+        run: swift scripts/screen-not-blank.swift 6 screenshots/*.png
 
       - name: Upload screenshots
         if: always()
