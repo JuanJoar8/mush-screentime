@@ -151,11 +151,26 @@ struct BlobView: View {
         let palette = Palette(stage: stage, gloss: p.gloss)
 
         let cx = size.width / 2
-        let radius = min(size.width, size.height) * 0.33
+
+        // Fit the *whole* creature, not the head.
+        //
+        // Taking a flat fraction of the short side put the gloves outside the canvas the
+        // moment the arms were lengthened, and SwiftUI clipped them off — a creature with
+        // no hands, in the gallery and the widget both. So the radius is derived from the
+        // two extremes that actually bind:
+        //
+        //   horizontally  wrist at 1.34 × bodyW, plus a glove of 0.215 × radius, and
+        //                 bodyW is 1.30 × radius → 1.96 × radius from the centre
+        //   vertically    the crown, at about 1.18 × radius above the centre, which sits
+        //                 at 42% of the height
+        //
+        // Change an arm length or a glove size and this line has to change with it.
+        let radius = min(size.width * 0.245, size.height * 0.30)
+
         // Idle breathing: slow, small, and the only thing that moves at rest.
         let breathe = CGFloat(sin(time * 0.9)) * radius * 0.014
         let tremor = p.jitter > 0 ? CGFloat(sin(time * 17)) * radius * p.jitter * 0.5 : 0
-        let cy = size.height * 0.40 + radius * p.sag + breathe
+        let cy = size.height * 0.42 + radius * p.sag + breathe
 
         let bodyW = radius * (1.30 + p.spread)
         let bodyH = radius * (1.06 - p.spread * 0.30)
@@ -166,7 +181,9 @@ struct BlobView: View {
         // waste. Below this size the softening is dropped and the offsets do the work.
         let detail = min(size.width, size.height) >= 96
 
-        drawShadow(&context, center: center, size: size, bodyW: bodyW, radius: radius)
+        // Same arithmetic the legs use, so the shadow cannot drift away from the shoes.
+        let groundY = center.y + bodyH * 0.80 + radius * (0.46 - p.sag * 0.7) + radius * 0.13
+        drawShadow(&context, center: center, groundY: groundY, bodyW: bodyW, radius: radius)
         drawLegs(&context, center: center, bodyW: bodyW, bodyH: bodyH, radius: radius, palette: palette)
         drawArms(&context, center: center, bodyW: bodyW, bodyH: bodyH, radius: radius,
                  palette: palette, time: time)
@@ -178,12 +195,12 @@ struct BlobView: View {
     // MARK: Ground
 
     private func drawShadow(
-        _ context: inout GraphicsContext, center: CGPoint, size: CGSize,
+        _ context: inout GraphicsContext, center: CGPoint, groundY: CGFloat,
         bodyW: CGFloat, radius: CGFloat
     ) {
         let rect = CGRect(
-            x: center.x - bodyW * 0.62, y: size.height * 0.86 - radius * 0.11,
-            width: bodyW * 1.24, height: radius * 0.22
+            x: center.x - bodyW * 0.62, y: groundY - radius * 0.09,
+            width: bodyW * 1.24, height: radius * 0.18
         )
         context.drawLayer { layer in
             layer.addFilter(.blur(radius: radius * 0.09))
