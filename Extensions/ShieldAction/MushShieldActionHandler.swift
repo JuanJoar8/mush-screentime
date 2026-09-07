@@ -39,7 +39,11 @@ class MushShieldActionHandler: ShieldActionDelegate {
             // no way to launch it for the user (FB15500695). They reopen it themselves.
             completionHandler(.close)
 
-        @unknown default:
+        // iOS 26.4 added first/second/thirdSecondarySubmenuItemPressed: the secondary
+        // button can now open a submenu of up to three items. We do not configure one, so
+        // these cannot fire on our shields today. Closing is the safe response — the one
+        // thing that must never happen by accident is granting access.
+        default:
             completionHandler(.close)
         }
     }

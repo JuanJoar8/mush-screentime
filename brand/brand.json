@@ -105,7 +105,7 @@
     "forbidden_patterns": [
       "Llamar 'bloqueado' a lo que solo es friccion. En Path B nada bloquea, y decirlo seria mentir.",
       "Alimentar Brain Health con cifras de Apple. Van marcadas, separadas y jamas entran al modelo.",
-      "Inventar metricas que iOS no nos da: pickups y notificaciones no existen fuera del report extension.",
+      "Presentar una cifra de Apple sin marcarla como suya. Desde iOS 26.4 activityData si entrega duracion por app, pickups y notificaciones (docs/11-IOS-26-CHANGES.md), pero siguen siendo dato de Apple y por debajo de 26.4 no existen: se marcan y se degradan, nunca se inventan.",
       "Tono de coach: 'Great job', 'You've got this', 'journey', 'mindful', 'supercharge'.",
       "Dibujar un dia sin senal como cero. Se dibuja hueco, siempre.",
       "Barra de progreso circular alrededor del personaje.",

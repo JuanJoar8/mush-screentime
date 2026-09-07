@@ -76,7 +76,7 @@ public actor MockScreenTimeProvider: ScreenTimeProviding {
     }
 
     public func applyShield(_ target: ShieldTarget, store: String) async throws {
-        guard status == .approved else { throw ScreenTimeError.notAuthorized }
+        guard status.canShield else { throw ScreenTimeError.notAuthorized }
         shields.insert(store)
     }
 
@@ -84,7 +84,7 @@ public actor MockScreenTimeProvider: ScreenTimeProviding {
     public func activeShieldStores() async -> [String] { Array(shields).sorted() }
 
     public func startMonitoring(_ plan: MonitoringPlan) async throws {
-        guard status == .approved else { throw ScreenTimeError.notAuthorized }
+        guard status.canShield else { throw ScreenTimeError.notAuthorized }
         guard plan.isValid else { throw ScreenTimeError.scheduleTooShort }
         activities.insert(plan.activityName)
     }

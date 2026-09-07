@@ -27,10 +27,13 @@ Fourth thing: **the widget and the Live Activity need no entitlement at all.** T
 the one part of the product that runs today on a free Apple ID, which is why the
 creature reaches the Home Screen before it reaches a shield (`08-DECISIONS.md` D17).
 
-Third thing: **Screen Time data cannot leave the report extension.** This is confirmed
-by Apple DTS, it is not a bug, and it dictates the entire two-plane architecture. If you
-find yourself designing a feature that reads Apple's numbers in app code, stop and read
-`01-FEASIBILITY.md` section 3.
+Third thing: **Screen Time data could not leave the report extension — until iOS 26.4.**
+That constraint dictated the entire two-plane architecture, and it is still true on our
+deployment floor of 26.0-26.3. From 26.4, `DeviceActivityData.activityData` reads per-app
+duration, pickups and notifications from ordinary app code. Read
+`11-IOS-26-CHANGES.md` **before** `01-FEASIBILITY.md` section 3 - several statements in
+that section are now version-dependent, and three other documented limitations moved
+too (shield can open our app, shield submenus, token refresh).
 
 ---
 
@@ -75,6 +78,7 @@ find yourself designing a feature that reads Apple's numbers in app code, stop a
 | `08-DECISIONS.md` | Decision log — what was chosen and what it ruled out |
 | `09-PATH-B-NO-ENTITLEMENT.md` | Running with no entitlements: what survives, what does not |
 | `10-FEATURE-PARITY.md` | Every Opal and Brainrot feature, with a status. The gap analysis |
+| `11-IOS-26-CHANGES.md` | What the 26.4/26.5 SDKs changed, tagged DECLARED / INFERRED / UNVERIFIED |
 
 ## Housekeeping rules for this repo
 

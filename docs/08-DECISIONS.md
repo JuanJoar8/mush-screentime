@@ -147,3 +147,35 @@ the same pixels, and would still be wrong the moment iOS declined to run it.
 
 **Consequence worth stating:** the widget needs no Family Controls entitlement at all, so
 it is the one part of the product that works today on a free Apple ID.
+
+### D18 · Adopt the iOS 26.4 data plane as an upgrade, not a rewrite
+
+`DeviceActivityData.activityData(filteredBy:using:)` removes the constraint this whole
+architecture was built to obey (`11-IOS-26-CHANGES.md` §1). The tempting move is to delete
+the threshold ladder and read Apple's numbers directly. We are not doing that.
+
+**The ladder stays**, for three reasons that are not sentimental:
+
+1. Our deployment floor is iOS 26.0. The new API is 26.4. On 26.0-26.3 the ladder is the
+   only measurement that exists.
+2. Measuring and *triggering* are different jobs. `activityData` is an async read; the
+   monitor extension still needs a threshold event to be woken by at all. Reading usage
+   does not shield anything.
+3. It needs `approvedWithDataAccess`, and a user may refuse the data tier while accepting
+   shielding. The app has to still work for them.
+
+**So the shape is:** the ladder remains the floor and the trigger. Where the new API is
+available *and* authorised, it upgrades what we can show and how precisely we can score —
+it does not replace the sensor.
+
+**And the provenance boundary survives, for a different reason than before.** It used to
+be structural: Apple's numbers physically could not reach our code. Now it is a choice.
+The reason to keep it is that Brain Health must stay explainable and deterministic: a
+score that silently changes meaning depending on whether a permission was granted is not
+one the user can reason about. Apple's figures stay marked as Apple's, and stay out of the
+model - now because we say so, which the UI must state rather than imply.
+
+**Rejected:** feeding total screen time into Brain Health once it becomes available. It
+would make the number better-informed and less explainable, and explainability is the
+product.
+

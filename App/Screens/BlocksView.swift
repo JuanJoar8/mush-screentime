@@ -34,7 +34,7 @@ struct BlocksView: View {
                     .font(.system(size: 13))
                     .foregroundStyle(Token.Color.inkDim)
 
-                if model.authorization != .approved && model.authorization != .unavailable {
+                if !model.authorization.canShield && model.authorization != .unavailable {
                     PrimaryAction(title: "Allow Screen Time access", tint: Token.Color.ink) {
                         Task { await model.requestAuthorization() }
                     }

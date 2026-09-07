@@ -40,6 +40,13 @@ Cost to unblock: **$99/year**.
 
 ## 3. THE defining constraint: Screen Time data cannot leave the report extension
 
+> **Amended 2026-09-07 — true below iOS 26.4, false from 26.4.** The 26.4 SDK ships
+> `DeviceActivityData.activityData(filteredBy:using:)`, a static function on a public
+> struct that is not confined to a report scene, returning per-app duration, pickups
+> and notifications. Everything in this section still governs iOS 26.0–26.3, which is
+> our deployment floor, so none of it is deleted — but it is no longer the permanent
+> law it was written as. Read `11-IOS-26-CHANGES.md` §1 before designing against it.
+
 This is the single fact that shapes our whole architecture, so it gets its own section.
 
 `DeviceActivityReport` renders inside a **deliberately restricted sandbox**. Apple DTS
@@ -94,7 +101,7 @@ what the entire statistics and brain-health system is built on.
 | # | Limitation | Consequence for us |
 |---|---|---|
 | L1 | Report-extension data cannot reach the app (section 3) | Two-tier statistics: "Apple numbers" (display-only) vs "our ledger" (computable) |
-| L2 | **A shield cannot open our app.** Only `.none`/`.close`/`.defer` exist. `UIApplication.open` and `NSExtensionContext` are unavailable in `ShieldActionDelegate`. Apple: *"no supported way"* (FB15079668) | Rich interventions are reached via Shortcuts automation or a local notification, never from the shield |
+| L2 | **Amended: iOS 26.5 added `ShieldActionResponse.openParentalControlsApp`** (`11-IOS-26-CHANGES.md` §3) — which app it opens is unverified. Below 26.5: **a shield cannot open our app.** Only `.none`/`.close`/`.defer` exist. `UIApplication.open` and `NSExtensionContext` are unavailable in `ShieldActionDelegate`. Apple: *"no supported way"* (FB15079668) | Rich interventions are reached via Shortcuts automation or a local notification, never from the shield |
 | L3 | `DeviceActivitySchedule` minimum interval is **15 minutes** | A "5-minute grant" must be built from an *event threshold*, not a schedule |
 | L4 | `WebDomain` shielding is **host-granular**. No paths | `youtube.com/shorts` cannot be shielded while `youtube.com` stays open |
 | L5 | Tokens are opaque and **can silently change at runtime** (FB14082790) | Never persist a token as an identity key; keep stable local IDs and re-map |
@@ -120,7 +127,7 @@ what the entire statistics and brain-health system is built on.
 | Configurable temporary access | YES | Shield secondary button, unshield, event-threshold re-shield (L3) |
 | Intervention screen before access | PARTIAL | The **shield itself** is the reliable intervention (fixed layout). Rich custom interventions need a user-made Shortcuts automation |
 | Customizable strictness | YES, with a caveat | Levels are real, but L7 means none are truly unbreakable |
-| Total / per-app / per-category screen time | YES, display-only | `DeviceActivityReport`; cannot be fed into our model |
+| Total / per-app / per-category screen time | YES; display-only below 26.4, **computable from 26.4** | `DeviceActivityReport`, or `activityData(filteredBy:using:)` on 26.4+ (`11-IOS-26-CHANGES.md` §1) |
 | Trend, streaks, interventions triggered, focus time | YES | From **our** ledger, not Apple data |
 | **Selectively block Reels/Shorts inside the native app** | **NO — impossible** | See `05-SHORTS-REELS.md` |
 
@@ -144,5 +151,12 @@ Genuinely unknown to me. Must not be assumed:
   it? Multiple developer-forum reports describe exempted apps still being shielded,
   with a generic shield rather than none. If true, the Allow Only mode ships broken
   and has to be withdrawn, not worked around. **UNVERIFIED.**
+
+- **Q6.** Does `activityData` actually return data outside a report extension?
+- **Q7.** `.live` versus `.cached`: latency, staleness, battery cost.
+- **Q8.** Does `openParentalControlsApp` open *our* app, or Settings > Screen Time?
+- **Q9.** Once the usage capability is added, can a user still grant plain `.approved`,
+  or is it all-or-nothing? If all-or-nothing, adding it costs us the users who would
+  have accepted shielding without surveillance.
 
 Every one of these needs the $99 membership before it can be answered.

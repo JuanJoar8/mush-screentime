@@ -6,10 +6,25 @@ public enum MushAuthorizationStatus: String, Codable, Sendable, CaseIterable {
     case notDetermined
     case denied
     case approved
+    /// iOS 26.4's second approved tier: shielding **plus** access to usage data through
+    /// `DeviceActivityData.activityData(filteredBy:using:)`. See `docs/11-IOS-26-CHANGES.md`.
+    ///
+    /// Treated as a superset of `.approved` everywhere that only asks "may we shield?",
+    /// and checked for explicitly only where usage data is being read.
+    case approvedWithDataAccess
     /// The app is running somewhere Family Controls cannot work at all: the Simulator,
     /// or a device provisioned by a free Personal Team. Distinct from `denied` because
     /// the user did nothing wrong and there is no prompt to re-show.
     case unavailable
+
+    /// May we apply shields?
+    public var canShield: Bool {
+        self == .approved || self == .approvedWithDataAccess
+    }
+
+    /// May we read Apple's usage figures directly, rather than inferring them from the
+    /// threshold ladder?
+    public var canReadUsage: Bool { self == .approvedWithDataAccess }
 }
 
 public enum ShieldTarget: Sendable, Equatable {

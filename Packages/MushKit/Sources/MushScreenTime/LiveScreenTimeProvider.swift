@@ -22,11 +22,23 @@ public actor LiveScreenTimeProvider: ScreenTimeProviding {
     // MARK: Authorization
 
     public var authorizationStatus: MushAuthorizationStatus {
-        switch AuthorizationCenter.shared.authorizationStatus {
-        case .notDetermined: .notDetermined
-        case .denied: .denied
-        case .approved: .approved
-        @unknown default: .notDetermined
+        let status = AuthorizationCenter.shared.authorizationStatus
+
+        // iOS 26.4 added a second approved tier, `approvedWithDataAccess`. It is checked
+        // before the switch rather than inside it: a case annotated for an OS newer than
+        // our deployment target cannot appear as a switch pattern here.
+        if #available(iOS 26.4, *), status == .approvedWithDataAccess {
+            return .approvedWithDataAccess
+        }
+
+        switch status {
+        case .notDetermined: return .notDetermined
+        case .denied: return .denied
+        case .approved: return .approved
+        // Plain `default`, not `@unknown default`. The compiler counts the 26.4 case as
+        // known-but-unhandled and warns on `@unknown default`, and an authorization state
+        // we do not recognise must fail closed rather than be treated as approved.
+        default: return .notDetermined
         }
     }
 
@@ -56,7 +68,7 @@ public actor LiveScreenTimeProvider: ScreenTimeProviding {
     // MARK: Shields
 
     public func applyShield(_ target: ShieldTarget, store name: String) async throws {
-        guard authorizationStatus == .approved else { throw ScreenTimeError.notAuthorized }
+        guard authorizationStatus.canShield else { throw ScreenTimeError.notAuthorized }
         let selection = selectionStore.load()
         guard selectionCount > 0 else { throw ScreenTimeError.tokenSelectionEmpty }
 
@@ -94,7 +106,7 @@ public actor LiveScreenTimeProvider: ScreenTimeProviding {
     // MARK: Monitoring
 
     public func startMonitoring(_ plan: MonitoringPlan) async throws {
-        guard authorizationStatus == .approved else { throw ScreenTimeError.notAuthorized }
+        guard authorizationStatus.canShield else { throw ScreenTimeError.notAuthorized }
         guard plan.isValid else { throw ScreenTimeError.scheduleTooShort }
 
         let selection = selectionStore.load()

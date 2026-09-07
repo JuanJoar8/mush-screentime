@@ -141,11 +141,11 @@ final class AppModel {
 
     var enforcement: Enforcement {
         if isMocked { return .simulated }
-        return authorization == .approved ? .shielded : .interrupted
+        return authorization.canShield ? .shielded : .interrupted
     }
 
     var primaryAction: PrimaryActionKind {
-        if authorization != .approved && !isMocked { return .fixAccess }
+        if !authorization.canShield && !isMocked { return .fixAccess }
         if activeFocus != nil { return .endFocus }
         if let today, today.hasSignal, let ratio = today.budgetRatio, ratio > 1 {
             return .blockEverything

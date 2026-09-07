@@ -158,5 +158,18 @@ chip):** total screen time · per-app duration · per-category duration · web d
 activity · pickups · notifications received
 
 We will never present an Apple-sourced number as an input to brain health, and never
-present a ledger number as if it were Apple's ground truth. The `01` doc explains why
-that boundary exists; the Stats screen explains it to the user in one line.
+present a ledger number as if it were Apple's ground truth.
+
+**What changed on iOS 26.4.** That boundary used to be structural — Apple's numbers
+physically could not reach our code. From 26.4 they can
+(`11-IOS-26-CHANGES.md` §1), so it is now a decision rather than a wall, and D18 explains
+why we keep it: Brain Health has to stay explainable, and a score that quietly means
+something different depending on a permission is not a score anyone can reason about.
+
+Two practical consequences:
+
+- Below 26.4, or without `approvedWithDataAccess`, Apple's plane is display-only exactly
+  as before, and pickups and notifications **do not exist for us at all**. The UI shows
+  nothing there rather than a zero.
+- From 26.4 with the data tier, the same panel fills in — still marked as Apple's, still
+  outside the model. The Stats screen says which of the two it is showing.
