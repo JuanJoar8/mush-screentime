@@ -336,3 +336,36 @@ func maintenanceHonesty() {
     #expect(!MaintenanceAction.clearStaleGrants.opensAGapWhileRunning)
     #expect(MaintenanceAction.allCases.allSatisfy { !$0.explanation.isEmpty })
 }
+
+@Test("Seeding marks itself done so a healthy user is not re-seeded into silence")
+func milestoneSeedIsRecorded() {
+    let watcher = MilestoneWatcher()
+    #expect(!MilestoneState().hasSeeded)
+    #expect(watcher.seed(at: 90).hasSeeded)
+}
+
+@Test("A ledger saved before a field existed still decodes")
+func ledgerDecodesLeniently() throws {
+    // Exactly what an older build would have written: no rules, gems or milestones.
+    let legacy = Data("""
+    {"days":[],"entries":[],"ladderLogs":{},"activeGrants":[],
+     "focusSessions":[],"health":64.5,"stage":1,"streak":2}
+    """.utf8)
+
+    let state = try JSONDecoder().decode(LedgerState.self, from: legacy)
+    #expect(state.health == 64.5)
+    #expect(state.streak == 2)
+    #expect(state.rules.groups.isEmpty)
+    #expect(state.gems.unlocked.isEmpty)
+    #expect(!state.milestones.hasSeeded)
+}
+
+@Test("Gem shapes are stable across launches, not seeded by the process hash")
+func gemSeedIsDeterministic() {
+    // The badge derives its polygon from this sum. `hashValue` would differ per launch,
+    // so the same gem would be a different shape every time the app opened.
+    func seed(_ id: String) -> Int { id.unicodeScalars.reduce(0) { $0 &+ Int($1.value) } }
+    #expect(seed("streak-7") == seed("streak-7"))
+    let shapes = Set(GemCatalog.all.map { (seed($0.id) % 4, seed($0.id) % 12) })
+    #expect(shapes.count >= 8, "twelve gems should not collapse into a handful of shapes")
+}

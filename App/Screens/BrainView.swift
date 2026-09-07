@@ -23,6 +23,9 @@ struct BrainView: View {
                             .padding(.top, 10)
                     }
                 }
+                Panel {
+                    GemShelf(unlocked: model.gems.unlocked, tint: model.stage.tint)
+                }
                 stages
                 howItWorks
             }

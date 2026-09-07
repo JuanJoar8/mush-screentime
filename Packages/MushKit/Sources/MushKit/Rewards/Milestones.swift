@@ -48,9 +48,24 @@ public struct MilestoneCrossing: Sendable, Equatable, Identifiable {
 /// Which milestones have already been announced on the way down.
 public struct MilestoneState: Codable, Sendable, Equatable {
     public var announcedFalling: Set<Int>
+    /// Whether `seed(at:)` has run. Without this flag the caller has to infer "is this a
+    /// fresh install?" from an empty set — which is also what a healthy user at 90 looks
+    /// like, and they would get every milestone fired at them the first time they dipped.
+    public var hasSeeded: Bool
 
-    public init(announcedFalling: Set<Int> = []) {
+    public init(announcedFalling: Set<Int> = [], hasSeeded: Bool = false) {
         self.announcedFalling = announcedFalling
+        self.hasSeeded = hasSeeded
+    }
+
+    // Lenient, for the same reason `LedgerState` is: a field added later must not make an
+    // existing ledger undecodable.
+    private enum CodingKeys: String, CodingKey { case announcedFalling, hasSeeded }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        announcedFalling = try container.decodeIfPresent(Set<Int>.self, forKey: .announcedFalling) ?? []
+        hasSeeded = try container.decodeIfPresent(Bool.self, forKey: .hasSeeded) ?? false
     }
 }
 
@@ -84,7 +99,8 @@ public struct MilestoneWatcher: Sendable {
         MilestoneState(
             announcedFalling: Set(
                 HealthMilestone.allCases.filter { health <= $0.level }.map(\.rawValue)
-            )
+            ),
+            hasSeeded: true
         )
     }
 

@@ -18,6 +18,7 @@ struct StatsView: View {
         ScrollView {
             VStack(spacing: 20) {
                 trend
+                weekly
                 counters
                 appleplane
             }
@@ -25,6 +26,58 @@ struct StatsView: View {
             .padding(.vertical, 16)
         }
         .background(Token.Color.ground)
+    }
+
+    /// This week against last week — and the refusal, when the comparison would be a lie.
+    ///
+    /// Every competitor ships a weekly report. The part that is ours is the second
+    /// branch: two weeks that contain days the monitor never woke for are not compared at
+    /// all, because the drop would be measurement, not behaviour.
+    @ViewBuilder
+    private var weekly: some View {
+        if let digest = model.digest {
+            Panel {
+                VStack(alignment: .leading, spacing: 14) {
+                    InstrumentLabel(
+                        title: "This week",
+                        value: digest.isComparable
+                            ? String(format: "%+d min", digest.minutesDelta)
+                            : "—",
+                        valueColor: digest.minutesDelta <= 0 ? Token.Color.good : Token.Color.warn
+                    )
+
+                    Text(digest.headline)
+                        .font(.system(size: 13))
+                        .foregroundStyle(Token.Color.ink)
+
+                    HStack(spacing: 0) {
+                        weeklyFigure("\(digest.greenDays)", "green days")
+                        weeklyFigure("\(digest.focusMinutes)", "focus min")
+                        weeklyFigure("\(digest.overridesTaken)", "overrides")
+                        weeklyFigure("\(digest.blindDays)", "blind days")
+                    }
+
+                    if let mover = digest.biggestMover {
+                        Rectangle()
+                            .fill(Token.Color.line)
+                            .frame(height: 1)
+                        ReceiptRow(reason: mover.reason, value: mover.value)
+                    }
+                }
+            }
+        }
+    }
+
+    private func weeklyFigure(_ value: String, _ label: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value)
+                .font(.mushData(18))
+                .foregroundStyle(Token.Color.ink)
+            Text(label)
+                .font(.system(size: 10))
+                .foregroundStyle(Token.Color.inkDim)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var trend: some View {

@@ -1,5 +1,6 @@
 import SwiftUI
 import MushKit
+import WidgetKit
 
 @main
 struct MushApp: App {
@@ -103,6 +104,20 @@ final class AppModel {
     private(set) var activeFocus: FocusSession?
     private(set) var loadError: String?
 
+    // Gamification. All of it derived from the ledger on every refresh, never stored as a
+    // separate score — a second number that could disagree with the first is the thing
+    // that makes a points system feel bolted on (docs/02-PRODUCT.md section 2).
+    private(set) var gems = GemState()
+    private(set) var newlyUnlocked: [Gem] = []
+    private(set) var digest: WeeklyDigest?
+    private(set) var milestone: MilestoneCrossing?
+
+    private let milestoneWatcher = MilestoneWatcher()
+    private let snapshots = WidgetSnapshotStore()
+
+    var unlockedGems: [Gem] { GemCatalog.all.filter { gems.unlocked.contains($0.id) } }
+    var lockedGems: [Gem] { GemCatalog.all.filter { !gems.unlocked.contains($0.id) } }
+
     var strictness: Strictness = .standard
     var budgetMinutes: Int = 60
 
@@ -163,10 +178,50 @@ final class AppModel {
             provisionalDelta = provisional.delta
             improvement = try ledger.improvement()
             totals = Self.totals(from: state)
+            digest = WeeklyDigestBuilder.build(days: state.days, entries: state.entries)
+            try awardAndNotify(from: state, today: provisional.record)
             loadError = nil
         } catch {
             loadError = String(describing: error)
         }
+    }
+
+    /// Evaluate gems and milestone crossings, persist whatever changed, and refresh the
+    /// widget.
+    ///
+    /// One pass, one save. Gems and milestones both live in `LedgerState`, so evaluating
+    /// them separately would mean two read-modify-write cycles racing each other across
+    /// the app and the intents process.
+    private func awardAndNotify(from state: LedgerState, today: DayRecord) throws {
+        var updated = state
+
+        let context = GemContext(
+            days: state.days,
+            entries: state.entries,
+            streak: state.streak,
+            health: state.health,
+            stage: state.stage
+        )
+        newlyUnlocked = GemEvaluator.evaluate(context, state: &updated.gems)
+        gems = updated.gems
+
+        // Seed once, so a fresh install at 70 does not fire every milestone under it the
+        // first time the number moves.
+        if !updated.milestones.hasSeeded {
+            updated.milestones = milestoneWatcher.seed(at: state.health)
+        }
+        let crossings = milestoneWatcher.evaluate(health: state.health, state: &updated.milestones)
+        milestone = milestoneWatcher.headline(from: crossings)
+
+        if updated != state {
+            try ledgerStore.save(updated)
+        }
+
+        let focusEndsAt = activeFocus.map {
+            $0.startedAt.addingTimeInterval(Double($0.plannedMinutes) * 60)
+        }
+        snapshots.write(WidgetSnapshot(state: state, today: today, focusEndsAt: focusEndsAt))
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     private static func totals(from state: LedgerState) -> Totals {
