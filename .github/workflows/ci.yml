@@ -28,12 +28,23 @@ jobs:
       - name: Screen Time enum surface
         run: |
           SDK=$(xcrun --sdk iphonesimulator --show-sdk-path)
-          for FRAMEWORK in FamilyControls ManagedSettings DeviceActivity; do
-            echo "===== $FRAMEWORK ====="
-            find "$SDK/System/Library/Frameworks/$FRAMEWORK.framework" \
-              -name 'arm64*.swiftinterface' -print -quit \
-              | xargs -r grep -nE "public enum (AuthorizationStatus|ShieldAction|ShieldActionResponse)" -A 12 \
-              || echo "(no matching enum in $FRAMEWORK)"
+          for FRAMEWORK in FamilyControls ManagedSettings ManagedSettingsUI DeviceActivity; do
+            IFACE=$(find "$SDK/System/Library/Frameworks/$FRAMEWORK.framework" \
+              -name 'arm64*.swiftinterface' -print -quit)
+            [ -n "$IFACE" ] || { echo "===== $FRAMEWORK: no interface ====="; continue; }
+            echo "===== $FRAMEWORK enums ====="
+            grep -nE "public enum (AuthorizationStatus|ShieldAction|ShieldActionResponse|ActivityCategoryPolicy)" \
+              -A 34 "$IFACE" || true
+            # Everything the 26.x SDKs added. This whole architecture is built on two
+            # limitations — the report-extension sandbox and a shield's inability to open
+            # our app (docs/01-FEASIBILITY.md L2 and section 3) — and the 26.4/26.5 SDK
+            # visibly moves at least one of them. Reading the shipped interface is the
+            # only way to find out what changed without guessing an API into existence.
+            echo "===== $FRAMEWORK: new in iOS 26.x ====="
+            grep -nE "@available\(iOS 26" -A 10 "$IFACE" \
+              | grep -vE "@available\((macOS|tvOS|watchOS|visionOS|macCatalyst|iOS)" \
+              | grep -E "(func|var|case|init|struct|enum|protocol|typealias) " \
+              | head -120 || echo "(none)"
           done
       - name: Test
         working-directory: Packages/MushKit

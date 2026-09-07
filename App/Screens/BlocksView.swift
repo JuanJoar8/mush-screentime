@@ -12,6 +12,7 @@ struct BlocksView: View {
         ScrollView {
             VStack(spacing: 20) {
                 capability
+                rules
                 strictness
                 limits
             }
@@ -41,6 +42,115 @@ struct BlocksView: View {
                 }
             }
         }
+    }
+
+    /// Independent rules, and the one arbitration iOS forces on us.
+    ///
+    /// The suspension notice is the point of this panel. `.all(except:)` cannot be
+    /// softened by another store, so an allowlist genuinely switches the others off —
+    /// and a user who is not told that will believe a rule is running when it is not
+    /// (docs/08-DECISIONS.md D16).
+    private var rules: some View {
+        Panel {
+            VStack(alignment: .leading, spacing: 14) {
+                InstrumentLabel(
+                    title: "Rules",
+                    value: "\(model.ruleResolution.active.count) in force"
+                )
+
+                if model.rules.groups.isEmpty {
+                    Text("No rules yet. A rule is a set of apps plus when, how long, and how hard.")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Token.Color.inkDim)
+                } else {
+                    ForEach(model.rules.groups) { group in
+                        ruleRow(group)
+                        if group.id != model.rules.groups.last?.id {
+                            Rectangle().fill(Token.Color.line).frame(height: 1)
+                        }
+                    }
+                }
+
+                ForEach(model.ruleResolution.suspended.filter { $0.reason == .allowlistExclusive }) { suspension in
+                    Text("\(suspension.group.name) is paused while an Only-these rule is running. iOS will not let a second rule reopen anything this one closed.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Token.Color.warn)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func ruleRow(_ group: RuleGroup) -> some View {
+        let isActive = model.ruleResolution.active.contains { $0.id == group.id }
+
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                Button {
+                    model.toggleRule(group)
+                } label: {
+                    Circle()
+                        .strokeBorder(
+                            group.isEnabled ? model.stage.tint : Token.Color.line,
+                            lineWidth: group.isEnabled ? 5 : 1
+                        )
+                        .frame(width: 16, height: 16)
+                }
+                .buttonStyle(.plain)
+
+                Text(group.name)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(group.isEnabled ? Token.Color.ink : Token.Color.inkDim)
+
+                Spacer()
+
+                Pill(
+                    text: isActive ? "on now" : (group.isEnabled ? "waiting" : "off"),
+                    tint: isActive ? model.stage.tint : Token.Color.inkDim,
+                    filled: isActive
+                )
+            }
+
+            HStack(spacing: 8) {
+                ForEach(BlockMode.allCases) { mode in
+                    Button {
+                        model.setRuleMode(group, to: mode)
+                    } label: {
+                        Pill(
+                            text: mode.title,
+                            tint: mode == group.mode ? model.stage.tint : Token.Color.inkDim,
+                            filled: mode == group.mode
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+                Spacer()
+            }
+
+            Text(ruleSummary(group))
+                .font(.system(size: 12))
+                .foregroundStyle(Token.Color.inkDim)
+
+            if group.mode.isExclusive {
+                Text(group.mode.explanation)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Token.Color.warn)
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
+    private func ruleSummary(_ group: RuleGroup) -> String {
+        var parts: [String] = []
+        if group.budgetMinutes > 0 { parts.append("\(group.budgetMinutes) min a day") }
+        if let limit = group.frequencyLimit { parts.append(limit.summary) }
+        if group.windows.isEmpty {
+            parts.append("always")
+        } else {
+            parts.append(group.windows.map(\.name).joined(separator: ", "))
+        }
+        parts.append(group.strictness.title.lowercased())
+        return parts.joined(separator: " · ")
     }
 
     private var strictness: some View {

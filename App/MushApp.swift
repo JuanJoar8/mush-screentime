@@ -107,6 +107,7 @@ final class AppModel {
     // Gamification. All of it derived from the ledger on every refresh, never stored as a
     // separate score — a second number that could disagree with the first is the thing
     // that makes a points system feel bolted on (docs/02-PRODUCT.md section 2).
+    private(set) var rules = RuleSet()
     private(set) var gems = GemState()
     private(set) var newlyUnlocked: [Gem] = []
     private(set) var digest: WeeklyDigest?
@@ -157,6 +158,7 @@ final class AppModel {
     func bootstrap() async {
         if isMocked {
             try? MockScreenTimeProvider.seed(.realisticFortnight, into: ledgerStore)
+            seedExampleRules()
         }
         await refresh()
     }
@@ -172,6 +174,7 @@ final class AppModel {
             lastEntry = state.entries.last
             history = state.days
             activeFocus = state.focusSessions.first { $0.outcome == .running }
+            rules = state.rules
 
             let provisional = try ledger.provisionalToday()
             today = provisional.record
@@ -234,6 +237,73 @@ final class AppModel {
             if day.hasSignal { t.measuredDays += 1 } else { t.blindDays += 1 }
         }
         return t
+    }
+
+    /// What is in force right now, and what an active allowlist has suspended.
+    var ruleResolution: RuleResolution { rules.resolve(at: Date()) }
+
+    func toggleRule(_ group: RuleGroup) {
+        mutateRules { set in
+            guard let index = set.groups.firstIndex(where: { $0.id == group.id }) else { return }
+            set.groups[index].isEnabled.toggle()
+        }
+    }
+
+    func setRuleMode(_ group: RuleGroup, to mode: BlockMode) {
+        mutateRules { set in
+            guard let index = set.groups.firstIndex(where: { $0.id == group.id }) else { return }
+            set.groups[index].mode = mode
+        }
+    }
+
+    private func mutateRules(_ body: (inout RuleSet) -> Void) {
+        do {
+            var state = try ledgerStore.load()
+            body(&state.rules)
+            try ledgerStore.save(state)
+            rules = state.rules
+        } catch {
+            loadError = String(describing: error)
+        }
+    }
+
+    /// Two example rules, so the Blocks screen opens showing what a rule *is* rather than
+    /// an empty list. Only on the mock provider, where the whole screen already says it is
+    /// simulated — never on a real build, where an invented rule would be a lie about
+    /// what is blocked.
+    private func seedExampleRules() {
+        guard isMocked else { return }
+        do {
+            var state = try ledgerStore.load()
+            guard state.rules.groups.isEmpty else { return }
+            state.rules = RuleSet(groups: [
+                RuleGroup(
+                    name: "The feeds",
+                    selectionKey: "example.feeds",
+                    budgetMinutes: 60,
+                    frequencyLimit: FrequencyLimit(maxTouchedQuarterHours: 12)
+                ),
+                RuleGroup(
+                    name: "Deep work",
+                    mode: .allowlist,
+                    selectionKey: "example.work",
+                    budgetMinutes: 0,
+                    windows: [
+                        ScheduleWindow(
+                            name: "Weekday mornings",
+                            startMinute: 9 * 60,
+                            endMinute: 12 * 60,
+                            weekdays: [2, 3, 4, 5, 6]
+                        )
+                    ],
+                    strictness: .strict,
+                    isEnabled: false
+                )
+            ])
+            try ledgerStore.save(state)
+        } catch {
+            loadError = String(describing: error)
+        }
     }
 
     // MARK: Actions
