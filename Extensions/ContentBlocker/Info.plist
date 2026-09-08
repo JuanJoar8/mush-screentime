@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDisplayName</key>
+	<string>Mush Feed Quarantine</string>
+	<key>NSExtension</key>
+	<dict>
+		<!-- A content blocker, not a Safari Web Extension. The extension point decides
+		     everything: this one hands WebKit a rule list and is then done, so it runs no
+		     code while the person browses and can see nothing they do. A web extension
+		     would run JavaScript on every page and need host permissions we have no
+		     reason to ask for. -->
+		<key>NSExtensionPointIdentifier</key>
+		<string>com.apple.Safari.content-blocker</string>
+		<key>NSExtensionPrincipalClass</key>
+		<string>$(PRODUCT_MODULE_NAME).ContentBlockerRequestHandler</string>
+	</dict>
+</dict>
+</plist>

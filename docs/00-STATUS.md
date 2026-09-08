@@ -77,7 +77,7 @@ whatever the check looks at is fine.** Read what a guard measures before trustin
 | 7 · Brain system + UI | **done** — design system, creature (flat vector with per-stage motifs, 2026-09-07), 7 screens, widget, Live Activity |
 | 7.5 · Competitive parity | **done** — every Opal/Brainrot feature classified in `10-FEATURE-PARITY.md`; the missing ones built |
 | 8 · Interventions | **done** — Path B Shortcuts onboarding (`PathBSetupView`), the hold-to-continue pause, four synthesised soundscapes |
-| 9 · Feed Quarantine | partial — **layer 2 (Clean Feed) built and tested**; layers 1 and 4 need the membership, layer 3 needs a Safari extension target |
+| 9 · Feed Quarantine | **layers 2 and 3 built** — Clean Feed in-app, and a Safari content blocker off the same rule set. Layers 1 and 4 need the membership |
 | 10 · Device hardening | **blocked** — needs device |
 
 ---

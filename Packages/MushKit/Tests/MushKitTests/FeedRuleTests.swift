@@ -153,3 +153,32 @@ func feedRulesHideAppDeepLinks() {
     // what the markup calls it, which is the only kind of selector here that will not rot.
     #expect(!joined.contains("class"))
 }
+
+@Test("Safari gets exactly the rules the app uses")
+func safariRulesMatchTheApp() throws {
+    // Layer 3 ships `Extensions/ContentBlocker/blockerList.json`, a static file, because a
+    // content blocker hands WebKit a bundled resource rather than calling our code. That
+    // makes it a second copy of the rule set — and a second copy is how Safari ends up
+    // enforcing last month's Instagram while the in-app browser enforces this month's.
+    //
+    // Compared canonically rather than as text: `JSONSerialization` does not promise key
+    // order, so a byte comparison would fail on formatting and pass on nothing useful.
+    func canonical(_ data: Data) throws -> String {
+        let object = try JSONSerialization.jsonObject(with: data)
+        let sorted = try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
+        return String(decoding: sorted, as: UTF8.self)
+    }
+
+    var root = URL(fileURLWithPath: #filePath)
+    for _ in 0..<5 { root.deleteLastPathComponent() }
+    let listURL = root
+        .appendingPathComponent("Extensions/ContentBlocker/blockerList.json")
+
+    let committed = try Data(contentsOf: listURL)
+    let generated = Data(try FeedRuleSet.json().utf8)
+
+    #expect(
+        try canonical(committed) == canonical(generated),
+        "blockerList.json has drifted from FeedRuleSet — regenerate it"
+    )
+}

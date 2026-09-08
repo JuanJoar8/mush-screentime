@@ -1,0 +1,42 @@
+[
+  {
+    "trigger": { "url-filter": "^https?://[^/]*instagram\\.com/reels", "resource-type": ["document"] },
+    "action": { "type": "block" }
+  },
+  {
+    "trigger": { "url-filter": "^https?://[^/]*instagram\\.com/reel/", "resource-type": ["document"] },
+    "action": { "type": "block" }
+  },
+  {
+    "trigger": { "url-filter": "^https?://[^/]*instagram\\.com/explore/?(\\?.*)?$", "resource-type": ["document"] },
+    "action": { "type": "block" }
+  },
+  {
+    "trigger": { "url-filter": ".*" },
+    "action": { "type": "css-display-none", "selector": "a[href^=\"/reels\"], a[href*=\"/reels/\"]" }
+  },
+  {
+    "trigger": { "url-filter": ".*" },
+    "action": { "type": "css-display-none", "selector": "a[href^=\"/explore\"]" }
+  },
+  {
+    "trigger": { "url-filter": "^https?://[^/]*youtube\\.com/shorts", "resource-type": ["document"] },
+    "action": { "type": "block" }
+  },
+  {
+    "trigger": { "url-filter": ".*" },
+    "action": { "type": "css-display-none", "selector": "a[href^=\"/shorts\"], a[href*=\"/shorts/\"]" }
+  },
+  {
+    "trigger": { "url-filter": ".*" },
+    "action": { "type": "css-display-none", "selector": "ytd-reel-shelf-renderer, ytm-reel-shelf-renderer" }
+  },
+  {
+    "trigger": { "url-filter": ".*" },
+    "action": { "type": "css-display-none", "selector": "ytd-rich-section-renderer:has(a[href^=\"/shorts\"])" }
+  },
+  {
+    "trigger": { "url-filter": ".*" },
+    "action": { "type": "css-display-none", "selector": "a[href^=\"instagram:\"], a[href^=\"youtube:\"], a[href^=\"vnd.youtube:\"], a[href^=\"intent:\"], a[href^=\"fb:\"]" }
+  }
+]

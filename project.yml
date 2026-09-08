@@ -63,6 +63,7 @@ targets:
       - target: MushShieldAction
       - target: MushReport
       - target: MushWidget
+      - target: MushBlocker
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)
@@ -165,3 +166,25 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).widget
         INFOPLIST_FILE: Extensions/Widget/Info.plist
         CODE_SIGN_ENTITLEMENTS: Extensions/Widget/Widget.entitlements
+
+  # ── Safari content blocker: Feed Quarantine layer 3 ───────────────────────
+  #
+  # The smallest target in the project and the second most useful. It is a JSON file and
+  # a function that hands it to WebKit — no JavaScript, no host permissions, no code
+  # running while the person browses. `blockerList.json` is `FeedRuleSet` serialised, and
+  # `safariRulesMatchTheApp` fails the build if the two drift apart.
+  #
+  # Needs no entitlement, so unlike layers 1 and 4 it can ship on the free tier.
+  MushBlocker:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Extensions/ContentBlocker
+        excludes:
+          - blockerList.json
+      - path: Extensions/ContentBlocker/blockerList.json
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).blocker
+        INFOPLIST_FILE: Extensions/ContentBlocker/Info.plist

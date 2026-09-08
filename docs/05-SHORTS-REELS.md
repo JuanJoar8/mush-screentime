@@ -124,7 +124,30 @@ infinite short-form surface genuinely absent. **This is the closest thing to the
 feature that iOS permits, and it actually works**, because it is our web view and we
 control the content rules inside it.
 
-### Layer 3 — Safari parity
+### Layer 3 — Safari parity  ·  **BUILT 2026-09-08**
+
+A **content blocker**, not a Safari Web Extension. The extension point decides everything:
+a content blocker hands WebKit a rule list once and is then done, so it runs no code while
+the person browses and can see nothing they do. A web extension would run JavaScript on
+every page and need host permissions we have no reason to ask for. It is also the smallest
+target in the project — a JSON file and a function that hands it over.
+
+`Extensions/ContentBlocker/blockerList.json` is `FeedRuleSet` serialised, and it is a
+*second copy* of the rule set, which is how Safari ends up enforcing last month's Instagram
+while Clean Feed enforces this month's. `safariRulesMatchTheApp` compares the two
+canonically and fails the build when they drift.
+
+It needs no entitlement, so unlike layers 1 and 4 it can ship on the free tier.
+
+**Unverified:** whether Safari accepts the list. Layer 2 gives strong evidence that it does
+— a content rule list fails to compile as a whole, Clean Feed loads nothing when
+compilation fails, and CI screenshotted Instagram rendering inside it, so WebKit accepted
+all ten patterns including the `:has()` selector. That was `WKContentRuleListStore`, not
+Safari's own compiler. Enabling the extension in Settings needs a device.
+
+---
+
+#### Original plan
 A Safari Web Extension + Content Blocker so the same rules apply when the user browses
 in Safari instead of our app. Proven category — `No Shorts`, `No Reel`, and
 `Short Video Hider` all ship this on the App Store today.
