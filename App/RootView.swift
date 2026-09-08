@@ -60,6 +60,18 @@ struct RootView: View {
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { model.checkInterruption() }
         }
+        // Above the tabs, below the pause. If a gem lands during an interruption the
+        // pause wins: one interruption at a time, and that one was not our idea.
+        .overlay {
+            if !model.newlyUnlocked.isEmpty && model.pendingInterruption == nil {
+                GemUnlockOverlay(
+                    gems: model.newlyUnlocked,
+                    tint: model.stage.tint
+                ) {
+                    model.dismissUnlock()
+                }
+            }
+        }
     }
 }
 

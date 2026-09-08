@@ -374,3 +374,20 @@ func gemSeedIsDeterministic() {
     let shapes = Set(GemCatalog.all.map { "\(seed($0.id) % 4)/\(seed($0.id) % 12)" })
     #expect(shapes.count >= 8, "twelve gems should not collapse into a handful of shapes")
 }
+
+@Test("The first evaluation backfills history silently, the next one announces")
+func gemsBackfillQuietly() {
+    var state = GemState()
+    let earned = DayRecord(date: at(1, 0), distractingMinutes: 20, budgetMinutes: 60)
+
+    let first = GemEvaluator.evaluate(gemContext(days: [earned]), state: &state)
+    #expect(first.isEmpty, "days that already happened are not achievements")
+    #expect(state.unlocked.contains("under-half"), "but they are still on the shelf")
+    #expect(state.hasBackfilled)
+
+    // A gem earned after the backfill is announced normally.
+    let announced = GemEvaluator.evaluate(
+        gemContext(days: [earned], streak: 7), state: &state
+    )
+    #expect(announced.contains { $0.id == "streak-7" })
+}

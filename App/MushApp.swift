@@ -256,6 +256,19 @@ final class AppModel {
             try ledgerStore.save(updated)
         }
 
+        // Deliver. Both engines were computing results that nothing ever showed - a gem
+        // that appears silently on a shelf is a database row, and a milestone nobody is
+        // told about is arithmetic.
+        //
+        // The gem overlay handles the in-app moment; the notification is for the case
+        // that matters more, which is not being in the app at all.
+        if let milestone {
+            Task { await MushNotifier.shared.post(milestone) }
+        }
+        for gem in newlyUnlocked {
+            Task { await MushNotifier.shared.post(unlocked: gem) }
+        }
+
         let focusEndsAt = activeFocus.map {
             $0.startedAt.addingTimeInterval(Double($0.plannedMinutes) * 60)
         }
@@ -277,6 +290,12 @@ final class AppModel {
 
     /// What is in force right now, and what an active allowlist has suspended.
     var ruleResolution: RuleResolution { rules.resolve(at: Date()) }
+
+    /// Clear the unlock overlay. Called after it has been seen, never automatically -
+    /// a reward that vanishes on a timer is one the user may never have registered.
+    func dismissUnlock() {
+        newlyUnlocked = []
+    }
 
     func toggleRule(_ group: RuleGroup) {
         mutateRules { set in

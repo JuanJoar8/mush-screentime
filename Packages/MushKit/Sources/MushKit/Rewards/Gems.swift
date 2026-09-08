@@ -198,10 +198,34 @@ public struct GemState: Codable, Sendable, Equatable {
     public var unlocked: Set<String>
     /// When each was unlocked. Used for the "earned on" line and for ordering the shelf.
     public var unlockedAt: [String: Date]
+    /// Whether the first evaluation has run.
+    ///
+    /// The first pass over an existing history is a **backfill**, not a set of
+    /// achievements: those days already happened. Celebrating eight gems at once the
+    /// moment someone opens the app for the first time is noise, and it devalues the
+    /// ninth. They land on the shelf silently and the next one is the first to be
+    /// announced.
+    public var hasBackfilled: Bool
 
-    public init(unlocked: Set<String> = [], unlockedAt: [String: Date] = [:]) {
+    public init(
+        unlocked: Set<String> = [],
+        unlockedAt: [String: Date] = [:],
+        hasBackfilled: Bool = false
+    ) {
         self.unlocked = unlocked
         self.unlockedAt = unlockedAt
+        self.hasBackfilled = hasBackfilled
+    }
+
+    // Lenient, for the same reason `LedgerState` is: a field added later must not make an
+    // existing ledger undecodable.
+    private enum CodingKeys: String, CodingKey { case unlocked, unlockedAt, hasBackfilled }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        unlocked = try container.decodeIfPresent(Set<String>.self, forKey: .unlocked) ?? []
+        unlockedAt = try container.decodeIfPresent([String: Date].self, forKey: .unlockedAt) ?? [:]
+        hasBackfilled = try container.decodeIfPresent(Bool.self, forKey: .hasBackfilled) ?? false
     }
 }
 
@@ -218,6 +242,12 @@ public enum GemEvaluator {
             state.unlocked.insert(gem.id)
             state.unlockedAt[gem.id] = context.now
             newly.append(gem)
+        }
+
+        // The first pass backfills history and announces nothing. See `hasBackfilled`.
+        if !state.hasBackfilled {
+            state.hasBackfilled = true
+            return []
         }
         return newly
     }
