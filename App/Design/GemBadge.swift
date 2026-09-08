@@ -159,10 +159,15 @@ struct GemShelf: View {
                         )
                         .frame(height: 46)
 
+                        // Two lines of height whether the title needs them or not: five
+                        // of the twelve titles wrap and the rest do not, and without a
+                        // reserved height the grid rows came out at three different
+                        // heights and the badges stopped lining up across the shelf.
                         Text(gem.title)
                             .font(.system(size: 10, weight: .medium))
                             .multilineTextAlignment(.center)
                             .lineLimit(2)
+                            .frame(height: 26, alignment: .top)
                             .foregroundStyle(
                                 unlocked.contains(gem.id) ? Token.Color.ink : Token.Color.inkDim
                             )
