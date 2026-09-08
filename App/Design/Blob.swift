@@ -76,7 +76,7 @@ struct CreatureParameters: Equatable {
         case .buzzed:
             .init(browTilt: -0.36, browLift: 0.14, lid: 0.00, open: 1.18, sag: 0.02,
                   spread: 0.03, sheen: 0.82, pupil: 0.42, mouth: -0.18, arms: 0.14,
-                  jitter: 0.050, blinkInterval: 1.1)
+                  jitter: 0.050, blinkInterval: 1.9)
         case .melting:
             .init(browTilt: 0.32, browLift: 0.04, lid: 0.40, open: 0.82, sag: 0.13,
                   spread: 0.10, sheen: 0.32, pupil: 0.14, mouth: -0.46, arms: 0.66,
@@ -457,7 +457,7 @@ struct BlobView: View {
         let style = StrokeStyle(lineWidth: width, lineCap: .round)
 
         for side in [-1.0, 1.0] as [CGFloat] {
-            for ring in 0..<3 {
+            for ring in 0..<4 {
                 let count = 4
                 for index in 0..<count {
                     let seed = ring * 17 + index * 5 + (side > 0 ? 101 : 3)
@@ -466,7 +466,7 @@ struct BlobView: View {
 
                     // Polar position inside the hemisphere. `radial` 0 is the fissure,
                     // 1 the outer edge; `arc` sweeps from crown to base.
-                    let radial = 0.34 + CGFloat(ring) * 0.24 + j1 * 0.08
+                    let radial = 0.30 + CGFloat(ring) * 0.16 + j1 * 0.07
                     let arc = (CGFloat(index) + 0.5) / CGFloat(count) * 1.9 - 0.42 + j2 * 0.12
 
                     let px = center.x + side * bodyW * radial * CGFloat(cos(Double(arc) - 0.35))
@@ -491,7 +491,7 @@ struct BlobView: View {
                     var fold = Path()
                     fold.move(to: CGPoint(x: ax, y: ay))
                     fold.addQuadCurve(to: CGPoint(x: bx, y: by), control: CGPoint(x: cxp, y: cyp))
-                    context.stroke(fold, with: .color(palette.ink.opacity(0.85)), style: style)
+                    context.stroke(fold, with: .color(palette.ink.opacity(0.92)), style: style)
                 }
             }
         }
@@ -568,8 +568,11 @@ struct BlobView: View {
         // Guarded on `time > 0` because a static render passes zero, and zero sits inside
         // the blink window — which had every widget and Dynamic Island drawing the
         // creature with its eyes shut.
+        // 90ms shut, which is a real blink. The window used to be 120ms against
+        // `buzzed`'s 1.1-second interval — an 11% duty cycle, so about one screenshot in
+        // nine caught the creature with its eyes closed and read as a bug.
         let cycle = time.truncatingRemainder(dividingBy: p.blinkInterval)
-        let blink: CGFloat = (time > 0 && cycle < 0.12) ? 0.08 : 1
+        let blink: CGFloat = (time > 0 && cycle < 0.09) ? 0 : 1
 
         drawBlush(&context, center: center, eyeX: eyeX, eyeY: eyeY,
                   lensR: lensR, radius: radius, palette: palette)
@@ -611,11 +614,24 @@ struct BlobView: View {
         rx: CGFloat, ry: CGFloat, blink: CGFloat, side: CGFloat,
         time: TimeInterval, palette: Palette
     ) {
-        let sclera = CGRect(x: ex - rx, y: eyeY - ry * blink,
-                            width: rx * 2, height: ry * blink * 2)
-        context.fill(Path(ellipseIn: sclera), with: .color(Token.Color.specular))
+        guard blink > 0.5 else {
+            // Shut. One ink curve, the way a flat drawing closes an eye — a 0.08-scale
+            // white ellipse left a pale sliver behind the lens and read as an empty frame.
+            var lid = Path()
+            lid.move(to: CGPoint(x: ex - rx * 0.92, y: eyeY))
+            lid.addQuadCurve(
+                to: CGPoint(x: ex + rx * 0.92, y: eyeY),
+                control: CGPoint(x: ex, y: eyeY + rx * 0.62)
+            )
+            context.stroke(
+                lid, with: .color(palette.ink),
+                style: StrokeStyle(lineWidth: max(rx * 0.30, 1.2), lineCap: .round)
+            )
+            return
+        }
 
-        guard blink > 0.5 else { return }
+        let sclera = CGRect(x: ex - rx, y: eyeY - ry, width: rx * 2, height: ry * 2)
+        context.fill(Path(ellipseIn: sclera), with: .color(Token.Color.specular))
 
         // Buzzed cannot hold a gaze.
         let gaze = p.jitter > 0 ? CGFloat(sin(time * 5.3 + Double(side))) * rx * 0.14 : 0
