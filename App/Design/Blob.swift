@@ -614,39 +614,53 @@ struct BlobView: View {
         _ context: inout GraphicsContext, center: CGPoint,
         bodyW: CGFloat, bodyH: CGFloat, radius: CGFloat, palette: Palette
     ) {
-        let yTop = center.y + bodyH * 0.72
+        let yTop = center.y + bodyH * 0.70
         let stroke = StrokeStyle(lineWidth: max(radius * 0.072, 1.4), lineJoin: .round)
 
-        // Uneven on purpose. Three drips of one length at even spacing read as a
-        // decorative fringe, and melting is not tidy.
+        // The first version read as legs — three straight shapes hanging off the bottom
+        // at roughly the length and weight of the real ones, so the creature appeared to
+        // have five. What separates a drip from a limb is not where it is, it is the
+        // *profile*: narrow where it leaves the body, swelling into a bead at the tip,
+        // and short. A limb is even-width and long.
         for (offset, length, width) in [
-            (CGFloat(-0.46), CGFloat(0.52), CGFloat(0.13)),
-            (CGFloat(0.08), CGFloat(0.34), CGFloat(0.10)),
-            (CGFloat(0.54), CGFloat(0.44), CGFloat(0.11))
+            (CGFloat(-0.40), CGFloat(0.30), CGFloat(0.15)),
+            (CGFloat(0.02), CGFloat(0.20), CGFloat(0.11)),
+            (CGFloat(0.42), CGFloat(0.26), CGFloat(0.13))
         ] {
             let x = center.x + bodyW * offset
-            let w = radius * width
+            let neck = radius * width * 0.42
+            let bead = radius * width
             let len = radius * length
 
             var drip = Path()
-            drip.move(to: CGPoint(x: x - w, y: yTop))
+            drip.move(to: CGPoint(x: x - neck, y: yTop))
             drip.addQuadCurve(
-                to: CGPoint(x: x - w * 0.72, y: yTop + len),
-                control: CGPoint(x: x - w * 1.06, y: yTop + len * 0.62)
+                to: CGPoint(x: x - bead, y: yTop + len),
+                control: CGPoint(x: x - neck * 0.90, y: yTop + len * 0.70)
             )
             drip.addQuadCurve(
-                to: CGPoint(x: x + w * 0.72, y: yTop + len),
-                control: CGPoint(x: x, y: yTop + len * 1.44)
+                to: CGPoint(x: x + bead, y: yTop + len),
+                control: CGPoint(x: x, y: yTop + len + bead * 1.70)
             )
             drip.addQuadCurve(
-                to: CGPoint(x: x + w, y: yTop),
-                control: CGPoint(x: x + w * 1.06, y: yTop + len * 0.62)
+                to: CGPoint(x: x + neck, y: yTop),
+                control: CGPoint(x: x + neck * 0.90, y: yTop + len * 0.70)
             )
             drip.closeSubpath()
 
             context.fill(drip, with: .color(palette.base))
             context.stroke(drip, with: .color(palette.ink), style: stroke)
         }
+
+        // One droplet already fallen, detached. This is the cue that does the most work:
+        // a shape hanging off a body is ambiguous, and a shape in mid-air under it is not.
+        let fallen = CGRect(
+            x: center.x - bodyW * 0.40 - radius * 0.062,
+            y: yTop + radius * 0.50,
+            width: radius * 0.124, height: radius * 0.155
+        )
+        context.fill(Path(ellipseIn: fallen), with: .color(palette.base))
+        context.stroke(Path(ellipseIn: fallen), with: .color(palette.ink), style: stroke)
     }
 
     /// Fissures that are not gyri. A fold curves and closes; a crack veers and stops, and
@@ -655,26 +669,32 @@ struct BlobView: View {
         _ context: inout GraphicsContext, center: CGPoint,
         bodyW: CGFloat, bodyH: CGFloat, palette: Palette
     ) {
-        let style = StrokeStyle(lineWidth: max(bodyW * 0.026, 1), lineCap: .round, lineJoin: .miter)
+        let style = StrokeStyle(lineWidth: max(bodyW * 0.038, 1.2), lineCap: .round, lineJoin: .miter)
 
-        for (index, seed) in [7, 23, 51].enumerated() {
-            let originX = center.x + bodyW * (CGFloat(index) - 1) * 0.52
-            let originY = center.y - bodyH * (0.62 - CGFloat(index) * 0.12)
+        // They run *outward*, toward the rim. The first version started them near the
+        // midline and walked down and to the right, straight into the face — where the
+        // eyes and glasses are painted over the top of them, so the stage that needed
+        // them most had none you could see.
+        let origins: [(CGFloat, CGFloat)] = [(-0.34, -0.78), (0.16, -0.90), (0.46, -0.58)]
+
+        for (index, origin) in origins.enumerated() {
+            let seed = [7, 23, 51][index]
+            let away: CGFloat = origin.0 < 0 ? -1 : 1
+            var point = CGPoint(x: center.x + bodyW * origin.0, y: center.y + bodyH * origin.1)
 
             var crack = Path()
-            crack.move(to: CGPoint(x: originX, y: originY))
-            var point = CGPoint(x: originX, y: originY)
-            // Five short segments, each veering. A smooth line reads as a fold; the
-            // veering is what makes it read as a break.
-            for step in 1...5 {
+            crack.move(to: point)
+            // Four short segments, each veering. A fold curves and closes; a crack veers
+            // and stops, and the veering is the whole difference.
+            for step in 1...4 {
                 let jitter = rnd(seed + step * 13) - 0.5
                 point = CGPoint(
-                    x: point.x + bodyW * (0.10 + jitter * 0.16),
-                    y: point.y + bodyH * (0.16 + jitter * 0.10)
+                    x: point.x + bodyW * away * (0.13 + jitter * 0.14),
+                    y: point.y + bodyH * (0.11 + jitter * 0.12)
                 )
                 crack.addLine(to: point)
             }
-            context.stroke(crack, with: .color(palette.ink.opacity(0.9)), style: style)
+            context.stroke(crack, with: .color(palette.ink), style: style)
         }
     }
 
@@ -996,6 +1016,33 @@ struct BlobView: View {
         radius: CGFloat, palette: Palette
     ) {
         let my = eyeY + radius * 0.58
+
+        // A squiggle, once the number is genuinely bad. A downturned arc reads as sad,
+        // which is a mood; a wavy line reads as unwell, which is a condition — and the
+        // difference between those two is the difference this whole pass is about.
+        // `buzzed` stays on the plain frown at -0.18: it is tense, not sick.
+        if p.mouth < -0.35 {
+            let mw = radius * 0.23
+            let amplitude = radius * 0.075
+            let step = mw * 2 / 3
+
+            var wave = Path()
+            wave.move(to: CGPoint(x: center.x - mw, y: my))
+            for segment in 0..<3 {
+                let from = center.x - mw + step * CGFloat(segment)
+                let to = from + step
+                let direction: CGFloat = segment % 2 == 0 ? -1 : 1
+                wave.addQuadCurve(
+                    to: CGPoint(x: to, y: my),
+                    control: CGPoint(x: (from + to) / 2, y: my + amplitude * direction)
+                )
+            }
+            context.stroke(
+                wave, with: .color(palette.ink),
+                style: StrokeStyle(lineWidth: max(radius * 0.058, 1.2), lineCap: .round)
+            )
+            return
+        }
 
         guard p.mouth > 0.15 else {
             let mw = radius * 0.21
