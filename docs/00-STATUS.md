@@ -67,8 +67,8 @@ whatever the check looks at is fine.** Read what a guard measures before trustin
 
 | Phase | State |
 |---|---|
-| 0 · Foundation | **done** — 7 targets, XcodeGen, CI green on tests |
-| 1 · Domain core + mock | **done** — 30 golden tests passing on CI |
+| 0 · Foundation | **done** — 8 targets, XcodeGen, CI green on tests |
+| 1 · Domain core + mock | **done** — 88 tests passing on CI |
 | 2 · Authorization + selection | **blocked** — needs paid membership |
 | 3 · Shield one app | **blocked** — needs paid membership |
 | 4 · Monitoring + ladder | **blocked** — needs paid membership |
@@ -79,6 +79,19 @@ whatever the check looks at is fine.** Read what a guard measures before trustin
 | 8 · Interventions | **done** — Path B Shortcuts onboarding (`PathBSetupView`), the hold-to-continue pause, four synthesised soundscapes |
 | 9 · Feed Quarantine | **layers 2 and 3 built** — Clean Feed in-app, and a Safari content blocker off the same rule set. Layers 1 and 4 need the membership |
 | 10 · Device hardening | **blocked** — needs device |
+
+**Everything not marked blocked is done.** As of 2026-09-08 there is no remaining product
+work that does not need either the $99 membership or a physical iPhone. The next move is
+not a commit; it is one of those two things.
+
+### What a device would answer immediately
+
+- **Q10b** — do the `css-display-none` selectors match the markup a *signed-in* Instagram
+  shows? CI has no account. This is the one that decides whether Clean Feed is a product
+  or a demo.
+- **Q8** — does `openParentalControlsApp` open our app or Settings?
+- Whether Safari accepts the content blocker's rule list. Layer 2 proves WebKit's
+  compiler does; Safari's own is untested.
 
 ---
 
