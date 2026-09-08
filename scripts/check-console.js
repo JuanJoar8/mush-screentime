@@ -34,8 +34,15 @@ const calls = [];
 function recordingContext(name) {
   return new Proxy({}, {
     get(_, prop) {
+      // Recorded like any other call, not silently swallowed. The modelled creature is
+      // built out of gradients — key light, occlusion, ground bounce, the iris dish — so
+      // a run that creates none of them has lost the entire volume and would otherwise
+      // sail past a check that only counts strokes.
       if (prop === 'createRadialGradient' || prop === 'createLinearGradient') {
-        return () => ({ addColorStop() {} });
+        return () => {
+          calls.push(name + '.' + String(prop));
+          return { addColorStop() {} };
+        };
       }
       if (prop === 'canvas') return { width: 800, height: 500 };
       return () => { calls.push(name + '.' + String(prop)); };
@@ -119,9 +126,15 @@ if (hero.length < 100) {
 }
 
 // Each of these is one part of the creature. Present but incomplete is still a bug worth
-// a red build: `arc` is the spectacle rings, `quadraticCurveTo` is the folds and the
-// mouth, `ellipse` is the shadow and the eyes.
-const required = ['ellipse', 'quadraticCurveTo', 'arc', 'stroke', 'fill', 'clip'];
+// a red build: `quadraticCurveTo` is the gyri and the mouth, `bezierCurveTo` is the
+// longitudinal fissure, `ellipse` is the shadow, the eyes and the spectacle rings.
+// `arc` left the list when the glasses moved to `ellipse`; `createRadialGradient` and
+// `createLinearGradient` joined it, because they are the volume. A creature drawn with
+// every stroke in place and no gradients is the flat version wearing this one's code.
+const required = [
+  'ellipse', 'quadraticCurveTo', 'bezierCurveTo', 'stroke', 'fill', 'clip',
+  'createRadialGradient', 'createLinearGradient',
+];
 const missing = required.filter((k) => !used.includes(k));
 if (missing.length) {
   fail('the hero canvas never called: ' + missing.join(', '));

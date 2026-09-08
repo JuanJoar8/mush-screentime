@@ -3,7 +3,7 @@
 **Project:** MUSH — an iOS Screen Time app whose brain-blob character reflects your
 relationship with distracting apps.
 **Target:** iPhone 16 Pro, iOS 26. Native Swift 6 / SwiftUI.
-**Last updated:** 2026-09-07
+**Last updated:** 2026-09-08
 
 ---
 
@@ -55,6 +55,45 @@ whatever the check looks at is fine.** Read what a guard measures before trustin
 
 ---
 
+## The character, and where to look at it
+
+The creature was rebuilt on 2026-09-08. It had been a flat sticker — solid fill, one
+heavy contour, folds as thin lines. It is now **modelled**, and the distinction that
+matters is *where the volume comes from*: not a radial gradient over a smooth egg, which
+is what the version before the flat one was and why that one was killed. Each gyrus is a
+ridge drawn as four strokes on one curve, all offset along a single light vector — a dark
+groove pushed away from the light, the ridge body, a lit crest, and a specular pop that
+only fires on the folds near the light. The two global gradients say where the light is;
+the folds do the describing.
+
+Two new parameters carry the material, and they are the reason a stage is a *condition*
+rather than a mood:
+
+| | crisp | foggy | buzzed | melting | mush |
+|---|---|---|---|---|---|
+| folds / side | 16 | 12 | 9 | 4 | 2 |
+| `turgor` | 1.00 | 0.72 | 0.86 | 0.44 | 0.22 |
+| `gloss` | 1.00 | 0.46 | **0.78** | 0.20 | 0.06 |
+
+`gloss` is deliberately **not** monotonic. Buzzed sits a rung below foggy and out-shines
+it, because overstimulated is not dull — it is the most awake the creature ever looks and
+the worst it is doing. `materialAxesAreDeliberate` asserts exactly that, so a future
+tidy-up into a clean descent fails the build and says why.
+
+**The review sheet is published as an artifact:**
+<https://claude.ai/code/artifact/38d6a358-1419-454f-93eb-5dcb17194b67> — five stages live,
+the drawing pipeline stopped at each of its four layers, and three app screens. Rebuild it
+with `python scripts/build-mockup.py`, which splices the renderer out of `host/console.html`
+so the sheet cannot drift from what ships, then republish to that same URL.
+
+**One token was retired, not recoloured.** `primary` was `#7C5CFA` — hue 252, saturation
+94%, squarely inside the forbidden purple band, and flagged by `anti-slop-gate.sh` the
+first time that gate was ever actually run against this repo. No Swift view consumed it;
+its only reader was the host console's focus ring, which now uses `accent`. A dead token
+that also breaks the one colour rule the project has is not a value to tune.
+
+---
+
 ## Environment
 
 - Owner is on **Windows 11**. No Mac, no Xcode locally.
@@ -92,6 +131,31 @@ not a commit; it is one of those two things.
 - **Q8** — does `openParentalControlsApp` open our app or Settings?
 - Whether Safari accepts the content blocker's rule list. Layer 2 proves WebKit's
   compiler does; Safari's own is untested.
+
+---
+
+## Guards, and what each one actually looks at
+
+| script | what it measures | what it cannot see |
+|---|---|---|
+| `check-plists.py` | every extension `Info.plist` has the six keys the embed step needs | whether the extension does anything |
+| `check-console.js` | the host page's script runs, all five stages draw, gradients and curves are present | whether the result looks like a brain |
+| `check-fit.js` | **the bounding box of everything drawn, against the canvas**, for all five stages | anything inside a `clip()`, by design — the clip path is what bounds those, and it is measured |
+| `check-workflow.py` | the CI YAML parses and its steps are shaped right | whether the steps assert anything |
+| `screen-not-blank.swift` | pixel variance in a screenshot, cropping the status bar and home indicator | a crash: the springboard has high variance too, hence the separate crash-report gate |
+
+`check-fit.js` is new on 2026-09-08 and it is the **third** guard against one bug. The
+creature has been drawn past the edge of its canvas twice — a glove that grew past a
+hardcoded fraction, then fit arithmetic redone for `crisp` and never rechecked against
+`mush`, which spreads 16% wider. Both times the fix was "derive `Reach` from the constants
+the drawing uses". Both times the derivation was itself done by hand, which is a claim and
+not a check. This one runs the drawing and measures. Tightest margin today: 6.8px, on the
+top of the `crisp` thumbnail, where a sparkle sits.
+
+It found one thing on its first run that no screenshot would have: `Reach.finger` measured
+the fingertip's *centre*, not the round cap of the stroke that draws it — half a line width
+past the budget. Latent, because height binds the fit at every size the app uses, but the
+fit is written as a guarantee for any frame. `Reach.limbCap` closes it.
 
 ---
 

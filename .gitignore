@@ -11,3 +11,7 @@ xcuserdata/
 *.mobileprovision
 *.cer
 *.key
+# Built by scripts/build-mockup.py from host/mockup.template.html plus the renderer
+# spliced out of host/console.html. Committing it would mean two copies of the drawing
+# code, and the second copy is the one that goes stale.
+host/mockup.html

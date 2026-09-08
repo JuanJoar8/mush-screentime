@@ -15,7 +15,6 @@
     --color-line: #3B2A70;
     --color-ink: #F1ECFF;
     --color-ink-dim: #A093CC;
-    --color-primary: #7C5CFA;
     --color-accent: #22D3C6;
     --color-good: #34D399;
     --color-warn: #FBBF24;
@@ -23,6 +22,7 @@
     --color-specular: #FFFFFF;
     --color-eye-iris: #4FA8DF;
     --color-eye-pupil: #0B1A2A;
+    --color-eye-iris-deep: #1B5E93;
 
     --color-stage-crisp: #FFB3C1;
     --color-stage-foggy: #E7A7BE;
@@ -49,6 +49,10 @@
 
     --stage-tint: var(--color-stage-buzzed);
   }
+
+  /* The body's gradient is `fixed`, so the root would otherwise stay UA white —
+     a flash on load, and a contrast checker measuring ink against #fff. */
+  html { background: var(--color-ground); }
 
   * { box-sizing: border-box; }
 
@@ -190,7 +194,7 @@
   .tabbar button i { display: block; width: 16px; height: 16px; margin: 0 auto 4px; border-radius: 5px; background: currentColor; opacity: .75; }
   .tabbar button.on { color: var(--stage-tint); font-weight: 700; }
   .tabbar button:active { transform: scale(.92); }
-  .tabbar button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; border-radius: 8px; }
+  .tabbar button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: 8px; }
 
   /* entrance stagger - predetermined, so CSS animation, off the main thread */
   .stagger > * { animation: rise var(--duration-slow) var(--ease-out) both; }
@@ -229,7 +233,7 @@
   }
   input[type=range]::-moz-range-thumb { width: 17px; height: 17px; border: 0; border-radius: var(--radius-pill); background: var(--stage-tint); }
   input[type=range]:active::-webkit-slider-thumb { transform: scale(1.18); }
-  input[type=range]:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+  input[type=range]:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
 
   .seg { display: flex; gap: 6px; flex-wrap: wrap; }
   .seg button {
@@ -240,7 +244,7 @@
   }
   .seg button[aria-pressed="true"] { background: var(--stage-tint); color: var(--color-ground-deep); border-color: transparent; font-weight: 700; }
   .seg button:active { transform: scale(.97); }
-  .seg button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+  .seg button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 
   .commit {
     width: 100%; padding: 12px; cursor: pointer; background: var(--color-accent); color: var(--color-ground-deep);
@@ -267,9 +271,9 @@
     text-align: left; color: var(--color-ink);
     transition: transform var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
   }
-  @media (hover: hover) and (pointer: fine) { .stagecard:hover { transform: translateY(-4px); border-color: var(--color-primary); } }
+  @media (hover: hover) and (pointer: fine) { .stagecard:hover { transform: translateY(-4px); border-color: var(--color-accent); } }
   .stagecard:active { transform: scale(.985); }
-  .stagecard:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 3px; }
+  .stagecard:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }
   .stagecard canvas { display: block; width: 100%; height: 132px; }
   .stagecard h3 { font-family: var(--font-display); font-weight: 800; font-size: 19px; margin: 0 0 1px; padding: 0 13px; }
   .stagecard p { margin: 0; padding: 0 13px; font-size: 11px; color: var(--color-ink-dim); }
@@ -449,23 +453,23 @@
   var STAGES = [
     { key:"mush", name:"Mush", low:0, mood:"puddled",
       browTilt:0.44, browLift:0.02, lid:0.60, open:0.72, sag:0.22, spread:0.16,
-      sheen:0.14, pupil:0.10, mouth:-0.62, armLeft:0.94, armRight:0.86, jitter:0.000, blinkInterval:8.8,
+      sheen:0.14, pupil:0.10, mouth:-0.62, armLeft:0.94, armRight:0.86, turgor:0.22, gloss:0.06, jitter:0.000, blinkInterval:8.8,
       foldRings:1, foldsPerRing:2, motifs:["drip","crack"] },
     { key:"melting", name:"Melting", low:25, mood:"drooping, losing shape",
       browTilt:0.32, browLift:0.04, lid:0.40, open:0.82, sag:0.13, spread:0.10,
-      sheen:0.32, pupil:0.14, mouth:-0.46, armLeft:0.62, armRight:0.76, jitter:0.000, blinkInterval:6.4,
+      sheen:0.32, pupil:0.14, mouth:-0.46, armLeft:0.62, armRight:0.76, turgor:0.44, gloss:0.20, jitter:0.000, blinkInterval:6.4,
       foldRings:2, foldsPerRing:2, motifs:["drip","sweat"] },
     { key:"buzzed", name:"Buzzed", low:45, mood:"overstimulated, twitchy",
       browTilt:-0.36, browLift:0.14, lid:0.00, open:1.18, sag:0.02, spread:0.03,
-      sheen:0.82, pupil:0.42, mouth:-0.18, armLeft:-0.38, armRight:-0.26, jitter:0.050, blinkInterval:1.9,
+      sheen:0.82, pupil:0.42, mouth:-0.18, armLeft:-0.38, armRight:-0.26, turgor:0.86, gloss:0.78, jitter:0.050, blinkInterval:1.9,
       foldRings:3, foldsPerRing:3, motifs:["spiral","sweat"] },
     { key:"foggy", name:"Foggy", low:65, mood:"a bit hazy, still fine",
       browTilt:0.12, browLift:0.06, lid:0.18, open:0.92, sag:0.05, spread:0.04,
-      sheen:0.66, pupil:0.16, mouth:0.22, armLeft:0.38, armRight:0.46, jitter:0.000, blinkInterval:4.6,
+      sheen:0.66, pupil:0.16, mouth:0.22, armLeft:0.38, armRight:0.46, turgor:0.72, gloss:0.46, jitter:0.000, blinkInterval:4.6,
       foldRings:3, foldsPerRing:4, motifs:[] },
     { key:"crisp", name:"Crisp", low:85, mood:"alert, holding shape",
       browTilt:-0.16, browLift:0.10, lid:0.00, open:1.00, sag:0.00, spread:0.00,
-      sheen:1.00, pupil:0.10, mouth:0.85, armLeft:0.34, armRight:-1.90, jitter:0.000, blinkInterval:3.2,
+      sheen:1.00, pupil:0.10, mouth:0.85, armLeft:0.34, armRight:-1.90, turgor:1.00, gloss:1.00, jitter:0.000, blinkInterval:3.2,
       foldRings:4, foldsPerRing:4, motifs:["sparkle"] }
   ];
   var TINTS = {};
@@ -476,11 +480,22 @@
     return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a + ")";
   }
   // ── The creature ──────────────────────────────────────────────────────────
-  // Flat vector, ported constant for constant from App/Design/Blob.swift. Solid fill,
-  // one heavy contour, thin ink lines for the folds, wire limbs, round wire glasses.
-  // Nothing on the character is blurred or gradient-filled: the only soft edge in the
-  // whole drawing is the hero-glow behind it, and that is the point — it reads as
-  // ambient light rather than as an out-of-focus object.
+  // Modelled, ported constant for constant from App/Design/Blob.swift.
+  //
+  // The volume comes from the anatomy, not from a gradient. Each gyrus is a ridge with
+  // its own groove below it and its own crest above — four strokes on one curve, all
+  // offset along a single light vector. The two global gradients only say where the
+  // light is; the folds do the describing. That is the difference between this and the
+  // stock-3D-render version that came before it, which was a smooth egg with thirty
+  // blurred layers on top.
+
+  var TAU = Math.PI * 2;
+
+  // One light direction for the whole drawing: the body's key, the groove each fold
+  // casts, the lit edge of a wire frame, the way the cast shadow falls. A sheen on the
+  // upper left over a shadow that also falls upper left is the tell that nothing was
+  // actually modelled.
+  var LIGHT = { dx: -0.62, dy: -0.78, ax: 0.62, ay: 0.78 };
 
   function hexRGB(h) { var n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
   function mixRGB(a, b, k) { return [a[0]*(1-k)+b[0]*k, a[1]*(1-k)+b[1]*k, a[2]*(1-k)+b[2]*k]; }
@@ -489,29 +504,83 @@
     return a === undefined ? "rgb(" + r + "," + g + "," + b + ")" : "rgba(" + r + "," + g + "," + b + "," + a + ")";
   }
 
+  // `ctx.filter` is the honest blur and Safari has shipped it since 17. Where it is
+  // missing the fallback is three concentric fills, which is not a real Gaussian but is
+  // the difference between a soft highlight and a hard white disc — and a hard white
+  // disc is what makes a render look plastic.
+  var SUPPORTS_FILTER = (function () {
+    try {
+      var probe = document.createElement("canvas").getContext("2d");
+      if (!probe || typeof probe.filter !== "string") return false;
+      probe.filter = "blur(2px)";
+      return probe.filter === "blur(2px)";
+    } catch (e) { return false; }
+  })();
+
+  function softEllipse(ctx, x, y, rx, ry, blur, colour, alpha) {
+    if (SUPPORTS_FILTER) {
+      ctx.save();
+      ctx.filter = "blur(" + blur.toFixed(2) + "px)";
+      ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, TAU);
+      ctx.fillStyle = rgbCSS(colour, alpha); ctx.fill();
+      ctx.restore();
+      return;
+    }
+    for (var i = 3; i >= 1; i--) {
+      var k = 1 + (blur / Math.max(rx, 1)) * i * 0.55;
+      ctx.beginPath(); ctx.ellipse(x, y, rx * k, ry * k, 0, 0, TAU);
+      ctx.fillStyle = rgbCSS(colour, alpha * (0.34 / i));
+      ctx.fill();
+    }
+  }
+
   // The drawing's extents in units of radius, at their worst case across all five
   // stages — `spread` widens the body 16% and `sag` drops it 22%. Worked out from the
   // constants below rather than measured, because a hand-fitted number is what clipped
-  // the hands off the two spread stages the first time.
+  // the hands off the two spread stages the first time. `shadow` grew from 0.16 to 0.28
+  // when the shadow gained a blur: a blur radius is extra extent.
   var REACH = (function () {
-    var maxSpread = 0.16, maxSag = 0.22, lump = 1.066, contour = 0.036;
-    var armSpan = 1.42, finger = 0.11, eyeOffset = 0.305, lens = 0.345, templeSpan = 2.06;
-    var hip = 0.80, legLength = 0.58, shadow = 0.16;
+    var maxSpread = 0.16, maxSag = 0.22, lump = 1.066, contour = 0.032;
+    // `finger` is the fingertip centre; `limbCap` is half the round-capped stroke that
+    // puts ink past it. Measured by scripts/check-fit.js rather than argued.
+    var armSpan = 1.42, finger = 0.11, limbCap = 0.026;
+    var eyeOffset = 0.305, lens = 0.345, templeSpan = 2.06;
+    var hip = 0.80, legLength = 0.58, shadow = 0.28;
     var wb = 1.30 + maxSpread, tb = 1.06;
     return {
-      halfWidth: Math.max(wb * armSpan + finger, wb * lump + contour, wb * eyeOffset + lens * templeSpan),
+      halfWidth: Math.max(wb * armSpan + finger + limbCap, wb * lump + contour, wb * eyeOffset + lens * templeSpan),
       above: tb * lump + contour,
       below: tb * hip + (legLength - maxSag * 0.7) + shadow + maxSag
     };
   })();
 
+  // Eleven shades where the flat version had five. That is the cost of modelling: a
+  // solid fill needs one colour; a lit surface needs a lit value, a mid, a turn, and a
+  // floor for where the light does not reach. Every one is mixed from the stage tint and
+  // the system tokens — a literal here would break the same contract a hex in a Swift
+  // view breaks.
   function palette(tint) {
-    var t = hexRGB(tint), deep = hexRGB(tk("--color-ground-deep")), bad = hexRGB(tk("--color-bad"));
-    // Warmed toward `bad` before it is darkened: mixing a tint straight to the deep
-    // ground desaturates it on the way, and the amber stage came out olive.
-    var ink = mixRGB(mixRGB(t, bad, 0.20), deep, 0.46);
-    return { base: rgbCSS(t), ink: rgbCSS(ink), inkA: function (a) { return rgbCSS(ink, a); },
-             blush: mixRGB(t, bad, 0.52), tongue: rgbCSS(mixRGB(bad, deep, 0.10)) };
+    var t = hexRGB(tint);
+    var deep = hexRGB(tk("--color-ground-deep"));
+    var bad = hexRGB(tk("--color-bad"));
+    var white = hexRGB(tk("--color-specular"));
+    var iris = hexRGB(tk("--color-eye-iris"));
+    // Warmed toward `bad` before it is darkened, at every level: mixing a tint straight
+    // to the deep ground desaturates it on the way, and the amber stage came out olive.
+    var warm = mixRGB(t, bad, 0.20);
+    return {
+      lit:   mixRGB(t, white, 0.42),
+      base:  t,
+      gyrus: mixRGB(t, white, 0.13),
+      shade: mixRGB(warm, deep, 0.26),
+      deep:  mixRGB(warm, deep, 0.50),
+      ink:   mixRGB(warm, deep, 0.66),
+      blush: mixRGB(t, bad, 0.52),
+      shine: white,
+      rim:   hexRGB(tk("--color-accent")),
+      glass: mixRGB(iris, white, 0.62),
+      tongue: mixRGB(bad, deep, 0.10)
+    };
   }
 
   // Stable pseudo-random so the folds never shimmer between frames.
@@ -519,17 +588,25 @@
 
   // Amplitude per degree of arc is what decides whether a bump is a lobe or a cusp.
   // Harmonic 6 at 0.072 swung the radius 15% across 60° and drew a five-pointed star;
-  // harmonic 8 at 0.048 swings 10% across 45° — the same lumpiness, curved.
+  // harmonic 8 at 0.048 swings 10% across 45° — the same lumpiness, curved. Factored out
+  // of bodyPath because the rim light needs the same curve: a rim on a plain ellipse
+  // separates from a lumpy edge and reads as a halo.
+  function lumpFactor(a) {
+    var lumps = 1 + 0.048 * Math.sin(a * 8 + 0.9) + 0.018 * Math.sin(a * 13 - 0.4);
+    var fromTop = Math.abs(Math.atan2(Math.sin(a + Math.PI / 2), Math.cos(a + Math.PI / 2)));
+    var dip = 1 - 0.105 * Math.exp(-Math.pow(fromTop / 0.30, 2));
+    return lumps * dip;
+  }
+
+  function bodyX(a, cx, w) { return cx + w * lumpFactor(a) * Math.cos(a); }
+  function bodyY(a, cy, h) { return cy + h * lumpFactor(a) * Math.sin(a); }
+
   function bodyPath(ctx, cx, cy, w, h) {
     ctx.beginPath();
     var steps = 120;
     for (var i = 0; i <= steps; i++) {
-      var a = (i / steps) * Math.PI * 2 - Math.PI / 2;
-      var lumps = 1 + 0.048 * Math.sin(a * 8 + 0.9) + 0.018 * Math.sin(a * 13 - 0.4);
-      var fromTop = Math.abs(Math.atan2(Math.sin(a + Math.PI / 2), Math.cos(a + Math.PI / 2)));
-      var dip = 1 - 0.105 * Math.exp(-Math.pow(fromTop / 0.30, 2));
-      var x = cx + w * lumps * dip * Math.cos(a);
-      var y = cy + h * lumps * dip * Math.sin(a);
+      var a = (i / steps) * TAU - Math.PI / 2;
+      var x = bodyX(a, cx, w), y = bodyY(a, cy, h);
       if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
     ctx.closePath();
@@ -537,75 +614,145 @@
 
   function has(p, motif) { return p.motifs && p.motifs.indexOf(motif) >= 0; }
 
-  function drawFolds(ctx, cx, cy, bw, bh, R, pal, p) {
-    var lw = Math.max(bw * 0.038, 1);
-    ctx.lineWidth = lw; ctx.lineCap = "round"; ctx.strokeStyle = pal.inkA(0.92);
+  // A limb twice: the full-weight dark stroke, then a thinner lit stroke shifted toward
+  // the light. Two strokes turn a flat line into a cylinder, and it is the cheapest
+  // volume in the whole drawing.
+  function strokeLimb(ctx, build, pal, w) {
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    build(0, 0);
+    ctx.strokeStyle = rgbCSS(pal.ink); ctx.lineWidth = w; ctx.stroke();
+    build(LIGHT.dx * w * 0.24, LIGHT.dy * w * 0.24);
+    ctx.strokeStyle = rgbCSS(pal.lit, 0.45); ctx.lineWidth = w * 0.34; ctx.stroke();
+  }
 
+  // The gyri, as ridges rather than as lines. The flat version stroked one thin line per
+  // fold: a boundary. A real gyrus is a raised worm, and what makes it read as raised is
+  // not the line — it is the groove the ridge casts into the sulcus beside it.
+  //
+  // Four strokes on one curve: groove (away from the light), body, crest (toward it),
+  // and a specular pop that only fires on the folds near the light. That last gate is
+  // why the highlights cluster on the upper left; sprinkled evenly they are glitter.
+  //
+  // `turgor` scales every offset, so at `mush` the remaining folds are still there and
+  // have simply stopped standing up. That is the smooth-brain reading in the material,
+  // where `foldRings × foldsPerRing` is the same reading in the count.
+  function drawGyri(ctx, cx, cy, bw, bh, R, pal, p, lx, ly, span) {
     // Keep out of the face — but only out of the face. An ellipse 0.95 radius wide and a
     // full radius tall covered 94% of the body and left three fold lines on the whole
-    // creature. This is the box the glasses and mouth actually occupy, so folds keep the
-    // crown above the brows and the flanks outside the frames.
-    var eyeY0 = cy + bh * 0.10;
-    var faceHalfW = bw * 0.305 + R * 0.345, faceTop = eyeY0 - R * (0.345 + 0.26);
+    // creature: a bald field with glasses on it.
+    var eyeY = cy + bh * 0.10;
+    var faceHalfW = bw * 0.305 + R * 0.345;
+    var faceTop = eyeY - R * (0.345 + 0.26);
+
+    var w = Math.max(bw * 0.052, 1.4);
+    var lift = w * p.turgor;
+    ctx.lineCap = "round";
 
     for (var si = 0; si < 2; si++) {
       var s = si === 0 ? -1 : 1;
       for (var ring = 0; ring < p.foldRings; ring++) {
-        for (var k = 0; k < p.foldsPerRing; k++) {
-          var seed = ring * 17 + k * 5 + (s > 0 ? 101 : 3);
+        for (var i = 0; i < p.foldsPerRing; i++) {
+          var seed = ring * 17 + i * 5 + (s > 0 ? 101 : 3);
           var j1 = rnd(seed) - 0.5, j2 = rnd(seed + 41) - 0.5;
           var radial = 0.30 + ring * (0.62 / Math.max(p.foldRings, 1)) + j1 * 0.07;
-          var arc = (k + 0.5) / Math.max(p.foldsPerRing, 1) * 1.9 - 0.42 + j2 * 0.12;
+          var arc = (i + 0.5) / Math.max(p.foldsPerRing, 1) * 1.9 - 0.42 + j2 * 0.12;
+
           var px = cx + s * bw * radial * Math.cos(arc - 0.35);
           var py = cy - bh * 0.74 + bh * 1.86 * arc / 1.9 + bh * j2 * 0.06;
           if (Math.abs(px - cx) <= faceHalfW && py >= faceTop) continue;
 
-          var theta = Math.atan2(py - cy, px - cx) + Math.PI / 2;
+          var th = Math.atan2(py - cy, px - cx) + Math.PI / 2;
           var len = bw * (0.26 + rnd(seed + 7) * 0.12);
+          var ax = px - Math.cos(th) * len / 2, ay = py - Math.sin(th) * len / 2;
+          var bx = px + Math.cos(th) * len / 2, by = py + Math.sin(th) * len / 2;
           var bow = len * (0.44 + rnd(seed + 13) * 0.20);
-          ctx.beginPath();
-          ctx.moveTo(px - Math.cos(theta) * len / 2, py - Math.sin(theta) * len / 2);
-          ctx.quadraticCurveTo(
-            px + Math.cos(theta - Math.PI / 2) * bow * s,
-            py + Math.sin(theta - Math.PI / 2) * bow * s,
-            px + Math.cos(theta) * len / 2, py + Math.sin(theta) * len / 2);
-          ctx.stroke();
+          var qx = px + Math.cos(th - Math.PI / 2) * bow * s;
+          var qy = py + Math.sin(th - Math.PI / 2) * bow * s;
+
+          var ridge = function (ox, oy) {
+            ctx.beginPath();
+            ctx.moveTo(ax + ox, ay + oy);
+            ctx.quadraticCurveTo(qx + ox, qy + oy, bx + ox, by + oy);
+          };
+
+          // How close this fold is to the light, 0…1. Drives the crest, gates the pop.
+          var dx = px - lx, dy = py - ly;
+          var fall = Math.max(0, Math.min(1, 1 - Math.sqrt(dx * dx + dy * dy) / (span * 1.15)));
+
+          ridge(LIGHT.ax * lift * 0.62, LIGHT.ay * lift * 0.62);
+          ctx.strokeStyle = rgbCSS(pal.deep, 0.52 + 0.34 * p.turgor);
+          ctx.lineWidth = w * 1.55; ctx.stroke();
+
+          ridge(0, 0);
+          ctx.strokeStyle = rgbCSS(pal.gyrus); ctx.lineWidth = w * 1.10; ctx.stroke();
+
+          ridge(LIGHT.dx * lift * 0.34, LIGHT.dy * lift * 0.34);
+          ctx.strokeStyle = rgbCSS(pal.lit, 0.30 + 0.55 * fall * p.sheen);
+          ctx.lineWidth = w * 0.42; ctx.stroke();
+
+          if (fall > 0.44 && p.gloss > 0.30) {
+            ridge(LIGHT.dx * lift * 0.44, LIGHT.dy * lift * 0.44);
+            ctx.strokeStyle = rgbCSS(pal.shine, ((fall - 0.44) / 0.56) * p.gloss * 0.72);
+            ctx.lineWidth = w * 0.20; ctx.stroke();
+          }
         }
       }
     }
 
-    // Longitudinal fissure — the one line that splits the halves. It stops above the
-    // brow rather than landing on the bridge of the glasses.
-    ctx.strokeStyle = pal.ink; ctx.lineWidth = lw * 1.15;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - bh * 1.02);
-    ctx.bezierCurveTo(cx + bw * 0.05, cy - bh * 0.80, cx - bw * 0.05, cy - bh * 0.52, cx, cy - bh * 0.34);
-    ctx.stroke();
-  }
-
-  // Three flat strokes on the upper left. The flat-drawing substitute for a specular:
-  // it says where the light is, which is why it stays on one side.
-  function drawSheen(ctx, cx, cy, bw, bh, R, p) {
-    if (p.sheen <= 0.08) return;
-    ctx.lineWidth = Math.max(R * 0.062, 1); ctx.lineCap = "round";
-    ctx.strokeStyle = rgba(tk("--color-specular"), 0.62 * p.sheen);
-    [[-0.62, -0.60, 0.34], [-0.30, -0.82, 0.26], [-0.80, -0.24, 0.22]].forEach(function (m) {
-      var sx = cx + bw * m[0], sy = cy + bh * m[1];
-      var ex = sx + bw * m[2] * 0.75, ey = sy - bh * m[2] * 0.30;
+    // Longitudinal fissure: the deepest fold on the object, so it gets the same groove +
+    // lit lip treatment. Drawn as a plain line it flattens the crown everything else has
+    // just built.
+    var fissure = function (ox, oy) {
       ctx.beginPath();
-      ctx.moveTo(sx, sy);
-      ctx.quadraticCurveTo((sx + ex) / 2, (sy + ey) / 2 - bh * m[2] * 0.34, ex, ey);
-      ctx.stroke();
-    });
+      ctx.moveTo(cx + ox, cy - bh * 1.02 + oy);
+      ctx.bezierCurveTo(cx + bw * 0.05 + ox, cy - bh * 0.80 + oy,
+                        cx - bw * 0.05 + ox, cy - bh * 0.52 + oy,
+                        cx + ox, cy - bh * 0.34 + oy);
+    };
+    fissure(0, 0);
+    ctx.strokeStyle = rgbCSS(pal.deep); ctx.lineWidth = w * 1.30; ctx.stroke();
+    fissure(LIGHT.dx * lift * 0.85, LIGHT.dy * lift * 0.85);
+    ctx.strokeStyle = rgbCSS(pal.lit, 0.34 + 0.30 * p.sheen);
+    ctx.lineWidth = w * 0.44; ctx.stroke();
   }
 
-  // The body going. Narrow where it leaves the head, swelling to a bead, and short —
-  // the first version was even-width and long, which is a leg, and melting appeared to
-  // have five of them. The detached droplet does most of the work: a shape hanging off a
-  // body is ambiguous, a shape in mid-air under it is not.
+  // A cool edge on the side away from the light, in the app's accent — a warm body with
+  // a cool rim separates from the panel behind it without an outline. Twenty-eight short
+  // segments with their own alphas, not one stroke: a rim of constant weight all the way
+  // round is a glow, and a glow is what makes cheap 3D look cheap.
+  function drawRimLight(ctx, cx, cy, bw, bh, R, pal, p) {
+    var segments = 28, from = -0.10, to = 1.30;
+    ctx.lineWidth = Math.max(R * 0.042, 1); ctx.lineCap = "round";
+    var peak = 0.30 + 0.34 * p.sheen;
+    for (var i = 0; i < segments; i++) {
+      var t0 = i / segments, t1 = (i + 1) / segments;
+      var a0 = (from + (to - from) * t0) * Math.PI;
+      var a1 = (from + (to - from) * t1) * Math.PI;
+      ctx.beginPath();
+      ctx.moveTo(bodyX(a0, cx, bw), bodyY(a0, cy, bh));
+      ctx.lineTo(bodyX(a1, cx, bw), bodyY(a1, cy, bh));
+      ctx.strokeStyle = rgbCSS(pal.rim, peak * Math.sin((t0 + t1) / 2 * Math.PI));
+      ctx.stroke();
+    }
+  }
+
+  // One soft highlight where the light hits, and one small sharp one inside it. The soft
+  // one says the surface is curved; the sharp one says it is wet.
+  function drawSpecular(ctx, lx, ly, bw, bh, R, pal, p) {
+    if (p.sheen <= 0.10) return;
+    softEllipse(ctx, lx, ly, bw * (0.46 - 0.16 * p.gloss) / 2, bh * (0.30 - 0.11 * p.gloss) / 2,
+                R * (0.16 - 0.07 * p.gloss), pal.shine, 0.16 + 0.30 * p.sheen);
+    if (p.gloss <= 0.30) return;
+    var cw = bw * 0.13 * p.gloss;
+    softEllipse(ctx, lx + bw * 0.04, ly - bh * 0.05, cw / 2, cw * 0.34,
+                R * 0.022, pal.shine, 0.40 + 0.42 * p.gloss);
+  }
+
+  // The body going. Narrow where it leaves the head, swelling into a bead, and short —
+  // an even-width shape of limb length hanging off the bottom reads as a fifth leg,
+  // which is what the first version drew.
   function drawDrips(ctx, cx, cy, bw, bh, R, pal) {
     var yTop = cy + bh * 0.70;
-    ctx.lineWidth = Math.max(R * 0.072, 1.4); ctx.lineJoin = "round";
     [[-0.40, 0.30, 0.15], [0.02, 0.20, 0.11], [0.42, 0.26, 0.13]].forEach(function (d) {
       var x = cx + bw * d[0], len = R * d[1], bead = R * d[2], neck = bead * 0.42;
       ctx.beginPath();
@@ -614,56 +761,84 @@
       ctx.quadraticCurveTo(x, yTop + len + bead * 1.70, x + bead, yTop + len);
       ctx.quadraticCurveTo(x + neck * 0.90, yTop + len * 0.70, x + neck, yTop);
       ctx.closePath();
-      ctx.fillStyle = pal.base; ctx.fill();
-      ctx.strokeStyle = pal.ink; ctx.stroke();
+      var g = ctx.createLinearGradient(x + LIGHT.dx * bead, yTop + LIGHT.dy * bead,
+                                       x + LIGHT.ax * bead * 1.6, yTop + len + bead);
+      g.addColorStop(0, rgbCSS(pal.gyrus));
+      g.addColorStop(1, rgbCSS(pal.shade));
+      ctx.fillStyle = g; ctx.fill();
+      ctx.strokeStyle = rgbCSS(pal.ink); ctx.lineWidth = Math.max(R * 0.048, 1.2);
+      ctx.lineJoin = "round"; ctx.stroke();
+      // A drip is wet by definition, so it keeps its glint even at mush, where the body
+      // itself has lost its own.
+      ctx.beginPath();
+      ctx.ellipse(x - bead * 0.40, yTop + len - bead * 0.36, bead * 0.22, bead * 0.16, 0, 0, TAU);
+      ctx.fillStyle = rgbCSS(pal.shine, 0.55); ctx.fill();
     });
+    // One droplet already fallen. A shape hanging off a body is ambiguous; a shape in
+    // mid-air under it is not.
+    var fx = cx - bw * 0.40, fy = yTop + R * 0.50 + R * 0.0775;
     ctx.beginPath();
-    ctx.ellipse(cx - bw * 0.40, yTop + R * 0.578, R * 0.062, R * 0.078, 0, 0, Math.PI * 2);
-    ctx.fillStyle = pal.base; ctx.fill();
-    ctx.strokeStyle = pal.ink; ctx.stroke();
+    ctx.ellipse(fx, fy, R * 0.062, R * 0.0775, 0, 0, TAU);
+    var fg = ctx.createLinearGradient(fx - R * 0.062, fy - R * 0.0775, fx + R * 0.062, fy + R * 0.0775);
+    fg.addColorStop(0, rgbCSS(pal.gyrus));
+    fg.addColorStop(1, rgbCSS(pal.shade));
+    ctx.fillStyle = fg; ctx.fill();
+    ctx.strokeStyle = rgbCSS(pal.ink); ctx.lineWidth = Math.max(R * 0.048, 1.2); ctx.stroke();
   }
 
-  // A fold curves and closes; a crack veers and stops. They run outward toward the rim
-  // because the first version walked into the face, where the glasses cover them.
+  // A fold curves and closes; a crack veers and stops. Two strokes: the dark split, and
+  // a lit lip along its upper edge — the lip is what makes it a crack *in* a surface
+  // rather than a line drawn *on* one.
   function drawCracks(ctx, cx, cy, bw, bh, pal) {
-    ctx.lineWidth = Math.max(bw * 0.038, 1.2); ctx.lineCap = "round"; ctx.lineJoin = "miter";
-    ctx.strokeStyle = pal.ink;
+    var w = Math.max(bw * 0.036, 1.2);
     [[-0.34, -0.78, 7], [0.16, -0.90, 23], [0.46, -0.58, 51]].forEach(function (o) {
-      var away = o[0] < 0 ? -1 : 1, x = cx + bw * o[0], y = cy + bh * o[1];
-      ctx.beginPath(); ctx.moveTo(x, y);
-      for (var step = 1; step <= 4; step++) {
-        var jitter = rnd(o[2] + step * 13) - 0.5;
-        x += bw * away * (0.13 + jitter * 0.14);
-        y += bh * (0.11 + jitter * 0.12);
-        ctx.lineTo(x, y);
-      }
-      ctx.stroke();
+      // Outward, toward the rim. The first version walked them into the face, where the
+      // glasses paint over the top and the stage that needs them most had none.
+      var away = o[0] < 0 ? -1 : 1;
+      var build = function (ox, oy) {
+        var x = cx + bw * o[0], y = cy + bh * o[1];
+        ctx.beginPath(); ctx.moveTo(x + ox, y + oy);
+        for (var k = 1; k <= 4; k++) {
+          var j = rnd(o[2] + k * 13) - 0.5;
+          x += bw * away * (0.13 + j * 0.14);
+          y += bh * (0.11 + j * 0.12);
+          ctx.lineTo(x + ox, y + oy);
+        }
+      };
+      ctx.lineCap = "round"; ctx.lineJoin = "miter";
+      build(LIGHT.dx * w * 0.55, LIGHT.dy * w * 0.55);
+      ctx.strokeStyle = rgbCSS(pal.lit, 0.30); ctx.lineWidth = w * 0.62; ctx.stroke();
+      build(0, 0);
+      ctx.strokeStyle = rgbCSS(pal.deep); ctx.lineWidth = w; ctx.stroke();
     });
   }
 
-  // Healing only. Waisted so they read as a sparkle and not as a plus sign, and kept
-  // inside 1.10 x bodyH so the canvas fit still holds.
+  // Four-pointed stars, waisted so they read as a sparkle and not as a plus sign, each
+  // over a bloom. A hard white shape on a dark ground reads as a cut-out; with the bloom
+  // it reads as something emitting. Healing only.
   function drawSparkles(ctx, cx, cy, bw, bh, R, t) {
-    var arms = [[0, -1], [1, 0], [0, 1], [-1, 0]];
     [[-1.16, -0.52, 0.135, 0.0], [1.08, -0.78, 0.100, 1.7], [0.50, -1.06, 0.075, 3.1]]
       .forEach(function (place) {
         var twinkle = t > 0 ? 0.72 + 0.28 * Math.sin(t * 1.8 + place[3]) : 1;
         var r = R * place[2] * twinkle;
         var sx = cx + bw * place[0], sy = cy + bh * place[1];
+        softEllipse(ctx, sx, sy, r * 1.15, r * 1.15, r * 0.55, hexRGB(tk("--color-specular")), 0.26);
+        var arms = [[0, -1], [1, 0], [0, 1], [-1, 0]];
         ctx.beginPath();
         ctx.moveTo(sx, sy - r);
         for (var i = 0; i < 4; i++) {
-          var here = arms[i], next = arms[(i + 1) % 4];
-          ctx.quadraticCurveTo(
-            sx + (here[0] + next[0]) * r * 0.15, sy + (here[1] + next[1]) * r * 0.15,
-            sx + next[0] * r, sy + next[1] * r);
+          var a = arms[i], b = arms[(i + 1) % 4];
+          ctx.quadraticCurveTo(sx + (a[0] + b[0]) * r * 0.15, sy + (a[1] + b[1]) * r * 0.15,
+                               sx + b[0] * r, sy + b[1] * r);
         }
         ctx.closePath();
-        ctx.fillStyle = rgba(tk("--color-specular"), 0.92); ctx.fill();
+        ctx.fillStyle = rgba(tk("--color-specular"), 0.94);
+        ctx.fill();
       });
   }
 
-  // One bead at the temple: the oldest shorthand in cartooning for "this is a lot".
+  // One bead at the temple, the oldest shorthand in cartooning for "this is a lot". Blue
+  // because it is the one colour in the system that is neither the creature nor a status.
   function drawSweat(ctx, cx, cy, bw, bh, R) {
     var x = cx + bw * 0.70, y = cy - bh * 0.46, w = R * 0.10, h = R * 0.20;
     ctx.beginPath();
@@ -672,165 +847,282 @@
     ctx.quadraticCurveTo(x, y + h * 1.15, x - w, y + h * 0.25);
     ctx.quadraticCurveTo(x - w * 0.55, y - h * 0.25, x, y - h);
     ctx.closePath();
-    ctx.fillStyle = tk("--color-eye-iris"); ctx.fill();
+    var iris = hexRGB(tk("--color-eye-iris")), white = hexRGB(tk("--color-specular"));
+    var g = ctx.createLinearGradient(x + LIGHT.dx * w, y + LIGHT.dy * h, x + LIGHT.ax * w, y + h);
+    g.addColorStop(0, rgbCSS(mixRGB(iris, white, 0.45)));
+    g.addColorStop(1, rgbCSS(hexRGB(tk("--color-eye-iris-deep"))));
+    ctx.fillStyle = g; ctx.fill();
     ctx.beginPath();
-    ctx.ellipse(x - w * 0.30, y + h * 0.15, w * 0.20, w * 0.20, 0, 0, Math.PI * 2);
-    ctx.fillStyle = rgba(tk("--color-specular"), 0.85); ctx.fill();
+    ctx.ellipse(x - w * 0.30, y + h * 0.15, w * 0.20, w * 0.20, 0, 0, TAU);
+    ctx.fillStyle = rgba(tk("--color-specular"), 0.90); ctx.fill();
   }
 
   function drawEye(ctx, ex, eyeY, rx, ry, blink, s, t, pal, p) {
-    // Shut is one ink curve. Scaling the white sclera to 0.08 left a pale sliver behind
-    // the lens that read as an empty frame.
-    if (blink <= 0.5) {
+    if (blink < 0.5) {
+      // Shut: one ink curve. A squashed white ellipse leaves a pale sliver behind the
+      // lens and reads as an empty frame.
       ctx.beginPath();
       ctx.moveTo(ex - rx * 0.92, eyeY);
       ctx.quadraticCurveTo(ex, eyeY + rx * 0.62, ex + rx * 0.92, eyeY);
-      ctx.strokeStyle = pal.ink; ctx.lineWidth = Math.max(rx * 0.30, 1.2); ctx.lineCap = "round";
-      ctx.stroke();
+      ctx.strokeStyle = rgbCSS(pal.ink); ctx.lineWidth = Math.max(rx * 0.30, 1.2);
+      ctx.lineCap = "round"; ctx.stroke();
       return;
     }
-    ctx.beginPath();
-    ctx.ellipse(ex, eyeY, rx, ry, 0, 0, Math.PI * 2);
-    ctx.fillStyle = tk("--color-specular"); ctx.fill();
+
+    // An eyeball is a sphere, not a white disc: brightest where the light hits it, and
+    // picking up the body's own shade around the rim.
+    ctx.beginPath(); ctx.ellipse(ex, eyeY, rx, ry, 0, 0, TAU);
+    var sg = ctx.createRadialGradient(ex + LIGHT.dx * rx * 0.42, eyeY + LIGHT.dy * ry * 0.42, 0,
+                                      ex + LIGHT.dx * rx * 0.42, eyeY + LIGHT.dy * ry * 0.42, rx * 1.5);
+    sg.addColorStop(0, rgbCSS(pal.shine));
+    sg.addColorStop(1, rgbCSS(mixRGB(pal.shine, pal.shade, 0.30)));
+    ctx.fillStyle = sg; ctx.fill();
 
     var gaze = p.jitter ? Math.sin(t * 5.3 + s) * rx * 0.14 : 0;
     var irisR = rx * 0.78, ix = ex + gaze, iy = eyeY + ry * 0.05;
 
     if (has(p, "spiral")) {
       // Hypnotised. The one drawing the whole internet already reads as brainrot, and it
-      // costs sixty line segments. Slowly is the point: a fast spin is a spinner.
-      var spin = t > 0 ? t * 0.7 : 0;
+      // turns slowly — a fast spin would be a loading indicator.
       ctx.beginPath();
-      for (var step = 0; step <= 60; step++) {
-        var progress = step / 60;
-        var angle = progress * 2.7 * 2 * Math.PI + spin;
-        var r = rx * 0.94 * progress;
-        var px = ix + r * Math.cos(angle), py = iy + r * Math.sin(angle);
-        if (step === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      var spin = t > 0 ? t * 0.7 : 0;
+      for (var k = 0; k <= 60; k++) {
+        var pr = k / 60, a = pr * 2.7 * TAU + spin, r = rx * 0.94 * pr;
+        var px = ix + r * Math.cos(a), py = iy + r * Math.sin(a);
+        if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
       }
       ctx.strokeStyle = tk("--color-eye-pupil");
-      ctx.lineWidth = Math.max(rx * 0.20, 1); ctx.lineCap = "round"; ctx.lineJoin = "round";
-      ctx.stroke();
+      ctx.lineWidth = Math.max(rx * 0.20, 1);
+      ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.stroke();
     } else {
-      // Flat discs. The blue is a ring around a large pupil, which is what an eye behind
-      // a lens looks like at this size, and it keeps the one blue in the system.
-      ctx.beginPath(); ctx.arc(ix, iy, irisR, 0, Math.PI * 2);
-      ctx.fillStyle = tk("--color-eye-iris"); ctx.fill();
+      // The iris is a dish, not a disc: dark at the limbus, bright at the floor, so the
+      // pupil sits *in* something. The ring at the edge is what a real limbal ring does,
+      // and it is most of why an eye reads as an eye at small sizes.
+      var iris = hexRGB(tk("--color-eye-iris"));
+      var irisDeep = hexRGB(tk("--color-eye-iris-deep"));
+      var white = hexRGB(tk("--color-specular"));
+      var gx = ix + LIGHT.ax * irisR * 0.25, gy = iy + LIGHT.ay * irisR * 0.25;
+      ctx.beginPath(); ctx.ellipse(ix, iy, irisR, irisR, 0, 0, TAU);
+      var ig = ctx.createRadialGradient(gx, gy, 0, gx, gy, irisR * 1.35);
+      ig.addColorStop(0, rgbCSS(mixRGB(iris, white, 0.30)));
+      ig.addColorStop(0.55, rgbCSS(iris));
+      ig.addColorStop(1, rgbCSS(irisDeep));
+      ctx.fillStyle = ig; ctx.fill();
+      ctx.strokeStyle = rgbCSS(irisDeep, 0.85);
+      ctx.lineWidth = Math.max(irisR * 0.16, 0.6); ctx.stroke();
+
       var pupilR = irisR * (0.94 - p.pupil * 0.5);
-      ctx.beginPath(); ctx.arc(ix, iy, pupilR, 0, Math.PI * 2);
+      ctx.beginPath(); ctx.ellipse(ix, iy, pupilR, pupilR, 0, 0, TAU);
       ctx.fillStyle = tk("--color-eye-pupil"); ctx.fill();
-      var gR = irisR * 0.28;
-      ctx.beginPath(); ctx.arc(ix - irisR * 0.30, iy - irisR * 0.38, gR, 0, Math.PI * 2);
-      ctx.fillStyle = tk("--color-specular"); ctx.fill();
+
+      // Light that went through the iris and came back out. It sits opposite the
+      // catchlight, always, and it is the detail that most separates a modelled eye from
+      // two circles.
+      ctx.beginPath();
+      ctx.ellipse(ix + LIGHT.ax * irisR * 0.34, iy + LIGHT.ay * irisR * 0.30,
+                  irisR * 0.26, irisR * 0.18, 0, 0, TAU);
+      ctx.fillStyle = rgbCSS(mixRGB(iris, white, 0.55), 0.42); ctx.fill();
+
+      var glintR = irisR * 0.30;
+      ctx.beginPath();
+      ctx.ellipse(ix + LIGHT.dx * irisR * 0.42, iy + LIGHT.dy * irisR * 0.42, glintR, glintR, 0, 0, TAU);
+      ctx.fillStyle = rgbCSS(pal.shine); ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(ix + LIGHT.ax * irisR * 0.42 + glintR * 0.42,
+                  iy + LIGHT.ay * irisR * 0.38 + glintR * 0.42, glintR * 0.42, glintR * 0.42, 0, 0, TAU);
+      ctx.fillStyle = rgbCSS(pal.shine, 0.60); ctx.fill();
     }
 
-    // A heavy lid in the body colour, so it reads as the brain closing over the eye
-    // rather than a grey bar laid on top.
+    // The brow ridge shading the top of the eyeball. Invisible until it is missing, at
+    // which point the eye reads as a sticker.
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(ex, eyeY, rx, ry, 0, 0, TAU); ctx.clip();
+    ctx.beginPath();
+    ctx.ellipse(ex, eyeY - ry * 1.30 + ry * 0.93, rx * 1.2, ry * 0.93, 0, 0, TAU);
+    ctx.fillStyle = rgbCSS(pal.deep, 0.22); ctx.fill();
+    ctx.restore();
+
+    // Heavy lid, in the body colour, so it reads as the brain closing over the eye rather
+    // than a grey bar laid on top. Its lower edge is darker, because a lid has thickness.
     if (p.lid > 0.01) {
       ctx.save();
-      ctx.beginPath(); ctx.ellipse(ex, eyeY, rx + 1, ry + 1, 0, 0, Math.PI * 2); ctx.clip();
-      ctx.fillStyle = pal.base;
-      ctx.fillRect(ex - rx - 2, eyeY - ry - 2, rx * 2 + 4, (ry * 2 + 4) * p.lid * 0.62);
+      ctx.beginPath(); ctx.ellipse(ex, eyeY, rx + 1, ry + 1, 0, 0, TAU); ctx.clip();
+      var depth = (ry * 2 + 4) * p.lid * 0.62;
+      var top = eyeY - ry - 2;
+      var lg = ctx.createLinearGradient(0, top, 0, top + depth);
+      lg.addColorStop(0, rgbCSS(pal.shade));
+      lg.addColorStop(1, rgbCSS(pal.base));
+      ctx.fillStyle = lg;
+      ctx.fillRect(ex - rx - 2, top, rx * 2 + 4, depth);
+      ctx.fillStyle = rgbCSS(pal.ink, 0.55);
+      ctx.fillRect(ex - rx - 2, top + depth - Math.max(ry * 0.16, 0.7), rx * 2 + 4, Math.max(ry * 0.16, 0.7));
       ctx.restore();
     }
   }
 
-  // Above 0.15 the mouth opens. The open smile is reserved for the good stages: it is
-  // the loudest thing on the face, and a creature grinning through a bad day is exactly
-  // the coach tone brand.json forbids.
   function drawMouth(ctx, cx, eyeY, R, pal, p) {
     var my = eyeY + R * 0.58;
+    ctx.lineCap = "round";
+
+    // A downturned arc is a mood; a wavy line is a condition. Buzzed stays on the plain
+    // frown at −0.18: it is tense, not sick.
     if (p.mouth < -0.35) {
-      var ww = R * 0.23, amp = R * 0.075, seg = ww * 2 / 3;
-      ctx.beginPath();
-      ctx.moveTo(cx - ww, my);
+      var mw = R * 0.23, amp = R * 0.075, step = mw * 2 / 3;
+      ctx.beginPath(); ctx.moveTo(cx - mw, my);
       for (var i = 0; i < 3; i++) {
-        var from = cx - ww + seg * i, to = from + seg;
+        var from = cx - mw + step * i, to = from + step;
         ctx.quadraticCurveTo((from + to) / 2, my + amp * (i % 2 === 0 ? -1 : 1), to, my);
       }
-      ctx.strokeStyle = pal.ink;
-      ctx.lineWidth = Math.max(R * 0.058, 1.2); ctx.lineCap = "round";
-      ctx.stroke();
+      ctx.strokeStyle = rgbCSS(pal.ink); ctx.lineWidth = Math.max(R * 0.058, 1.2); ctx.stroke();
       return;
     }
     if (p.mouth <= 0.15) {
-      var lw = R * 0.21;
-      ctx.beginPath();
-      ctx.moveTo(cx - lw, my);
-      ctx.quadraticCurveTo(cx, my + R * 0.34 * p.mouth, cx + lw, my);
-      ctx.strokeStyle = pal.ink; ctx.lineWidth = Math.max(R * 0.058, 1.2); ctx.lineCap = "round";
-      ctx.stroke();
+      var lw2 = R * 0.21;
+      ctx.beginPath(); ctx.moveTo(cx - lw2, my);
+      ctx.quadraticCurveTo(cx, my + R * 0.34 * p.mouth, cx + lw2, my);
+      ctx.strokeStyle = rgbCSS(pal.ink); ctx.lineWidth = Math.max(R * 0.058, 1.2); ctx.stroke();
       return;
     }
-    var mw = R * (0.19 + 0.09 * p.mouth), depth = R * (0.16 + 0.24 * p.mouth);
-    ctx.save();
+
+    var w = R * (0.19 + 0.09 * p.mouth), d = R * (0.16 + 0.24 * p.mouth);
+    var shape = function () {
+      ctx.beginPath();
+      ctx.moveTo(cx - w, my);
+      ctx.quadraticCurveTo(cx, my - d * 0.18, cx + w, my);
+      ctx.quadraticCurveTo(cx, my + d * 2.1, cx - w, my);
+      ctx.closePath();
+    };
+    // A cavity, so it gets depth: near-black at the throat, lifting to the ink colour at
+    // the lips. A flat fill here is a hole cut in the face.
+    shape();
+    var mg = ctx.createRadialGradient(cx, my + d * 0.55, 0, cx, my + d * 0.55, w * 1.5);
+    mg.addColorStop(0, rgbCSS(pal.ink));
+    mg.addColorStop(1, rgbCSS(mixRGB(pal.ink, hexRGB(tk("--color-ground-deep")), 0.55)));
+    ctx.fillStyle = mg; ctx.fill();
+
+    ctx.save(); shape(); ctx.clip();
     ctx.beginPath();
-    ctx.moveTo(cx - mw, my);
-    ctx.quadraticCurveTo(cx, my - depth * 0.18, cx + mw, my);
-    ctx.quadraticCurveTo(cx, my + depth * 2.1, cx - mw, my);
-    ctx.closePath();
-    ctx.fillStyle = pal.ink; ctx.fill();
-    ctx.clip();
-    ctx.beginPath();
-    ctx.ellipse(cx, my + depth * 1.19, mw * 0.62, depth * 0.75, 0, 0, Math.PI * 2);
-    ctx.fillStyle = pal.tongue; ctx.fill();
-    // One tooth. Two would read as a grimace.
+    ctx.ellipse(cx, my + d * 1.19, w * 0.62, d * 0.75, 0, 0, TAU);
+    var tg = ctx.createRadialGradient(cx + LIGHT.dx * w * 0.3, my + d * 1.19 + LIGHT.dy * d * 0.3, 0,
+                                      cx + LIGHT.dx * w * 0.3, my + d * 1.19 + LIGHT.dy * d * 0.3, w);
+    tg.addColorStop(0, rgbCSS(mixRGB(pal.tongue, hexRGB(tk("--color-specular")), 0.22)));
+    tg.addColorStop(1, rgbCSS(pal.tongue));
+    ctx.fillStyle = tg; ctx.fill();
+    // One tooth on the upper lip. Two would read as a grimace.
     ctx.fillStyle = tk("--color-specular");
-    ctx.fillRect(cx - mw * 0.34, my - depth * 0.10, mw * 0.62, depth * 0.34);
+    ctx.fillRect(cx - w * 0.34, my - d * 0.10, w * 0.62, d * 0.34);
+    ctx.fillStyle = rgbCSS(pal.shade, 0.45);
+    ctx.fillRect(cx - w * 0.34, my + d * 0.16, w * 0.62, d * 0.08);
     ctx.restore();
   }
 
-  // Round wire frames: two rings, a bowed bridge, a temple with a hook. The hook is not
-  // decoration — without it the temple ends in mid-air and the glasses read as two
-  // circles drawn on the face rather than an object that goes round a head.
-  function drawGlasses(ctx, cx, eyeX, eyeY, lensR, R, pal) {
+  // Round wire frames, and now an actual object rather than two circles on a face: the
+  // frame's shadow on the brain behind it, a faint glass tint, a lit upper edge on the
+  // wire, two streaks across the glass, and the hook that says the arm goes round a head.
+  function drawGlasses(ctx, cx, eyeX, eyeY, lensR, R, pal, finish) {
     var wire = Math.max(R * 0.050, 1.2);
-    ctx.lineWidth = wire; ctx.lineCap = "round"; ctx.lineJoin = "round";
-    [-1, 1].forEach(function (s) {
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+
+    for (var si = 0; si < 2; si++) {
+      var s = si === 0 ? -1 : 1;
       var ex = cx + s * eyeX;
-      ctx.strokeStyle = pal.ink; ctx.lineWidth = wire;
-      ctx.beginPath(); ctx.arc(ex, eyeY, lensR, 0, Math.PI * 2); ctx.stroke();
+      var ring = function (ox, oy) {
+        ctx.beginPath(); ctx.ellipse(ex + ox, eyeY + oy, lensR, lensR, 0, 0, TAU);
+      };
 
-      ctx.strokeStyle = rgba(tk("--color-specular"), 0.42);
-      ctx.lineWidth = wire * 0.9;
-      ctx.beginPath();
-      ctx.moveTo(ex - lensR * 0.52, eyeY + lensR * 0.10);
-      ctx.lineTo(ex - lensR * 0.10, eyeY - lensR * 0.50);
-      ctx.stroke();
+      // Cast onto the face, away from the light. This is the one element that puts the
+      // glasses in front of the brain instead of on the same plane as it. Two strokes
+      // rather than a filter, because a blurred stroke is the one blur canvas is worst at.
+      if (finish !== false) {
+        ring(LIGHT.ax * wire * 2.4, LIGHT.ay * wire * 2.4);
+        ctx.strokeStyle = rgbCSS(pal.deep, 0.20); ctx.lineWidth = wire * 2.0; ctx.stroke();
+        ring(LIGHT.ax * wire * 1.9, LIGHT.ay * wire * 1.9);
+        ctx.strokeStyle = rgbCSS(pal.deep, 0.34); ctx.lineWidth = wire * 1.25; ctx.stroke();
 
-      ctx.strokeStyle = pal.ink; ctx.lineWidth = wire;
+        // Glass: barely there, a lens you can read the eye through, brighter at the top
+        // where it faces the sky.
+        ring(0, 0);
+        var gg = ctx.createLinearGradient(ex - lensR, eyeY - lensR, ex + lensR, eyeY + lensR);
+        gg.addColorStop(0, rgbCSS(pal.glass, 0.30));
+        gg.addColorStop(0.55, rgbCSS(pal.glass, 0.05));
+        gg.addColorStop(1, rgbCSS(pal.glass, 0.14));
+        ctx.fillStyle = gg; ctx.fill();
+      }
+
+      ring(0, 0);
+      ctx.strokeStyle = rgbCSS(pal.ink); ctx.lineWidth = wire; ctx.stroke();
+      // Metal catches light on one edge. The ring stroked again, thin and offset toward
+      // the light — the overlap is what reads as a bevel.
+      ring(LIGHT.dx * wire * 0.26, LIGHT.dy * wire * 0.26);
+      ctx.strokeStyle = rgbCSS(pal.lit, 0.55); ctx.lineWidth = wire * 0.36; ctx.stroke();
+
+      // One streak reads as a scratch; two parallel ones read as glass, in every medium.
+      if (finish !== false) [[0.62, 0.16, 1.0], [0.30, -0.12, 0.55]].forEach(function (k) {
+        ctx.beginPath();
+        ctx.moveTo(ex - lensR * k[0], eyeY + lensR * (k[0] - 0.42));
+        ctx.lineTo(ex - lensR * k[1], eyeY + lensR * (k[1] - 0.42));
+        ctx.strokeStyle = rgba(tk("--color-specular"), k[2] * 0.50);
+        ctx.lineWidth = wire * k[2] * 0.95; ctx.stroke();
+      });
+
+      // Temple: out and slightly up, then a short hook down.
       var hx = ex + s * lensR * 1.90, hy = eyeY - lensR * 0.72;
+      var temple = function (ox, oy) {
+        ctx.beginPath();
+        ctx.moveTo(ex + s * lensR * 0.96 + ox, eyeY - lensR * 0.30 + oy);
+        ctx.quadraticCurveTo(ex + s * lensR * 1.44 + ox, eyeY - lensR * 0.74 + oy, hx + ox, hy + oy);
+        ctx.quadraticCurveTo(hx + s * lensR * 0.30 + ox, hy + lensR * 0.04 + oy,
+                             hx + s * lensR * 0.16 + ox, hy + lensR * 0.30 + oy);
+      };
+      temple(0, 0);
+      ctx.strokeStyle = rgbCSS(pal.ink); ctx.lineWidth = wire; ctx.stroke();
+      temple(LIGHT.dx * wire * 0.24, LIGHT.dy * wire * 0.24);
+      ctx.strokeStyle = rgbCSS(pal.lit, 0.40); ctx.lineWidth = wire * 0.32; ctx.stroke();
+    }
+
+    var bridge = function (ox, oy) {
       ctx.beginPath();
-      ctx.moveTo(ex + s * lensR * 0.96, eyeY - lensR * 0.30);
-      ctx.quadraticCurveTo(ex + s * lensR * 1.44, eyeY - lensR * 0.74, hx, hy);
-      ctx.quadraticCurveTo(hx + s * lensR * 0.30, hy + lensR * 0.04, hx + s * lensR * 0.16, hy + lensR * 0.30);
-      ctx.stroke();
-    });
-    ctx.strokeStyle = pal.ink;
-    ctx.beginPath();
-    ctx.moveTo(cx - eyeX + lensR * 0.94, eyeY - lensR * 0.20);
-    ctx.quadraticCurveTo(cx, eyeY - lensR * 0.62, cx + eyeX - lensR * 0.94, eyeY - lensR * 0.20);
-    ctx.stroke();
+      ctx.moveTo(cx - eyeX + lensR * 0.94 + ox, eyeY - lensR * 0.20 + oy);
+      ctx.quadraticCurveTo(cx + ox, eyeY - lensR * 0.62 + oy,
+                           cx + eyeX - lensR * 0.94 + ox, eyeY - lensR * 0.20 + oy);
+    };
+    bridge(0, 0);
+    ctx.strokeStyle = rgbCSS(pal.ink); ctx.lineWidth = wire; ctx.stroke();
+    bridge(LIGHT.dx * wire * 0.24, LIGHT.dy * wire * 0.24);
+    ctx.strokeStyle = rgbCSS(pal.lit, 0.45); ctx.lineWidth = wire * 0.32; ctx.stroke();
   }
 
-  // The brows do the acting. Tilt and lift on two short strokes carry almost all of the
-  // expression, which is why they move most between stages.
+  // A brow is a ridge in the surface, so it gets the same two strokes as a gyrus: dark
+  // body, lit lip toward the light. Tilt and lift carry almost all of the expression,
+  // which is why they are the parameters that move most between stages.
   function drawBrows(ctx, cx, eyeX, eyeY, lensR, R, pal, p) {
-    ctx.strokeStyle = pal.ink; ctx.lineWidth = Math.max(R * 0.078, 1.4); ctx.lineCap = "round";
-    [-1, 1].forEach(function (s) {
+    for (var si = 0; si < 2; si++) {
+      var s = si === 0 ? -1 : 1;
       ctx.save();
       ctx.translate(cx + s * eyeX, eyeY - lensR - R * (0.07 + p.browLift));
       ctx.rotate(s * p.browTilt);
       var bw = lensR * 1.20;
-      ctx.beginPath();
-      ctx.moveTo(-bw * 0.5, R * 0.022);
-      ctx.quadraticCurveTo(0, -R * 0.050, bw * 0.5, R * 0.014);
-      ctx.stroke();
+      var brow = function (ox, oy) {
+        ctx.beginPath();
+        ctx.moveTo(-bw * 0.5 + ox, R * 0.022 + oy);
+        ctx.quadraticCurveTo(ox, -R * 0.050 + oy, bw * 0.5 + ox, R * 0.014 + oy);
+      };
+      ctx.lineCap = "round";
+      brow(0, 0);
+      ctx.strokeStyle = rgbCSS(pal.ink); ctx.lineWidth = Math.max(R * 0.078, 1.4); ctx.stroke();
+      brow(LIGHT.dx * R * 0.024, LIGHT.dy * R * 0.024);
+      ctx.strokeStyle = rgbCSS(pal.lit, 0.34); ctx.lineWidth = Math.max(R * 0.026, 0.8); ctx.stroke();
       ctx.restore();
-    });
+    }
   }
 
-  function drawCreature(ctx, W, H, p, tint, t) {
+  // `layers` is the one thing this mirror carries that the app's Canvas does not: a way
+  // to stop the pipeline part-way. It exists so the review sheet can show what each layer
+  // actually contributes — flat fill, then the light, then the crests, then the finish.
+  // Every flag defaults on, so every existing caller draws exactly what it drew before.
+  function drawCreature(ctx, W, H, p, tint, t, layers) {
+    var L = layers || {};
+    var wantLight = L.light !== false, wantGyri = L.gyri !== false, wantFinish = L.finish !== false;
     var pal = palette(tint);
     var R = Math.min(W * 0.5 / REACH.halfWidth, H * 0.42 / REACH.above, H * 0.58 / REACH.below);
     var breathe = Math.sin(t * 0.9) * R * 0.014;
@@ -838,6 +1130,8 @@
     var cx = W / 2 + tremor, cy = H * 0.42 + R * p.sag + breathe;
     var bw = R * (1.30 + p.spread), bh = R * (1.06 - p.spread * 0.30);
     var lw = Math.max(R * 0.052, 1.2);
+    var span = Math.max(bw, bh);
+    var lx = cx + LIGHT.dx * bw * 0.52, ly = cy + LIGHT.dy * bh * 0.52;
 
     // hero-glow. In the app this lives on the Viewport behind the Canvas; here it is
     // painted first into the same canvas, which is the same picture by a shorter route.
@@ -847,25 +1141,29 @@
     g.addColorStop(1, rgba(tint, 0));
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
 
-    // Flat shadow. A soft shadow under a flat drawing is the fastest way to make it look
-    // like two illustrations stapled together.
+    // Two shapes, not one. A single hard ellipse makes a drawing sit on the page; a
+    // single soft one makes it float. Real contact is a wide soft pool plus a small dark
+    // core right under the feet.
     var groundY = cy + bh * 0.80 + R * (0.58 - p.sag * 0.7) + R * 0.10;
+    var slump = Math.max(0, 0.42 - p.sag * 0.5);
+    var deepRGB = hexRGB(tk("--color-ground-deep"));
+    softEllipse(ctx, cx + LIGHT.ax * R * 0.10, groundY, bw * 0.62, R * 0.075,
+                R * 0.075, deepRGB, slump * 0.85);
     ctx.beginPath();
-    ctx.ellipse(cx, groundY, bw * 0.58, R * 0.06, 0, 0, Math.PI * 2);
-    ctx.fillStyle = rgba(tk("--color-ground-deep"), Math.max(0, 0.42 - p.sag * 0.5));
-    ctx.fill();
+    ctx.ellipse(cx + LIGHT.ax * R * 0.05, groundY, bw * 0.30, R * 0.035, 0, 0, TAU);
+    ctx.fillStyle = rgbCSS(deepRGB, slump); ctx.fill();
 
     // Legs. The foot is a kink in the same line, not an object.
-    ctx.strokeStyle = pal.ink; ctx.lineWidth = lw; ctx.lineCap = "round"; ctx.lineJoin = "round";
     var hipY = cy + bh * 0.80, footY = hipY + R * (0.58 - p.sag * 0.7);
     var stance = bw * (0.30 + p.spread * 1.1);
     [-1, 1].forEach(function (s) {
       var x1 = cx + s * stance;
-      ctx.beginPath();
-      ctx.moveTo(cx + s * bw * 0.18, hipY);
-      ctx.lineTo(x1, footY);
-      ctx.lineTo(x1 + s * R * 0.17, footY - R * 0.015);
-      ctx.stroke();
+      strokeLimb(ctx, function (ox, oy) {
+        ctx.beginPath();
+        ctx.moveTo(cx + s * bw * 0.18 + ox, hipY + oy);
+        ctx.lineTo(x1 + ox, footY + oy);
+        ctx.lineTo(x1 + s * R * 0.17 + ox, footY - R * 0.015 + oy);
+      }, pal, lw);
     });
 
     // Arms, with three fingers fanned along the forearm's heading. A dot on the end of a
@@ -880,10 +1178,12 @@
       // and it keeps the widest reach at drop zero, which is what the fit is derived from.
       var elX = cx + s * bw * (1.18 - Math.abs(drop) * 0.08), elY = shY + R * (0.02 + drop * 0.26);
       var wrX = cx + s * bw * (1.42 - Math.abs(drop) * 0.16), wrY = shY + R * (0.22 + drop * 0.62 + sway);
-      ctx.lineWidth = lw;
-      ctx.beginPath(); ctx.moveTo(shX, shY); ctx.lineTo(elX, elY); ctx.lineTo(wrX, wrY); ctx.stroke();
+      strokeLimb(ctx, function (ox, oy) {
+        ctx.beginPath();
+        ctx.moveTo(shX + ox, shY + oy); ctx.lineTo(elX + ox, elY + oy); ctx.lineTo(wrX + ox, wrY + oy);
+      }, pal, lw);
       var heading = Math.atan2(wrY - elY, wrX - elX);
-      ctx.lineWidth = lw * 0.85;
+      ctx.strokeStyle = rgbCSS(pal.ink); ctx.lineWidth = lw * 0.85;
       for (var f = -1; f <= 1; f++) {
         var a = heading + f * 0.44;
         ctx.beginPath();
@@ -896,42 +1196,93 @@
     // Drips first, so the body paints over their shoulders and the seam never shows.
     if (has(p, "drip")) drawDrips(ctx, cx, cy, bw, bh, R, pal);
 
-    // Body. Folds and sheen live inside the contour, so the contour is stroked last and
-    // stays a clean unbroken edge.
+    // Body. Flat fill, then the two gradients that make it a sphere before a single fold
+    // is drawn, then the folds that make it a brain.
     bodyPath(ctx, cx, cy, bw, bh);
-    ctx.fillStyle = pal.base; ctx.fill();
+    ctx.fillStyle = rgbCSS(pal.base); ctx.fill();
+
     ctx.save();
     bodyPath(ctx, cx, cy, bw, bh); ctx.clip();
-    drawFolds(ctx, cx, cy, bw, bh, R, pal, p);
-    if (has(p, "crack")) drawCracks(ctx, cx, cy, bw, bh, pal);
-    drawSheen(ctx, cx, cy, bw, bh, R, p);
-    ctx.restore();
+
+    if (wantLight) {
     bodyPath(ctx, cx, cy, bw, bh);
-    ctx.strokeStyle = pal.ink; ctx.lineWidth = Math.max(R * 0.072, 1.4); ctx.lineJoin = "round";
-    ctx.stroke();
+    var key = ctx.createRadialGradient(lx, ly, 0, lx, ly, span * 1.02);
+    key.addColorStop(0, rgbCSS(pal.lit, 0.26 + 0.54 * p.sheen));
+    key.addColorStop(1, rgbCSS(pal.lit, 0));
+    ctx.fillStyle = key; ctx.fill();
+
+    bodyPath(ctx, cx, cy, bw, bh);
+    var occ = ctx.createRadialGradient(lx, ly, 0, lx, ly, span * 1.62);
+    occ.addColorStop(0.34, rgbCSS(pal.deep, 0));
+    occ.addColorStop(0.76, rgbCSS(pal.deep, 0.30));
+    occ.addColorStop(1, rgbCSS(pal.deep, 0.78));
+    ctx.fillStyle = occ; ctx.fill();
+
+    // Bounce off the ground, in the app's accent. A warm body with a cool underside is
+    // how a real object separates from its background; an outline is how a sticker does.
+    bodyPath(ctx, cx, cy, bw, bh);
+    var bx = cx + bw * 0.12, by = cy + bh * 0.92;
+    var bounce = ctx.createRadialGradient(bx, by, 0, bx, by, bw * 0.95);
+    bounce.addColorStop(0, rgbCSS(pal.rim, 0.10 + 0.14 * p.sheen));
+    bounce.addColorStop(1, rgbCSS(pal.rim, 0));
+    ctx.fillStyle = bounce; ctx.fill();
+    }
+
+    if (wantGyri) {
+      drawGyri(ctx, cx, cy, bw, bh, R, pal, p, lx, ly, span);
+      if (has(p, "crack")) drawCracks(ctx, cx, cy, bw, bh, pal);
+    }
+    if (wantFinish) drawSpecular(ctx, lx, ly, bw, bh, R, pal, p);
+    ctx.restore();
+
+    // Thin, now that the form does the describing. A heavy contour on a modelled body
+    // reads as a sticker cut out of a render.
+    bodyPath(ctx, cx, cy, bw, bh);
+    ctx.strokeStyle = rgbCSS(pal.ink); ctx.lineWidth = Math.max(R * 0.048, 1.2);
+    ctx.lineJoin = "round"; ctx.stroke();
+    if (wantFinish) drawRimLight(ctx, cx, cy, bw, bh, R, pal, p);
 
     // Face. Glasses over the eyes, brows over the glasses — the order a real pair sits in.
     var eyeY = cy + bh * 0.10, eyeX = bw * 0.305, lensR = R * 0.345;
     var rx = R * 0.160, ry = rx * 1.04 * p.open;
     var blink = (t > 0 && (t % p.blinkInterval) < 0.09) ? 0 : 1;
 
-    if (p.sheen > 0.2) {
-      ctx.fillStyle = rgbCSS(pal.blush, 0.55 + 0.25 * p.sheen);
+    // The sockets, before anything else on the face: two soft pools that push the eyes
+    // back into the head. A face whose features all sit on one plane is the flattest part
+    // of any modelled character.
+    if (wantLight) [-1, 1].forEach(function (s) {
+      var ex = cx + s * eyeX, socket = lensR * 1.22;
+      ctx.beginPath(); ctx.ellipse(ex, eyeY, socket, socket * 0.94, 0, 0, TAU);
+      var sk = ctx.createRadialGradient(ex, eyeY, 0, ex, eyeY, socket);
+      sk.addColorStop(0, rgbCSS(pal.deep, 0.34));
+      sk.addColorStop(0.62, rgbCSS(pal.deep, 0.16));
+      sk.addColorStop(1, rgbCSS(pal.deep, 0));
+      ctx.fillStyle = sk; ctx.fill();
+    });
+
+    // Blush is subsurface — it has no boundary, and a hard edge on it reads as two
+    // painted circles.
+    if (wantLight && p.sheen > 0.2) {
       [-1, 1].forEach(function (s) {
-        ctx.beginPath();
-        ctx.ellipse(cx + s * (eyeX + R * 0.12), eyeY + lensR * 1.05, R * 0.15, R * 0.085, 0, 0, Math.PI * 2);
-        ctx.fill();
+        var bxp = cx + s * (eyeX + R * 0.12), byp = eyeY + lensR * 1.05;
+        ctx.beginPath(); ctx.ellipse(bxp, byp, R * 0.17, R * 0.10, 0, 0, TAU);
+        var bg = ctx.createRadialGradient(bxp, byp, 0, bxp, byp, R * 0.17);
+        bg.addColorStop(0, rgbCSS(pal.blush, 0.50 + 0.28 * p.sheen));
+        bg.addColorStop(1, rgbCSS(pal.blush, 0));
+        ctx.fillStyle = bg; ctx.fill();
       });
     }
+
     [-1, 1].forEach(function (s) { drawEye(ctx, cx + s * eyeX, eyeY, rx, ry, blink, s, t, pal, p); });
     drawMouth(ctx, cx, eyeY, R, pal, p);
-    drawGlasses(ctx, cx, eyeX, eyeY, lensR, R, pal);
+    drawGlasses(ctx, cx, eyeX, eyeY, lensR, R, pal, wantFinish);
     drawBrows(ctx, cx, eyeX, eyeY, lensR, R, pal, p);
 
     // Props last, outside the silhouette. A prop drawn under the creature is a smudge.
     if (has(p, "sweat")) drawSweat(ctx, cx, cy, bw, bh, R);
     if (has(p, "sparkle")) drawSparkles(ctx, cx, cy, bw, bh, R, t);
   }
+
 
   // ── Engine, ported from BrainHealthEngine.swift ───────────────────────────
   function budgetContribution(r) {
@@ -984,7 +1335,7 @@
   var HOUR_W = [0,0,0,0,0,0,1,2,3,2,2,3,4,3,3,4,5,6,8,9,8,6,3,1];
   var OFFENDERS = [
     { n: "Instagram", c: "Distracting", m: 0.46, k: "--color-bad" },
-    { n: "TikTok", c: "Distracting", m: 0.34, k: "--color-primary" },
+    { n: "TikTok", c: "Distracting", m: 0.34, k: "--color-stage-melting" },
     { n: "YouTube", c: "Neutral", m: 0.20, k: "--color-warn" }
   ];
   var NOW_HOUR = 20;

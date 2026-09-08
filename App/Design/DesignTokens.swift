@@ -31,8 +31,6 @@ public enum Token {
         public static let inkOnViewport = SwiftUI.Color(red: 0.9451, green: 0.9255, blue: 1.0000)
         /// #FFFFFF
         public static let specular = SwiftUI.Color(red: 1.0000, green: 1.0000, blue: 1.0000)
-        /// #7C5CFA
-        public static let primary = SwiftUI.Color(red: 0.4863, green: 0.3608, blue: 0.9804)
         /// #22D3C6
         public static let accent = SwiftUI.Color(red: 0.1333, green: 0.8275, blue: 0.7765)
         /// #34D399

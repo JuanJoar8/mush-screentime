@@ -75,6 +75,21 @@ public struct CreatureParameters: Equatable, Sendable {
     /// gets the same number twice.
     public var armLeft: CGFloat
     public var armRight: CGFloat
+    /// How far a fold stands proud of the surface around it, 1 being firm tissue.
+    ///
+    /// This is the *material* half of the smooth-brain reading, where `foldsPerSide` is
+    /// the count half. A stage can lose folds and still look like a healthy brain with
+    /// fewer of them; losing turgor is what makes the remaining ones read as smeared. It
+    /// scales the offset of every groove and crest in the drawing, so at `mush` the folds
+    /// are still there and have simply stopped standing up.
+    public var turgor: CGFloat
+    /// How tight the specular highlight is: wet tissue against a matte dome.
+    ///
+    /// Separate from `sheen`, which is how *bright* the light is. Gloss is how *sharp* it
+    /// is, and the two come apart at `buzzed`: an overstimulated brain is not a dull one,
+    /// so it stays wet and shining while `foggy`, one rung better, has already gone soft.
+    /// That is the parameter that keeps the ladder from being a dimmer switch.
+    public var gloss: CGFloat
     /// High-frequency tremor. Only `buzzed` has one.
     public var jitter: CGFloat
     /// Seconds between blinks. A duller creature blinks more slowly.
@@ -99,26 +114,31 @@ public struct CreatureParameters: Equatable, Sendable {
         case .crisp:
             .init(browTilt: -0.16, browLift: 0.10, lid: 0.00, open: 1.00, sag: 0.00,
                   spread: 0.00, sheen: 1.00, pupil: 0.10, mouth: 0.85, armLeft: 0.34, armRight: -1.90,
+                  turgor: 1.00, gloss: 1.00,
                   jitter: 0.000, blinkInterval: 3.2,
                   foldRings: 4, foldsPerRing: 4, motifs: [.sparkle])
         case .foggy:
             .init(browTilt: 0.12, browLift: 0.06, lid: 0.18, open: 0.92, sag: 0.05,
                   spread: 0.04, sheen: 0.66, pupil: 0.16, mouth: 0.22, armLeft: 0.38, armRight: 0.46,
+                  turgor: 0.72, gloss: 0.46,
                   jitter: 0.000, blinkInterval: 4.6,
                   foldRings: 3, foldsPerRing: 4, motifs: [])
         case .buzzed:
             .init(browTilt: -0.36, browLift: 0.14, lid: 0.00, open: 1.18, sag: 0.02,
                   spread: 0.03, sheen: 0.82, pupil: 0.42, mouth: -0.18, armLeft: -0.38, armRight: -0.26,
+                  turgor: 0.86, gloss: 0.78,
                   jitter: 0.050, blinkInterval: 1.9,
                   foldRings: 3, foldsPerRing: 3, motifs: [.spiral, .sweat])
         case .melting:
             .init(browTilt: 0.32, browLift: 0.04, lid: 0.40, open: 0.82, sag: 0.13,
                   spread: 0.10, sheen: 0.32, pupil: 0.14, mouth: -0.46, armLeft: 0.62, armRight: 0.76,
+                  turgor: 0.44, gloss: 0.20,
                   jitter: 0.000, blinkInterval: 6.4,
                   foldRings: 2, foldsPerRing: 2, motifs: [.drip, .sweat])
         case .mush:
             .init(browTilt: 0.44, browLift: 0.02, lid: 0.60, open: 0.72, sag: 0.22,
                   spread: 0.16, sheen: 0.14, pupil: 0.10, mouth: -0.62, armLeft: 0.94, armRight: 0.86,
+                  turgor: 0.22, gloss: 0.06,
                   jitter: 0.000, blinkInterval: 8.8,
                   foldRings: 1, foldsPerRing: 2, motifs: [.drip, .crack])
         }

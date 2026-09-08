@@ -1,0 +1,758 @@
+<title>Personaje de Mush</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Un solo tema, a propósito: la app entera es una noche índigo y el personaje está
+     iluminado para ella. Todos los colores se pintan explícitos — nada hereda el fondo
+     del visor. Los tokens son los mismos de brand/brand.json; ni un hex fuera de :root. */
+  :root {
+    color-scheme: dark;
+
+    --ground: #140B2E;
+    --ground-deep: #0C0620;
+    --panel: #1E1240;
+    --panel-raised: #2A1B55;
+    --line: #3B2A70;
+    --viewport: #241552;
+    --ink: #F1ECFF;
+    --ink-dim: #A093CC;
+    --accent: #22D3C6;
+    --good: #34D399;
+    --warn: #FBBF24;
+    --bad: #F4436B;
+    --specular: #FFFFFF;
+    --eye-iris: #4FA8DF;
+    --eye-iris-deep: #1B5E93;
+    --eye-pupil: #0B1A2A;
+
+    --color-ground-deep: #0C0620;
+    --color-specular: #FFFFFF;
+    --color-accent: #22D3C6;
+    --color-bad: #F4436B;
+    --color-eye-iris: #4FA8DF;
+    --color-eye-iris-deep: #1B5E93;
+    --color-eye-pupil: #0B1A2A;
+    --color-stage-crisp: #FFB3C1;
+    --color-stage-foggy: #E7A7BE;
+    --color-stage-buzzed: #FFC24D;
+    --color-stage-melting: #B08A94;
+    --color-stage-mush: #7A7391;
+
+    --display: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+    --body: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+    --r-viewport: 28px;
+    --r-panel: 12px;
+    --r-pill: 999px;
+  }
+
+  html { background: var(--ground-deep); }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(128% 74% at 50% -12%, var(--panel) 0%, var(--ground) 46%, var(--ground-deep) 100%)
+      var(--ground-deep) fixed;
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 40px 22px 96px; }
+
+  /* Etiqueta de instrumento: versalita diminuta sobre filete. El sistema de sección de
+     la app, reutilizado aquí tal cual. */
+  .instrument {
+    display: flex; align-items: baseline; gap: 12px;
+    font-family: var(--mono);
+    font-size: 11.5px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ink-dim);
+    padding-bottom: 9px;
+    border-bottom: 1px solid var(--line);
+    margin: 0 0 22px;
+  }
+  .instrument b { color: var(--accent); font-weight: 500; }
+  .instrument .n { margin-left: auto; color: var(--line); letter-spacing: 0.1em; }
+
+  header.mast { padding-bottom: 46px; }
+  .topline {
+    display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+    padding-bottom: 13px; border-bottom: 1px solid var(--line); margin-bottom: 30px;
+  }
+  .topline .mark {
+    font-family: var(--display); font-weight: 800; font-size: 21px;
+    letter-spacing: -0.01em; color: var(--ink);
+  }
+  .topline .role { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+  .topline .date { font-family: var(--mono); font-size: 12px; color: var(--ink-dim); margin-left: auto; }
+  h1 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(34px, 6.2vw, 62px);
+    line-height: 0.98;
+    letter-spacing: -0.024em;
+    margin: 0 0 20px;
+    max-width: 15ch;
+    text-wrap: balance;
+    color: var(--ink);
+  }
+  .lede { margin: 0; max-width: 58ch; font-size: 17px; color: var(--ink-dim); }
+  .lede strong { color: var(--ink); font-weight: 600; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; }
+  .chip {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.02em;
+    padding: 6px 12px; border-radius: var(--r-pill);
+    border: 1px solid var(--line); color: var(--ink-dim);
+    background: var(--panel);
+  }
+  .chip b { color: var(--ink); font-weight: 500; }
+
+  section { padding: 44px 0; }
+  h2 {
+    font-family: var(--display); font-weight: 800;
+    font-size: clamp(23px, 3vw, 31px); letter-spacing: -0.015em;
+    margin: 0 0 10px; color: var(--ink);
+  }
+  section > p.note { margin: 0 0 30px; max-width: 62ch; color: var(--ink-dim); }
+  section > p.note strong { color: var(--ink); font-weight: 600; }
+
+  /* ── La escalera ─────────────────────────────────────────────────────── */
+  .ladder {
+    display: grid; gap: 14px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .rung {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--r-panel);
+    padding: 10px 10px 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .rung .stagebox {
+    border-radius: 18px;
+    background:
+      radial-gradient(74% 62% at 50% 40%, color-mix(in srgb, var(--tint) 22%, transparent), transparent 72%),
+      var(--viewport);
+    overflow: hidden;
+    aspect-ratio: 88 / 100;
+  }
+  .rung canvas { display: block; width: 100%; height: 100%; }
+  .rung h3 {
+    font-family: var(--display); font-weight: 800; font-size: 19px;
+    margin: 0; color: var(--tint); letter-spacing: -0.01em;
+  }
+  .facts { display: grid; gap: 4px; font-family: var(--mono); font-size: 11px; color: var(--ink-dim); }
+  .facts span { display: flex; justify-content: space-between; gap: 8px; }
+  .facts b { color: var(--ink); font-weight: 400; }
+  .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+  .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.02em;
+    padding: 2px 7px; border-radius: 5px;
+    border: 1px solid currentColor; opacity: 0.85;
+  }
+  .tag.heal { color: var(--good); }
+  .tag.rot { color: var(--bad); }
+  .tag.mid { color: var(--warn); }
+  .tag.none { color: var(--line); }
+
+  /* ── La tubería, capa por capa ───────────────────────────────────────── */
+  .pipeline { display: grid; gap: 16px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .step { display: flex; flex-direction: column; gap: 12px; }
+  .step .stagebox {
+    border-radius: 16px; overflow: hidden; aspect-ratio: 1 / 1;
+    background: var(--viewport);
+    border: 1px solid var(--line);
+  }
+  .step canvas { display: block; width: 100%; height: 100%; }
+  .step .num {
+    font-family: var(--mono); font-size: 11px; color: var(--accent);
+    letter-spacing: 0.1em;
+  }
+  .step h4 {
+    font-family: var(--display); font-weight: 800; font-size: 17px;
+    margin: 0; color: var(--ink);
+  }
+  .step p { margin: 0; font-size: 13.5px; color: var(--ink-dim); line-height: 1.5; }
+
+  /* ── Teléfonos ───────────────────────────────────────────────────────── */
+  .seg { display: inline-flex; gap: 3px; padding: 3px; margin-bottom: 26px;
+         background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-pill); }
+  .seg button {
+    font: inherit; font-family: var(--mono); font-size: 12px; letter-spacing: 0.02em;
+    padding: 7px 14px; border-radius: var(--r-pill); border: 0;
+    background: transparent; color: var(--ink-dim); cursor: pointer;
+    transition: color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+                background-color 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  .seg button[aria-pressed="true"] { background: var(--panel-raised); color: var(--ink); }
+  .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .phones { display: grid; gap: 26px; grid-template-columns: repeat(auto-fit, minmax(292px, 1fr)); align-items: start; }
+  .phone {
+    border: 8px solid var(--panel-raised);
+    border-radius: 42px;
+    background: var(--ground-deep);
+    padding: 0;
+    overflow: hidden;
+    box-shadow: 0 26px 60px -28px var(--ground-deep);
+  }
+  .screen {
+    background: linear-gradient(180deg, var(--panel) 0%, var(--ground) 52%, var(--ground-deep) 100%);
+    padding: 14px 13px 16px;
+    display: flex; flex-direction: column; gap: 11px;
+    min-height: 560px;
+  }
+  .statusbar {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--mono); font-size: 11px; color: var(--ink-dim);
+    padding: 2px 6px 4px;
+  }
+  .vp {
+    border-radius: var(--r-viewport);
+    background:
+      radial-gradient(76% 58% at 50% 42%, color-mix(in srgb, var(--tint) 26%, transparent), transparent 74%),
+      var(--viewport);
+    overflow: hidden;
+    position: relative;
+  }
+  .vp canvas { display: block; width: 100%; height: 100%; }
+  .vp.hero { aspect-ratio: 1 / 1; }
+
+  .readout { text-align: center; padding: 4px 0 2px; }
+  .readout .big {
+    font-family: var(--display); font-weight: 800;
+    font-size: 54px; line-height: 1; letter-spacing: -0.03em;
+    color: var(--tint);
+    font-variant-numeric: tabular-nums;
+  }
+  .readout .cap {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.10em;
+    text-transform: uppercase; color: var(--ink-dim); margin-top: 7px;
+  }
+
+  .cta {
+    font-family: var(--display); font-weight: 800; font-size: 15.5px;
+    text-align: center; padding: 13px; border-radius: var(--r-pill);
+    background: var(--tint); color: var(--ground-deep);
+    letter-spacing: -0.005em;
+  }
+
+  .panel {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--r-panel); padding: 11px 12px;
+    display: flex; flex-direction: column; gap: 9px;
+  }
+  .row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .row .k { font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
+            text-transform: uppercase; color: var(--ink-dim); }
+  .row .v { font-family: var(--mono); font-size: 13px; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .row .v.good { color: var(--good); }
+  .row .v.warn { color: var(--warn); }
+  .row .v.dim { color: var(--ink-dim); }
+
+  .bar { height: 5px; border-radius: var(--r-pill); background: var(--ground-deep); overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: var(--r-pill); background: var(--tint); }
+
+  /* La cinta de etapas del Brain screen: cinco miniaturas, la actual marcada. */
+  .rail { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .rail .cell {
+    border-radius: 10px; background: var(--ground-deep);
+    border: 1px solid transparent; overflow: hidden;
+    aspect-ratio: 1 / 1;
+  }
+  .rail .cell.on { border-color: var(--tint); }
+  .rail canvas { display: block; width: 100%; height: 100%; }
+  .railnow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
+    color: var(--ink-dim); margin-top: 8px; display: flex; justify-content: space-between;
+  }
+  .railnow b { color: var(--tint); font-weight: 500; }
+
+  .quarantine .layer {
+    display: flex; align-items: flex-start; gap: 9px;
+    padding: 8px 0; border-top: 1px solid var(--line);
+  }
+  .quarantine .layer:first-of-type { border-top: 0; padding-top: 2px; }
+  .quarantine .dot {
+    width: 7px; height: 7px; border-radius: 50%; margin-top: 6px; flex: none;
+  }
+  .quarantine .dot.on { background: var(--good); }
+  .quarantine .dot.off { background: var(--line); }
+  .quarantine .txt { flex: 1; }
+  .quarantine .t { font-size: 12.5px; color: var(--ink); }
+  .quarantine .s { font-family: var(--mono); font-size: 11px; color: var(--ink-dim);
+                    margin-top: 3px; line-height: 1.35; }
+
+  .phone figcaption {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-dim);
+  }
+  .phonewrap { display: flex; flex-direction: column; gap: 12px; }
+  .phonewrap > .cap {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.10em;
+    text-transform: uppercase; color: var(--ink-dim);
+  }
+  .phonewrap > .cap b { color: var(--accent); font-weight: 500; }
+
+  /* ── Tabla ───────────────────────────────────────────────────────────── */
+  .tablewrap { overflow-x: auto; padding: 1px; }
+  table {
+    border-collapse: separate; border-spacing: 0; width: 100%; min-width: 680px;
+    border: 1px solid var(--line); border-radius: var(--r-panel); overflow: hidden;
+  }
+  th, td {
+    text-align: right; padding: 12px 16px;
+    font-family: var(--mono); font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink);
+  }
+  th:first-child, td:first-child { text-align: left; }
+  thead th {
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-dim); background: var(--panel); font-weight: 500;
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody td:first-child { font-family: var(--display); font-weight: 800; font-size: 15px; }
+  td.hi { color: var(--accent); }
+
+  /* ── Cierre ──────────────────────────────────────────────────────────── */
+  .verdict { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
+  .verdict > div {
+    border: 1px solid var(--line); border-radius: var(--r-panel);
+    background: var(--panel); padding: 18px 19px;
+  }
+  .verdict h5 {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.13em;
+    text-transform: uppercase; margin: 0 0 12px;
+  }
+  .verdict .yes h5 { color: var(--good); }
+  .verdict .no h5 { color: var(--warn); }
+  .verdict ul { margin: 0; padding-left: 17px; display: grid; gap: 7px; }
+  .verdict li { font-size: 13.5px; color: var(--ink-dim); }
+  .verdict li b { color: var(--ink); font-weight: 600; }
+
+  code {
+    font-family: var(--mono); font-size: 0.88em;
+    background: var(--panel-raised); color: var(--ink);
+    padding: 1px 5px; border-radius: 5px;
+  }
+
+  @media (max-width: 900px) {
+    .ladder { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .pipeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .phones { grid-template-columns: 1fr; max-width: 340px; }
+    .verdict { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 520px) {
+    .ladder { grid-template-columns: 1fr; }
+    .pipeline { grid-template-columns: 1fr; }
+  }
+
+  /* Entrada escalonada. transform y opacity, 240ms, ease-out fuerte — y el estado en
+     reposo es visible: si el observer nunca corre, la página ya está leída. */
+  .rise { animation: rise 240ms cubic-bezier(0.23, 1, 0.32, 1) both; }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .rise { animation: none; }
+    * { scroll-behavior: auto !important; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="mast">
+    <div class="topline">
+      <span class="mark">Mush</span>
+      <span class="role">hoja de personaje</span>
+      <span class="date">8 sep 2026</span>
+    </div>
+    <h1>Un cerebro que se nota cuando se apaga</h1>
+    <p class="lede">
+      Cinco estados, dos materiales, cero imágenes. Todo se dibuja en Canvas a partir de
+      <code>BrainStage</code>, así que el personaje <strong>no puede desincronizarse del número
+      que tiene al lado</strong>: cambia la etapa y le siguen el color, la postura, la ceja, la
+      mirada y cuánto sobresale cada pliegue.
+    </p>
+    <div class="chips">
+      <span class="chip"><b>5</b> estados</span>
+      <span class="chip"><b>0</b> assets</span>
+      <span class="chip"><b>1</b> vector de luz</span>
+      <span class="chip"><b>11</b> tintes por etapa</span>
+      <span class="chip">todo vivo en esta página</span>
+    </div>
+  </header>
+
+  <section>
+    <p class="instrument"><b>01</b> La escalera <span class="n">crisp → mush</span></p>
+    <h2>No son cinco humores. Son dos condiciones.</h2>
+    <p class="note">
+      La señal principal es la <strong>densidad de surcos</strong>: bajan de dieciséis por lado a
+      dos, porque un cerebro que pierde sus circunvoluciones es la metáfora que internet ya usa.
+      La segunda es el <strong>material</strong>: <code>turgor</code> dice cuánto sobresale un
+      pliegue y <code>gloss</code> cuán apretado es el brillo. En <em>mush</em> los pliegues siguen
+      ahí — simplemente dejaron de levantarse.
+    </p>
+    <div class="ladder" id="ladder"></div>
+  </section>
+
+  <section>
+    <p class="instrument"><b>02</b> Cómo se construye <span class="n">4 capas</span></p>
+    <h2>El volumen sale de la anatomía, no de un degradado</h2>
+    <p class="note">
+      Hubo una versión modelada antes de esta y se mató con razón: era un huevo liso con un
+      degradado radial y treinta capas borrosas encima, que es lo que es cualquier render 3D de
+      stock. Esta se arma al revés. Aquí está la misma criatura con la tubería detenida en cada
+      paso — <strong>el mismo código que corre en la app</strong>, con las capas apagadas una a una.
+    </p>
+    <div class="pipeline" id="pipeline"></div>
+  </section>
+
+  <section>
+    <p class="instrument"><b>03</b> En la app <span class="n">3 pantallas</span></p>
+    <h2>Dónde vive</h2>
+    <p class="note">
+      Las tres pantallas reaccionan al selector. El personaje de cada una es el renderizador
+      real, al tamaño real: el <em>hero</em> a 320&nbsp;pt y las miniaturas de la cinta a 52, que
+      es justo donde el nivel de detalle cambia y los surcos se sostienen igual.
+    </p>
+    <div class="seg" id="seg" role="group" aria-label="Estado del cerebro"></div>
+    <div class="phones" id="phones"></div>
+  </section>
+
+  <section>
+    <p class="instrument"><b>04</b> La tabla <span class="n">parámetros por etapa</span></p>
+    <h2>Lo que cambia entre una y otra</h2>
+    <p class="note">
+      Un test exige que dos etapas cualesquiera difieran en al menos <strong>doce de diecisiete</strong>
+      parámetros: una etapa que solo se distinga por el color es el fallo que esta tabla existe
+      para evitar. El mínimo real medido es quince, entre <em>crisp</em> y <em>mush</em>, que aun
+      estando en los extremos comparten dos números.
+    </p>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Etapa</th><th>Surcos / lado</th><th>Turgor</th><th>Gloss</th>
+            <th>Brillo</th><th>Boca</th><th>Brazos</th><th>Props</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <p class="note" style="margin-top:18px">
+      <code>gloss</code> es la única columna que <strong>no</strong> baja en orden, y es a
+      propósito: <em>buzzed</em> está un peldaño por debajo de <em>foggy</em> y brilla más, porque
+      sobreestimulado no es apagado — es lo más despierto que se ve la criatura y lo peor que le
+      va. Si alguien la ordena, las cinco etapas vuelven a ser cinco posiciones de un dimmer, y
+      hay un test que falla y lo dice con esas palabras.
+    </p>
+  </section>
+
+  <section>
+    <p class="instrument"><b>05</b> Estado <span class="n">qué se comprobó</span></p>
+    <h2>Qué está verificado y qué no</h2>
+    <div class="verdict">
+      <div class="yes">
+        <h5>Medido, no afirmado</h5>
+        <ul>
+          <li><b>Nada se recorta.</b> Un guardia dibuja las cinco etapas y mide la caja: el margen
+            más justo es de 6,8&nbsp;px. Es la tercera vez que esta clase de bug aparece; las dos
+            anteriores el ajuste estaba calculado a mano.</li>
+          <li><b>El dibujo corre sin excepción</b> en las cinco etapas, 8.087 llamadas de canvas,
+            con los degradados y las curvas que cada parte necesita.</li>
+          <li><b>Contraste real</b> contra el fondo de la app: ink 16,3:1, ink-dim 6,8:1, acento
+            10,0:1. Todos pasan AA de cuerpo.</li>
+          <li><b>El morado prohibido se fue.</b> El token <code>primary</code> era
+            <code>#7C5CFA</code> — hue 252 — y no lo usaba ni una vista. Retirado, no recoloreado.</li>
+        </ul>
+      </div>
+      <div class="no">
+        <h5>Todavía no</h5>
+        <ul>
+          <li><b>Nadie lo ha visto en un iPhone.</b> Esto es el port a Canvas del mismo dibujo;
+            el Swift lo compila CI, no esta máquina.</li>
+          <li><b>El desenfoque</b> usa <code>ctx.filter</code> donde existe y tres pasadas
+            concéntricas donde no. En SwiftUI es un filtro de verdad, así que el brillo será algo
+            más suave que aquí.</li>
+          <li><b>Q10b sigue abierta:</b> si los selectores de Clean Feed aciertan sobre el
+            Instagram de alguien con la sesión iniciada. CI no tiene cuenta, y esa pregunta sola
+            decide si Clean Feed es un producto o una demo.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var css = getComputedStyle(document.documentElement);
+  function tk(n) { return css.getPropertyValue(n).trim(); }
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/*__STAGES__*/
+
+  var TINTS = {};
+  STAGES.forEach(function (s) { TINTS[s.key] = tk("--color-stage-" + s.key); });
+
+/*__CREATURE_JS__*/
+
+  // ── Página ────────────────────────────────────────────────────────────────
+
+  var DPR = Math.min(window.devicePixelRatio || 1, 2);
+  var painters = [];
+
+  // Un canvas que se dimensiona solo y se repinta con el tiempo global. `still` fija el
+  // tiempo en cero, que es exactamente lo que hace `isStatic` en el widget: un blink
+  // congelado sería un ojo cerrado en una captura.
+  function canvasIn(host, stageKey, opts, still) {
+    var c = document.createElement("canvas");
+    host.appendChild(c);
+    var ctx = c.getContext("2d");
+    var W = 0, H = 0;
+
+    function resize() {
+      var r = host.getBoundingClientRect();
+      var w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
+      if (w === W && h === H) return;
+      W = w; H = h;
+      c.width = Math.round(W * DPR); c.height = Math.round(H * DPR);
+      c.style.width = W + "px"; c.style.height = H + "px";
+    }
+
+    var painter = {
+      key: stageKey,
+      draw: function (t) {
+        resize();
+        if (!W || !H) return;
+        ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+        ctx.clearRect(0, 0, W, H);
+        var s = STAGES.filter(function (x) { return x.key === painter.key; })[0];
+        drawCreature(ctx, W, H, s, TINTS[s.key], still ? 0 : t, opts);
+      }
+    };
+    painters.push(painter);
+    return painter;
+  }
+
+  var LADDER = ["crisp", "foggy", "buzzed", "melting", "mush"];
+  var MOTIF_CLASS = { sparkle: "heal", spiral: "mid", sweat: "mid", drip: "rot", crack: "rot" };
+  var MOTIF_ES = { sparkle: "destellos", spiral: "espiral", sweat: "sudor", drip: "goteo", crack: "grietas" };
+
+  function stageOf(key) { return STAGES.filter(function (s) { return s.key === key; })[0]; }
+  function folds(s) { return s.foldRings * s.foldsPerRing; }
+
+  // ── 01 · la escalera ──
+  var ladder = document.getElementById("ladder");
+  LADDER.forEach(function (key, i) {
+    var s = stageOf(key);
+    var card = document.createElement("div");
+    card.className = "rung rise";
+    card.style.setProperty("--tint", TINTS[key]);
+    card.style.animationDelay = (i * 50) + "ms";
+    card.innerHTML =
+      '<div class="stagebox"></div>' +
+      '<h3>' + s.name + '</h3>' +
+      '<div class="facts">' +
+        '<span>surcos<b>' + folds(s) + '</b></span>' +
+        '<span>turgor<b>' + s.turgor.toFixed(2) + '</b></span>' +
+        '<span>gloss<b>' + s.gloss.toFixed(2) + '</b></span>' +
+      '</div>' +
+      '<div class="tags">' + (s.motifs.length
+        ? s.motifs.map(function (m) {
+            return '<span class="tag ' + MOTIF_CLASS[m] + '">' + MOTIF_ES[m] + '</span>';
+          }).join("")
+        : '<span class="tag none">sin props</span>') + '</div>';
+    ladder.appendChild(card);
+    canvasIn(card.querySelector(".stagebox"), key);
+  });
+
+  // ── 02 · la tubería ──
+  var STEPS = [
+    { n: "01", t: "Relleno", o: { light: false, gyri: false, finish: false },
+      d: "Color de etapa sólido y contorno. Aquí estaba el personaje hasta ahora: legible, y sin ningún lugar en el espacio." },
+    { n: "02", t: "Luz", o: { light: true, gyri: false, finish: false },
+      d: "Dos degradados radiales desde el mismo punto — la clave y la oclusión. Ya es una esfera, y todavía no hay un solo pliegue." },
+    { n: "03", t: "Crestas", o: { light: true, gyri: true, finish: false },
+      d: "Cada surco pasa a ser una cresta: valle oscuro empujado en contra de la luz, cuerpo, y lomo iluminado a favor." },
+    { n: "04", t: "Acabado", o: {},
+      d: "Especular donde pega la luz, borde turquesa donde no, cristal en las gafas y la sombra que la montura tira sobre la cara." }
+  ];
+  var pipeline = document.getElementById("pipeline");
+  STEPS.forEach(function (step, i) {
+    var d = document.createElement("div");
+    d.className = "step rise";
+    d.style.animationDelay = (i * 50) + "ms";
+    d.innerHTML =
+      '<div class="stagebox"></div>' +
+      '<div class="num">' + step.n + '</div>' +
+      '<h4>' + step.t + '</h4>' +
+      '<p>' + step.d + '</p>';
+    pipeline.appendChild(d);
+    canvasIn(d.querySelector(".stagebox"), "crisp", step.o);
+  });
+
+  // ── 03 · los teléfonos ──
+  var current = "buzzed";
+  var seg = document.getElementById("seg");
+  LADDER.forEach(function (key) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.textContent = stageOf(key).name;
+    b.setAttribute("aria-pressed", String(key === current));
+    b.addEventListener("click", function () { setStage(key); });
+    seg.appendChild(b);
+  });
+
+  var COPY = {
+    crisp:   { health: 88, action: "Empezar un focus", budget: 12, note: "Todo en orden" },
+    foggy:   { health: 71, action: "Empezar un focus", budget: 34, note: "Un poco de niebla" },
+    buzzed:  { health: 52, action: "Cortar veinte minutos", budget: 61, note: "Demasiado estímulo" },
+    melting: { health: 31, action: "Cortar veinte minutos", budget: 88, note: "Perdiendo forma" },
+    mush:    { health: 14, action: "Bloquear lo de arriba", budget: 100, note: "Se deshizo" }
+  };
+
+  var phones = document.getElementById("phones");
+  var refs = {};
+
+  function phone(caption, kicker, inner) {
+    var w = document.createElement("div");
+    w.className = "phonewrap rise";
+    w.innerHTML =
+      '<div class="phone"><div class="screen">' +
+        '<div class="statusbar"><span>9:41</span><span>Mush</span></div>' + inner +
+      '</div></div>' +
+      '<div class="cap"><b>' + kicker + '</b> · ' + caption + '</div>';
+    phones.appendChild(w);
+    return w.querySelector(".screen");
+  }
+
+  // Home: el objeto heroico, el número, y la acción contextual justo debajo — en una app
+  // de autocontrol el momento de decidir es el que tiene que estar más a mano.
+  var home = phone("El objeto heroico y la acción contextual", "Home",
+    '<div class="vp hero"></div>' +
+    '<div class="readout"><div class="big" data-health>—</div><div class="cap" data-note></div></div>' +
+    '<div class="cta" data-action>—</div>' +
+    '<div class="panel">' +
+      '<div class="row"><span class="k">Presupuesto</span><span class="v" data-budget>—</span></div>' +
+      '<div class="bar"><i data-bar></i></div>' +
+      '<div class="row"><span class="k">Racha</span><span class="v good">4 días</span></div>' +
+    '</div>');
+  refs.homeHero = canvasIn(home.querySelector(".vp"), current);
+  refs.health = home.querySelector("[data-health]");
+  refs.note = home.querySelector("[data-note]");
+  refs.action = home.querySelector("[data-action]");
+  refs.budget = home.querySelector("[data-budget]");
+  refs.bar = home.querySelector("[data-bar]");
+
+  // Brain: la escalera entera, dibujada, a tamaño de miniatura. El umbral de detalle está
+  // en 64 justo para que estas conserven sus surcos.
+  var brainInner =
+    '<div class="vp hero" style="aspect-ratio:5/4"></div>' +
+    '<div class="panel">' +
+      '<div class="row"><span class="k">La escalera</span><span class="v dim">5 estados</span></div>' +
+      '<div class="rail">' + LADDER.map(function () { return '<div class="cell"></div>'; }).join("") + '</div>' +
+      '<div class="railnow"><span>ahora</span><b data-railnow>&mdash;</b></div>' +
+    '</div>' +
+    '<div class="panel">' +
+      '<div class="row"><span class="k">Hoy</span><span class="v" data-h2>—</span></div>' +
+      '<div class="row"><span class="k">Ayer</span><span class="v dim">64</span></div>' +
+      '<div class="row"><span class="k">Focus</span><span class="v good">2 sesiones</span></div>' +
+    '</div>';
+  var brain = phone("La escalera completa, a 52 pt", "Brain", brainInner);
+  refs.brainHero = canvasIn(brain.querySelector(".vp"), current);
+  refs.h2 = brain.querySelector("[data-h2]");
+  refs.railnow = brain.querySelector("[data-railnow]");
+  refs.cells = [].slice.call(brain.querySelectorAll(".rail .cell"));
+  refs.cells.forEach(function (cell, i) { canvasIn(cell, LADDER[i], null, true); });
+
+  // Blocks: las cuatro capas de Feed Quarantine y cuál está realmente encendida. Las dos
+  // que faltan no son un "pronto": necesitan la membresía de 99 $.
+  phone("Feed Quarantine, y cuál capa está encendida de verdad", "Blocks",
+    '<div class="panel quarantine">' +
+      '<div class="row"><span class="k">Feed Quarantine</span><span class="v warn">2 de 4</span></div>' +
+      '<div class="layer"><span class="dot off"></span><span class="txt">' +
+        '<span class="t">Bloqueo por app</span><span class="s">necesita Family Controls · 99 $</span></span></div>' +
+      '<div class="layer"><span class="dot on"></span><span class="txt">' +
+        '<span class="t">Clean Feed</span><span class="s">reels y shorts fuera · activo</span></span></div>' +
+      '<div class="layer"><span class="dot on"></span><span class="txt">' +
+        '<span class="t">Safari</span><span class="s">las mismas reglas, en todo el navegador</span></span></div>' +
+      '<div class="layer"><span class="dot off"></span><span class="txt">' +
+        '<span class="t">Pantalla de escudo</span><span class="s">necesita Family Controls · 99 $</span></span></div>' +
+    '</div>' +
+    '<div class="panel">' +
+      '<div class="row"><span class="k">Instagram</span><span class="v warn">46 min</span></div>' +
+      '<div class="row"><span class="k">TikTok</span><span class="v warn">34 min</span></div>' +
+      '<div class="row"><span class="k">YouTube</span><span class="v dim">20 min</span></div>' +
+    '</div>' +
+    '<div class="panel">' +
+      '<div class="row"><span class="k">Un blocker no te ve</span><span class="v dim">—</span></div>' +
+      '<div class="row"><span class="k" style="text-transform:none;letter-spacing:0;font-family:var(--body);font-size:12px;line-height:1.45">' +
+        'Le entrega a Safari una lista de reglas una vez y después no corre nada. No puede saber qué visitas.</span></div>' +
+    '</div>');
+
+  function setStage(key) {
+    current = key;
+    var tint = TINTS[key];
+    var c = COPY[key];
+    [].slice.call(seg.children).forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.textContent === stageOf(key).name));
+    });
+    [].slice.call(document.querySelectorAll(".phonewrap .screen")).forEach(function (s) {
+      s.style.setProperty("--tint", tint);
+    });
+    refs.homeHero.key = key;
+    refs.brainHero.key = key;
+    refs.health.textContent = c.health;
+    refs.note.textContent = c.note;
+    refs.action.textContent = c.action;
+    refs.budget.textContent = c.budget + " / 100 min";
+    refs.bar.style.width = Math.min(100, c.budget) + "%";
+    refs.h2.textContent = c.health;
+    refs.cells.forEach(function (cell, i) { cell.classList.toggle("on", LADDER[i] === key); });
+    refs.railnow.textContent = stageOf(key).name;
+  }
+
+  // ── 04 · la tabla ──
+  var tbody = document.getElementById("tbody");
+  LADDER.forEach(function (key) {
+    var s = stageOf(key);
+    var tr = document.createElement("tr");
+    var arms = s.armLeft.toFixed(2) + " / " + s.armRight.toFixed(2);
+    var props = s.motifs.length ? s.motifs.map(function (m) { return MOTIF_ES[m]; }).join(", ") : "—";
+    tr.innerHTML =
+      '<td style="color:' + TINTS[key] + '">' + s.name + '</td>' +
+      '<td>' + folds(s) + '</td>' +
+      '<td>' + s.turgor.toFixed(2) + '</td>' +
+      '<td class="hi">' + s.gloss.toFixed(2) + '</td>' +
+      '<td>' + s.sheen.toFixed(2) + '</td>' +
+      '<td>' + s.mouth.toFixed(2) + '</td>' +
+      '<td>' + arms + '</td>' +
+      '<td>' + props + '</td>';
+    tbody.appendChild(tr);
+  });
+
+  // ── El bucle ──
+  setStage(current);
+
+  var started = performance.now();
+  function frame(now) {
+    var t = reduce ? 0 : (now - started) / 1000;
+    for (var i = 0; i < painters.length; i++) painters[i].draw(t);
+    if (!reduce) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  window.addEventListener("resize", function () {
+    if (reduce) requestAnimationFrame(frame);
+  });
+})();
+</script>

@@ -65,15 +65,20 @@ func noStageIsSymmetric() {
 func noStageIsAColourSwap() {
     // brand.json forbids this in prose. Here it is as an exit code.
     //
-    // Ten of fifteen, measured against a real minimum of thirteen — the closest pair is
-    // crisp and mush, which sit at opposite ends and still share two numbers. Three of
-    // slack, so an honest tuning change does not trip it and a stage collapsing into a
-    // recolour of its neighbour does.
+    // Twelve of seventeen, measured against a real minimum of fifteen — the closest pair
+    // is crisp and mush, which sit at opposite ends and still share two numbers (pupil
+    // and jitter). Three of slack, so an honest tuning change does not trip it and a
+    // stage collapsing into a recolour of its neighbour does.
+    //
+    // The threshold moved with the count. `turgor` and `gloss` differ across every pair,
+    // so leaving it at ten would have quietly bought five more of slack — a test that
+    // gets easier when the thing it guards gets bigger is not guarding anything.
     func signature(_ p: CreatureParameters) -> [Double] {
         [
             Double(p.browTilt), Double(p.browLift), Double(p.lid), Double(p.open),
             Double(p.sag), Double(p.spread), Double(p.sheen), Double(p.pupil),
             Double(p.mouth), Double(p.armLeft), Double(p.armRight), Double(p.jitter),
+            Double(p.turgor), Double(p.gloss),
             p.blinkInterval, Double(p.foldsPerSide), Double(p.motifs.rawValue)
         ]
     }
@@ -84,7 +89,7 @@ func noStageIsAColourSwap() {
             let right = signature(params(b))
             let differing = zip(left, right).filter { $0.0 != $0.1 }.count
             #expect(
-                differing >= 10,
+                differing >= 12,
                 "\(a) and \(b) differ in only \(differing) of \(left.count) parameters"
             )
         }
@@ -117,6 +122,32 @@ func onlyBuzzedIsJittery() {
         let duty = 0.09 / params(stage).blinkInterval
         #expect(duty < 0.06, "\(stage) blinks \(Int(duty * 100))% of the time")
     }
+}
+
+@Test("The surface carries the ladder, and gloss is not a dimmer switch")
+func materialAxesAreDeliberate() {
+    // Turgor is monotonic for the same reason fold count is: a fold standing prouder than
+    // a healthier stage's would read as recovering while the number fell. The two are
+    // the count half and the material half of the same smooth-brain reading — sixteen
+    // folds standing flat would look as wrong as two folds standing proud.
+    let turgor = ladder.map { params($0).turgor }
+    for (index, value) in turgor.enumerated().dropFirst() {
+        #expect(
+            value <= turgor[index - 1],
+            "\(ladder[index]) stands prouder than \(ladder[index - 1])"
+        )
+    }
+    #expect(turgor.first! >= turgor.last! * 3, "the ends are not far enough apart to read")
+
+    // Gloss is deliberately *not* monotonic, and this is the assertion that says so out
+    // loud. Buzzed sits one rung below foggy and is the wetter, shinier of the two,
+    // because overstimulated is not dull — it is the most awake the creature ever looks
+    // and the least well it is doing. If someone ever tidies this into a clean descent,
+    // the five stages become five settings of one slider, and this fails and says why.
+    #expect(params(.buzzed).gloss > params(.foggy).gloss,
+            "buzzed must out-shine foggy — that non-monotonicity is the whole point")
+    #expect(params(.crisp).gloss > params(.buzzed).gloss, "nothing out-shines crisp")
+    #expect(params(.mush).gloss < 0.10, "mush must be matte")
 }
 
 private extension Motifs {
