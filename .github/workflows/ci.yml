@@ -124,6 +124,21 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             | tee xcodebuild.log | xcbeautify
 
+      # "nearly matches optional requirement" is never cosmetic. It means a delegate
+      # method is spelled almost right, does not satisfy the protocol, is never called,
+      # and compiles clean. Clean Feed's host restriction shipped that way and was dead
+      # code: the browser would have followed a link anywhere, including the deep link
+      # back into the app the whole screen exists to avoid.
+      - name: No delegate method is silently unused
+        if: always()
+        run: |
+          if grep -qE "nearly matches" xcodebuild.log; then
+            grep -nE "nearly matches" -B 1 -A 3 xcodebuild.log | head -40
+            echo "A delegate method does not satisfy its protocol and will never be called."
+            exit 1
+          fi
+          echo "No near-miss delegate methods."
+
       - name: Compiler warnings, in full
         if: always()
         run: |

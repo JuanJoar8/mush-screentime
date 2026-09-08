@@ -38,11 +38,16 @@ final class SafariBlockerModel {
         SFContentBlockerManager.getStateOfContentBlocker(
             withIdentifier: Self.identifier
         ) { blockerState, error in
+            // Read the Bool out here. `SFContentBlockerState` is not Sendable, so
+            // carrying the object itself across the hop is a data race and Swift 6
+            // refuses to build it. A Bool and a String are.
+            let enabled = blockerState?.isEnabled
+            let message = error?.localizedDescription
             MainActor.assumeIsolated {
-                if let blockerState {
-                    self.state = blockerState.isEnabled ? .on : .off
+                if let enabled {
+                    self.state = enabled ? .on : .off
                 } else {
-                    self.state = .unreadable(error?.localizedDescription ?? "no answer")
+                    self.state = .unreadable(message ?? "no answer")
                 }
             }
         }

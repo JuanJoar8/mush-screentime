@@ -192,17 +192,24 @@ private struct CleanFeedWebView: UIViewRepresentable {
     ///
     /// An in-app browser that will load anything is a general browser with no content
     /// rules — worse than no in-app browser, because it looks like one.
+    /// The async form of the delegate method, deliberately.
+    ///
+    /// The completion-handler form was written first and the compiler answered with
+    /// "nearly matches optional requirement" — a *warning*, which is the worst possible
+    /// outcome: the build was green and WebKit never called the method, so every one of
+    /// these checks was dead code and Clean Feed would happily have followed a link to
+    /// anywhere, including the `instagram://` deep link straight back to the Reels.
+    ///
+    /// The async variant has one spelling and cannot drift out of it. CI now fails on
+    /// "nearly matches" for exactly this reason.
+    @MainActor
     final class Coordinator: NSObject, WKNavigationDelegate {
         func webView(
             _ webView: WKWebView,
-            decidePolicyFor navigationAction: WKNavigationAction,
-            decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
-        ) {
-            guard let target = navigationAction.request.url else {
-                decisionHandler(.cancel)
-                return
-            }
-            decisionHandler(FeedRuleSet.isSupported(target) ? .allow : .cancel)
+            decidePolicyFor navigationAction: WKNavigationAction
+        ) async -> WKNavigationActionPolicy {
+            guard let target = navigationAction.request.url else { return .cancel }
+            return FeedRuleSet.isSupported(target) ? .allow : .cancel
         }
     }
 
