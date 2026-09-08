@@ -125,9 +125,12 @@ private struct Palette {
         let tint = stage.tint
         base = tint
 
-        // Toward the deep ground, but capped short of it: at 0.55 the dull stages sank
-        // into the background and the creature lost its outline entirely.
-        ink = tint.mix(with: Token.Color.groundDeep, by: 0.44)
+        // Warmed *before* it is darkened. Mixing a tint straight toward the deep ground
+        // desaturates it on the way: the amber stage came out olive and the grey stages
+        // came out dead. A touch of `bad` first keeps the line a deeper version of the
+        // body colour rather than a grey one.
+        ink = tint.mix(with: Token.Color.bad, by: 0.20)
+            .mix(with: Token.Color.groundDeep, by: 0.46)
         blush = tint.mix(with: Token.Color.bad, by: 0.52)
         shine = Token.Color.specular
         tongue = Token.Color.bad.mix(with: Token.Color.groundDeep, by: 0.10)
@@ -144,14 +147,14 @@ private enum Reach {
     static let maxSpread: CGFloat = 0.16
     static let maxSag: CGFloat = 0.22
     /// Silhouette harmonics, at their peak: 1 + 0.056 + 0.028.
-    static let lump: CGFloat = 1.084
+    static let lump: CGFloat = 1.092
     /// Half the contour stroke.
     static let contour: CGFloat = 0.036
 
     static let armSpan: CGFloat = 1.42      // wrist, in bodyW
     static let finger: CGFloat = 0.11       // in radius
-    static let eyeOffset: CGFloat = 0.30    // in bodyW
-    static let lens: CGFloat = 0.375        // in radius
+    static let eyeOffset: CGFloat = 0.33    // in bodyW
+    static let lens: CGFloat = 0.40         // in radius
     static let templeSpan: CGFloat = 2.06   // hook end, in lensR
     static let hip: CGFloat = 0.80          // in bodyH
     static let legLength: CGFloat = 0.46    // in radius, before sag shortens it
@@ -370,14 +373,17 @@ struct BlobView: View {
         for step in 0...steps {
             let angle = Double(step) / Double(steps) * 2 * .pi - .pi / 2
 
+            // Harmonic 6 carries the lobes and 11 breaks up the regularity. The first
+            // version used 7 and 11 at half this amplitude and the silhouette read as a
+            // rock: too many bumps, none of them big enough to be a lobe.
             let lumps = 1
-                + 0.056 * sin(angle * 7 + 0.9)
-                + 0.028 * sin(angle * 11 - 0.4)
+                + 0.072 * sin(angle * 6 + 0.9)
+                + 0.020 * sin(angle * 11 - 0.4)
 
             // Crown dip: the longitudinal fissure pulls the top centre down. Narrow, so
             // it reads as a cleft rather than a flat top.
             let fromTop = abs(atan2(sin(angle + .pi / 2), cos(angle + .pi / 2)))
-            let dip = 1 - 0.085 * exp(-pow(fromTop / 0.30, 2))
+            let dip = 1 - 0.105 * exp(-pow(fromTop / 0.30, 2))
 
             let rx = w * CGFloat(lumps * dip)
             let ry = h * CGFloat(lumps * dip)
@@ -404,7 +410,7 @@ struct BlobView: View {
         context.drawLayer { layer in
             layer.clip(to: silhouette)
             if detail {
-                drawFolds(&layer, center: center, bodyW: bodyW, bodyH: bodyH, palette: palette)
+                drawFolds(&layer, center: center, bodyW: bodyW, bodyH: bodyH, radius: radius, palette: palette)
                 drawSheen(&layer, center: center, bodyW: bodyW, bodyH: bodyH,
                           radius: radius, palette: palette)
             }
@@ -431,8 +437,21 @@ struct BlobView: View {
     /// far fewer: at this weight anything denser turns the body into hatching.
     private func drawFolds(
         _ context: inout GraphicsContext, center: CGPoint,
-        bodyW: CGFloat, bodyH: CGFloat, palette: Palette
+        bodyW: CGFloat, bodyH: CGFloat, radius: CGFloat, palette: Palette
     ) {
+        // Keep out of the face. Without this the folds ran straight through the glasses
+        // and the mouth vanished into them — the drawing read as a cracked rock with eyes
+        // rather than as a creature. Elliptical, so the exclusion follows the face's own
+        // shape instead of cutting a rectangle out of the folds.
+        let faceY = center.y + bodyH * 0.10
+        let faceRX = bodyW * 0.33 + radius * 0.52
+        let faceRY = radius * 1.00
+        func clearsFace(_ point: CGPoint) -> Bool {
+            let dx = (point.x - center.x) / faceRX
+            let dy = (point.y - faceY) / faceRY
+            return dx * dx + dy * dy > 1
+        }
+
         let width = max(bodyW * 0.038, 1)
         let style = StrokeStyle(lineWidth: width, lineCap: .round)
 
@@ -455,16 +474,18 @@ struct BlobView: View {
                     // Tangential: perpendicular to the line out from the centre, so folds
                     // wrap the dome rather than cutting across it.
                     let theta = atan2(Double(py - center.y), Double(px - center.x)) + .pi / 2
-                    let length = bodyW * (0.46 + rnd(seed + 7) * 0.16)
+                    let length = bodyW * (0.26 + rnd(seed + 7) * 0.12)
 
                     let ax = px - CGFloat(cos(theta)) * length / 2
                     let ay = py - CGFloat(sin(theta)) * length / 2
                     let bx = px + CGFloat(cos(theta)) * length / 2
                     let by = py + CGFloat(sin(theta)) * length / 2
                     // Bow outward from the centre, the direction a fold bulges.
-                    let bow = length * (0.32 + rnd(seed + 13) * 0.18)
+                    let bow = length * (0.44 + rnd(seed + 13) * 0.20)
                     let cxp = px + CGFloat(cos(theta - .pi / 2)) * bow * side
                     let cyp = py + CGFloat(sin(theta - .pi / 2)) * bow * side
+
+                    guard clearsFace(CGPoint(x: px, y: py)) else { continue }
 
                     var fold = Path()
                     fold.move(to: CGPoint(x: ax, y: ay))
@@ -479,9 +500,9 @@ struct BlobView: View {
         var fissure = Path()
         fissure.move(to: CGPoint(x: center.x, y: center.y - bodyH * 1.02))
         fissure.addCurve(
-            to: CGPoint(x: center.x, y: center.y + bodyH * 0.34),
-            control1: CGPoint(x: center.x + bodyW * 0.05, y: center.y - bodyH * 0.55),
-            control2: CGPoint(x: center.x - bodyW * 0.05, y: center.y - bodyH * 0.10)
+            to: CGPoint(x: center.x, y: center.y - bodyH * 0.34),
+            control1: CGPoint(x: center.x + bodyW * 0.05, y: center.y - bodyH * 0.80),
+            control2: CGPoint(x: center.x - bodyW * 0.05, y: center.y - bodyH * 0.52)
         )
         context.stroke(
             fissure, with: .color(palette.ink),
@@ -532,10 +553,13 @@ struct BlobView: View {
         bodyW: CGFloat, bodyH: CGFloat, radius: CGFloat, palette: Palette,
         time: TimeInterval, detail: Bool
     ) {
-        let eyeY = center.y + bodyH * 0.04
-        let eyeX = bodyW * 0.30
-        let lensR = radius * 0.375
-        let rx = radius * 0.205
+        // The face sits just below centre, the way the reference's does, and the lens is
+        // now clearly larger than the eye it holds. At 0.375 against an eye of 0.205 the
+        // wide-eyed `buzzed` sclera pushed past the rim and the frames read as goggles.
+        let eyeY = center.y + bodyH * 0.10
+        let eyeX = bodyW * 0.33
+        let lensR = radius * 0.40
+        let rx = radius * 0.185
         let ry = rx * 1.04 * p.open
 
         // Blink. Cheap, and most of what makes something read as alive.
@@ -573,7 +597,7 @@ struct BlobView: View {
         let h = radius * 0.17
         for side in [-1.0, 1.0] as [CGFloat] {
             let cxp = center.x + side * (eyeX + radius * 0.12)
-            let rect = CGRect(x: cxp - w / 2, y: eyeY + lensR * 0.82 - h / 2, width: w, height: h)
+            let rect = CGRect(x: cxp - w / 2, y: eyeY + lensR * 1.05 - h / 2, width: w, height: h)
             context.fill(
                 Path(ellipseIn: rect),
                 with: .color(palette.blush.opacity(Double(0.55 + 0.25 * p.sheen)))
@@ -726,7 +750,7 @@ struct BlobView: View {
         _ context: inout GraphicsContext, center: CGPoint, eyeY: CGFloat,
         radius: CGFloat, palette: Palette
     ) {
-        let my = eyeY + radius * 0.52
+        let my = eyeY + radius * 0.64
 
         guard p.mouth > 0.15 else {
             let mw = radius * 0.21
