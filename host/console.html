@@ -449,19 +449,24 @@
   var STAGES = [
     { key:"mush", name:"Mush", low:0, mood:"puddled",
       browTilt:0.44, browLift:0.02, lid:0.60, open:0.72, sag:0.22, spread:0.16,
-      sheen:0.14, pupil:0.10, mouth:-0.62, arms:0.86, jitter:0.000, blinkInterval:8.8 },
+      sheen:0.14, pupil:0.10, mouth:-0.62, arms:0.86, jitter:0.000, blinkInterval:8.8,
+      foldRings:1, foldsPerRing:2, motifs:["drip","crack"] },
     { key:"melting", name:"Melting", low:25, mood:"drooping, losing shape",
       browTilt:0.32, browLift:0.04, lid:0.40, open:0.82, sag:0.13, spread:0.10,
-      sheen:0.32, pupil:0.14, mouth:-0.46, arms:0.66, jitter:0.000, blinkInterval:6.4 },
+      sheen:0.32, pupil:0.14, mouth:-0.46, arms:0.66, jitter:0.000, blinkInterval:6.4,
+      foldRings:2, foldsPerRing:2, motifs:["drip","sweat"] },
     { key:"buzzed", name:"Buzzed", low:45, mood:"overstimulated, twitchy",
       browTilt:-0.36, browLift:0.14, lid:0.00, open:1.18, sag:0.02, spread:0.03,
-      sheen:0.82, pupil:0.42, mouth:-0.18, arms:0.14, jitter:0.050, blinkInterval:1.9 },
+      sheen:0.82, pupil:0.42, mouth:-0.18, arms:0.14, jitter:0.050, blinkInterval:1.9,
+      foldRings:3, foldsPerRing:3, motifs:["spiral","sweat"] },
     { key:"foggy", name:"Foggy", low:65, mood:"a bit hazy, still fine",
       browTilt:0.12, browLift:0.06, lid:0.18, open:0.92, sag:0.05, spread:0.04,
-      sheen:0.66, pupil:0.16, mouth:0.22, arms:0.40, jitter:0.000, blinkInterval:4.6 },
+      sheen:0.66, pupil:0.16, mouth:0.22, arms:0.40, jitter:0.000, blinkInterval:4.6,
+      foldRings:3, foldsPerRing:4, motifs:[] },
     { key:"crisp", name:"Crisp", low:85, mood:"alert, holding shape",
       browTilt:-0.16, browLift:0.10, lid:0.00, open:1.00, sag:0.00, spread:0.00,
-      sheen:1.00, pupil:0.10, mouth:0.85, arms:0.16, jitter:0.000, blinkInterval:3.2 }
+      sheen:1.00, pupil:0.10, mouth:0.85, arms:0.16, jitter:0.000, blinkInterval:3.2,
+      foldRings:4, foldsPerRing:4, motifs:["sparkle"] }
   ];
   var TINTS = {};
   STAGES.forEach(function (s) { TINTS[s.key] = tk("--color-stage-" + s.key); });
@@ -530,7 +535,9 @@
     ctx.closePath();
   }
 
-  function drawFolds(ctx, cx, cy, bw, bh, R, pal) {
+  function has(p, motif) { return p.motifs && p.motifs.indexOf(motif) >= 0; }
+
+  function drawFolds(ctx, cx, cy, bw, bh, R, pal, p) {
     var lw = Math.max(bw * 0.038, 1);
     ctx.lineWidth = lw; ctx.lineCap = "round"; ctx.strokeStyle = pal.inkA(0.92);
 
@@ -543,12 +550,12 @@
 
     for (var si = 0; si < 2; si++) {
       var s = si === 0 ? -1 : 1;
-      for (var ring = 0; ring < 4; ring++) {
-        for (var k = 0; k < 4; k++) {
+      for (var ring = 0; ring < p.foldRings; ring++) {
+        for (var k = 0; k < p.foldsPerRing; k++) {
           var seed = ring * 17 + k * 5 + (s > 0 ? 101 : 3);
           var j1 = rnd(seed) - 0.5, j2 = rnd(seed + 41) - 0.5;
-          var radial = 0.30 + ring * 0.16 + j1 * 0.07;
-          var arc = (k + 0.5) / 4 * 1.9 - 0.42 + j2 * 0.12;
+          var radial = 0.30 + ring * (0.62 / Math.max(p.foldRings, 1)) + j1 * 0.07;
+          var arc = (k + 0.5) / Math.max(p.foldsPerRing, 1) * 1.9 - 0.42 + j2 * 0.12;
           var px = cx + s * bw * radial * Math.cos(arc - 0.35);
           var py = cy - bh * 0.74 + bh * 1.86 * arc / 1.9 + bh * j2 * 0.06;
           if (Math.abs(px - cx) <= faceHalfW && py >= faceTop) continue;
@@ -592,6 +599,85 @@
     });
   }
 
+  // The body going. Narrow where it leaves the head, swelling to a bead, and short —
+  // the first version was even-width and long, which is a leg, and melting appeared to
+  // have five of them. The detached droplet does most of the work: a shape hanging off a
+  // body is ambiguous, a shape in mid-air under it is not.
+  function drawDrips(ctx, cx, cy, bw, bh, R, pal) {
+    var yTop = cy + bh * 0.70;
+    ctx.lineWidth = Math.max(R * 0.072, 1.4); ctx.lineJoin = "round";
+    [[-0.40, 0.30, 0.15], [0.02, 0.20, 0.11], [0.42, 0.26, 0.13]].forEach(function (d) {
+      var x = cx + bw * d[0], len = R * d[1], bead = R * d[2], neck = bead * 0.42;
+      ctx.beginPath();
+      ctx.moveTo(x - neck, yTop);
+      ctx.quadraticCurveTo(x - neck * 0.90, yTop + len * 0.70, x - bead, yTop + len);
+      ctx.quadraticCurveTo(x, yTop + len + bead * 1.70, x + bead, yTop + len);
+      ctx.quadraticCurveTo(x + neck * 0.90, yTop + len * 0.70, x + neck, yTop);
+      ctx.closePath();
+      ctx.fillStyle = pal.base; ctx.fill();
+      ctx.strokeStyle = pal.ink; ctx.stroke();
+    });
+    ctx.beginPath();
+    ctx.ellipse(cx - bw * 0.40, yTop + R * 0.578, R * 0.062, R * 0.078, 0, 0, Math.PI * 2);
+    ctx.fillStyle = pal.base; ctx.fill();
+    ctx.strokeStyle = pal.ink; ctx.stroke();
+  }
+
+  // A fold curves and closes; a crack veers and stops. They run outward toward the rim
+  // because the first version walked into the face, where the glasses cover them.
+  function drawCracks(ctx, cx, cy, bw, bh, pal) {
+    ctx.lineWidth = Math.max(bw * 0.038, 1.2); ctx.lineCap = "round"; ctx.lineJoin = "miter";
+    ctx.strokeStyle = pal.ink;
+    [[-0.34, -0.78, 7], [0.16, -0.90, 23], [0.46, -0.58, 51]].forEach(function (o) {
+      var away = o[0] < 0 ? -1 : 1, x = cx + bw * o[0], y = cy + bh * o[1];
+      ctx.beginPath(); ctx.moveTo(x, y);
+      for (var step = 1; step <= 4; step++) {
+        var jitter = rnd(o[2] + step * 13) - 0.5;
+        x += bw * away * (0.13 + jitter * 0.14);
+        y += bh * (0.11 + jitter * 0.12);
+        ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    });
+  }
+
+  // Healing only. Waisted so they read as a sparkle and not as a plus sign, and kept
+  // inside 1.10 x bodyH so the canvas fit still holds.
+  function drawSparkles(ctx, cx, cy, bw, bh, R, t) {
+    var arms = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+    [[-1.16, -0.52, 0.135, 0.0], [1.08, -0.78, 0.100, 1.7], [0.50, -1.06, 0.075, 3.1]]
+      .forEach(function (place) {
+        var twinkle = t > 0 ? 0.72 + 0.28 * Math.sin(t * 1.8 + place[3]) : 1;
+        var r = R * place[2] * twinkle;
+        var sx = cx + bw * place[0], sy = cy + bh * place[1];
+        ctx.beginPath();
+        ctx.moveTo(sx, sy - r);
+        for (var i = 0; i < 4; i++) {
+          var here = arms[i], next = arms[(i + 1) % 4];
+          ctx.quadraticCurveTo(
+            sx + (here[0] + next[0]) * r * 0.15, sy + (here[1] + next[1]) * r * 0.15,
+            sx + next[0] * r, sy + next[1] * r);
+        }
+        ctx.closePath();
+        ctx.fillStyle = rgba(tk("--color-specular"), 0.92); ctx.fill();
+      });
+  }
+
+  // One bead at the temple: the oldest shorthand in cartooning for "this is a lot".
+  function drawSweat(ctx, cx, cy, bw, bh, R) {
+    var x = cx + bw * 0.70, y = cy - bh * 0.46, w = R * 0.10, h = R * 0.20;
+    ctx.beginPath();
+    ctx.moveTo(x, y - h);
+    ctx.quadraticCurveTo(x + w * 0.55, y - h * 0.25, x + w, y + h * 0.25);
+    ctx.quadraticCurveTo(x, y + h * 1.15, x - w, y + h * 0.25);
+    ctx.quadraticCurveTo(x - w * 0.55, y - h * 0.25, x, y - h);
+    ctx.closePath();
+    ctx.fillStyle = tk("--color-eye-iris"); ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(x - w * 0.30, y + h * 0.15, w * 0.20, w * 0.20, 0, 0, Math.PI * 2);
+    ctx.fillStyle = rgba(tk("--color-specular"), 0.85); ctx.fill();
+  }
+
   function drawEye(ctx, ex, eyeY, rx, ry, blink, s, t, pal, p) {
     // Shut is one ink curve. Scaling the white sclera to 0.08 left a pale sliver behind
     // the lens that read as an empty frame.
@@ -610,16 +696,33 @@
     var gaze = p.jitter ? Math.sin(t * 5.3 + s) * rx * 0.14 : 0;
     var irisR = rx * 0.78, ix = ex + gaze, iy = eyeY + ry * 0.05;
 
-    // Flat discs. The blue is a ring around a large pupil, which is what an eye behind
-    // a lens looks like at this size, and it keeps the one blue in the system.
-    ctx.beginPath(); ctx.arc(ix, iy, irisR, 0, Math.PI * 2);
-    ctx.fillStyle = tk("--color-eye-iris"); ctx.fill();
-    var pupilR = irisR * (0.94 - p.pupil * 0.5);
-    ctx.beginPath(); ctx.arc(ix, iy, pupilR, 0, Math.PI * 2);
-    ctx.fillStyle = tk("--color-eye-pupil"); ctx.fill();
-    var gR = irisR * 0.28;
-    ctx.beginPath(); ctx.arc(ix - irisR * 0.30, iy - irisR * 0.38, gR, 0, Math.PI * 2);
-    ctx.fillStyle = tk("--color-specular"); ctx.fill();
+    if (has(p, "spiral")) {
+      // Hypnotised. The one drawing the whole internet already reads as brainrot, and it
+      // costs sixty line segments. Slowly is the point: a fast spin is a spinner.
+      var spin = t > 0 ? t * 0.7 : 0;
+      ctx.beginPath();
+      for (var step = 0; step <= 60; step++) {
+        var progress = step / 60;
+        var angle = progress * 2.7 * 2 * Math.PI + spin;
+        var r = rx * 0.94 * progress;
+        var px = ix + r * Math.cos(angle), py = iy + r * Math.sin(angle);
+        if (step === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.strokeStyle = tk("--color-eye-pupil");
+      ctx.lineWidth = Math.max(rx * 0.20, 1); ctx.lineCap = "round"; ctx.lineJoin = "round";
+      ctx.stroke();
+    } else {
+      // Flat discs. The blue is a ring around a large pupil, which is what an eye behind
+      // a lens looks like at this size, and it keeps the one blue in the system.
+      ctx.beginPath(); ctx.arc(ix, iy, irisR, 0, Math.PI * 2);
+      ctx.fillStyle = tk("--color-eye-iris"); ctx.fill();
+      var pupilR = irisR * (0.94 - p.pupil * 0.5);
+      ctx.beginPath(); ctx.arc(ix, iy, pupilR, 0, Math.PI * 2);
+      ctx.fillStyle = tk("--color-eye-pupil"); ctx.fill();
+      var gR = irisR * 0.28;
+      ctx.beginPath(); ctx.arc(ix - irisR * 0.30, iy - irisR * 0.38, gR, 0, Math.PI * 2);
+      ctx.fillStyle = tk("--color-specular"); ctx.fill();
+    }
 
     // A heavy lid in the body colour, so it reads as the brain closing over the eye
     // rather than a grey bar laid on top.
@@ -637,6 +740,19 @@
   // the coach tone brand.json forbids.
   function drawMouth(ctx, cx, eyeY, R, pal, p) {
     var my = eyeY + R * 0.58;
+    if (p.mouth < -0.35) {
+      var ww = R * 0.23, amp = R * 0.075, seg = ww * 2 / 3;
+      ctx.beginPath();
+      ctx.moveTo(cx - ww, my);
+      for (var i = 0; i < 3; i++) {
+        var from = cx - ww + seg * i, to = from + seg;
+        ctx.quadraticCurveTo((from + to) / 2, my + amp * (i % 2 === 0 ? -1 : 1), to, my);
+      }
+      ctx.strokeStyle = pal.ink;
+      ctx.lineWidth = Math.max(R * 0.058, 1.2); ctx.lineCap = "round";
+      ctx.stroke();
+      return;
+    }
     if (p.mouth <= 0.15) {
       var lw = R * 0.21;
       ctx.beginPath();
@@ -772,13 +888,17 @@
       }
     });
 
+    // Drips first, so the body paints over their shoulders and the seam never shows.
+    if (has(p, "drip")) drawDrips(ctx, cx, cy, bw, bh, R, pal);
+
     // Body. Folds and sheen live inside the contour, so the contour is stroked last and
     // stays a clean unbroken edge.
     bodyPath(ctx, cx, cy, bw, bh);
     ctx.fillStyle = pal.base; ctx.fill();
     ctx.save();
     bodyPath(ctx, cx, cy, bw, bh); ctx.clip();
-    drawFolds(ctx, cx, cy, bw, bh, R, pal);
+    drawFolds(ctx, cx, cy, bw, bh, R, pal, p);
+    if (has(p, "crack")) drawCracks(ctx, cx, cy, bw, bh, pal);
     drawSheen(ctx, cx, cy, bw, bh, R, p);
     ctx.restore();
     bodyPath(ctx, cx, cy, bw, bh);
@@ -802,6 +922,10 @@
     drawMouth(ctx, cx, eyeY, R, pal, p);
     drawGlasses(ctx, cx, eyeX, eyeY, lensR, R, pal);
     drawBrows(ctx, cx, eyeX, eyeY, lensR, R, pal, p);
+
+    // Props last, outside the silhouette. A prop drawn under the creature is a smudge.
+    if (has(p, "sweat")) drawSweat(ctx, cx, cy, bw, bh, R);
+    if (has(p, "sparkle")) drawSparkles(ctx, cx, cy, bw, bh, R, t);
   }
 
   // ── Engine, ported from BrainHealthEngine.swift ───────────────────────────

@@ -44,13 +44,26 @@ function recordingContext(name) {
   });
 }
 
+// Every stage card, so all five stages are actually drawn.
+//
+// The first version of this file returned [] from querySelectorAll, which meant the strip
+// never rendered and only the current stage — `foggy`, the one stage with no motifs at
+// all — was exercised. The drips, cracks, spiral and sparkles were entirely uncovered by
+// the check written to cover them.
+const stageCards = ['mush', 'melting', 'buzzed', 'foggy', 'crisp'].map((key) => ({
+  dataset: { stage: key },
+  querySelector: () => el('stage-' + key),
+  addEventListener() {},
+}));
+
 const el = (id) => ({
   id,
   getContext: () => recordingContext(id),
   addEventListener() {}, removeEventListener() {},
   classList: { toggle() {}, add() {}, remove() {}, contains: () => false },
   style: new Proxy({}, { get: () => () => {}, set: () => true }),
-  dataset: {}, querySelector: () => el('inner'), querySelectorAll: () => [],
+  dataset: {}, querySelector: () => el('inner'),
+  querySelectorAll: (sel) => (sel === '.stagecard' ? stageCards : []),
   setAttribute() {}, getAttribute: () => null,
   scrollTo() {}, scrollTop: 0, offsetWidth: 100, value: 0,
   set innerHTML(v) {}, get innerHTML() { return ''; },
@@ -60,7 +73,7 @@ const el = (id) => ({
 global.document = {
   documentElement: { style: { setProperty() {} } },
   getElementById: el,
-  querySelectorAll: () => [],
+  querySelectorAll: (sel) => (sel === '.stagecard' ? stageCards : []),
   createElement: el,
 };
 global.window = { matchMedia: () => ({ matches: false }), addEventListener() {} };
@@ -90,6 +103,16 @@ const used = [...new Set(hero.map((c) => c.split('.')[1]))];
 console.log('script ran with no exception');
 console.log('  2D calls total: ' + calls.length + ', on the hero canvas: ' + hero.length);
 console.log('  hero used: ' + (used.join(', ') || '(nothing)'));
+
+// Every stage, not just whichever one happens to be current. Each of the five has its own
+// motifs — drips, cracks, a spiral pupil, sparkles — and each is a separate code path.
+for (const key of ['mush', 'melting', 'buzzed', 'foggy', 'crisp']) {
+  const drew = calls.filter((c) => c.startsWith('stage-' + key + '.')).length;
+  console.log('  ' + key.padEnd(8) + drew + ' calls');
+  if (drew < 50) {
+    fail(key + ' drew only ' + drew + ' times; its motifs are not being exercised');
+  }
+}
 
 if (hero.length < 100) {
   fail('the hero canvas took ' + hero.length + ' drawing calls; the creature needs hundreds');
