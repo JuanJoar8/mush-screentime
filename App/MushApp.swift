@@ -116,6 +116,13 @@ final class AppModel {
     /// Set when a Shortcuts automation just foregrounded us. Drives the pause screen.
     private(set) var pendingInterruption: PendingInterruption?
 
+    /// Notifications are suppressed until the first refresh has completed.
+    ///
+    /// Same reasoning as the gem backfill: whatever the number was before the app
+    /// opened is not news. It also keeps `UNUserNotificationCenter` off the launch
+    /// path entirely, which is where a blank Brain screen was coming from.
+    private var hasSettled = false
+
     private let inbox = InterruptionInbox()
     private let milestoneWatcher = MilestoneWatcher()
     private let snapshots = WidgetSnapshotStore()
@@ -262,6 +269,17 @@ final class AppModel {
         //
         // The gem overlay handles the in-app moment; the notification is for the case
         // that matters more, which is not being in the app at all.
+        //
+        // Never on the first pass. Whatever the number was before the app opened is not
+        // news, and touching the notification centre during launch is what left the
+        // Brain screen blank.
+        guard hasSettled else {
+            hasSettled = true
+            newlyUnlocked = []
+            milestone = nil
+            return
+        }
+
         if let milestone {
             Task { await MushNotifier.shared.post(milestone) }
         }

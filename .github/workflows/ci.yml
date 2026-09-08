@@ -173,6 +173,24 @@ jobs:
       - name: Screens actually rendered
         run: swift scripts/screen-not-blank.swift 6 screenshots/*.png
 
+      # A blank screen is almost always a crash on launch, and the difference between
+      # "blank" and a stack trace is the difference between guessing and knowing. Only
+      # runs when the check above failed, so a green build stays quiet.
+      - name: Why it was blank
+        if: failure()
+        run: |
+          echo "--- crash reports ---"
+          find ~/Library/Logs/DiagnosticReports -name 'Mush*' -newermt '-20 minutes' 2>/dev/null \
+            | while read -r REPORT; do
+                echo "=== $REPORT ==="
+                head -80 "$REPORT"
+              done
+          echo "--- last app output ---"
+          xcrun simctl spawn "${{ steps.sim.outputs.udid }}" log show \
+            --style compact --last 10m \
+            --predicate 'process == "Mush" OR senderImagePath CONTAINS "Mush"' 2>/dev/null \
+            | tail -60 || echo "(no log)"
+
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4
