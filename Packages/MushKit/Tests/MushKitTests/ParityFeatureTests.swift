@@ -187,7 +187,8 @@ private func gemContext(days: [DayRecord], streak: Int = 0, health: Double = 70)
 
 @Test("Gems unlock from the ledger and never re-lock")
 func gemsAreSticky() {
-    var state = GemState()
+    // Past the backfill: this test is about stickiness, not about the first pass.
+    var state = GemState(hasBackfilled: true)
     let good = DayRecord(date: at(1, 0), distractingMinutes: 20, budgetMinutes: 60, shieldsShown: 0)
 
     let first = GemEvaluator.evaluate(gemContext(days: [good]), state: &state)
@@ -201,7 +202,9 @@ func gemsAreSticky() {
 
 @Test("A blind day earns nothing")
 func gemsIgnoreBlindDays() {
-    var state = GemState()
+    // Past the backfill, so an empty result means the day genuinely earned nothing
+    // rather than that the first pass swallowed it.
+    var state = GemState(hasBackfilled: true)
     let blind = DayRecord(date: at(1, 0), distractingMinutes: 0, budgetMinutes: 60, hasSignal: false)
     let unlocked = GemEvaluator.evaluate(gemContext(days: [blind]), state: &state)
     #expect(!unlocked.contains { $0.id == "first-signal" })
