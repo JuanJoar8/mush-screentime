@@ -134,6 +134,48 @@ private struct Palette {
     }
 }
 
+/// The drawing's extents, in units of `radius`, derived from the constants the drawing
+/// actually uses rather than measured off a screenshot.
+///
+/// Everything here is a worst case across all five stages: `spread` widens the body by up
+/// to 16% and `sag` drops it by up to 22%, so the fit has to hold for the widest and the
+/// lowest, not for the one that happens to be on screen.
+private enum Reach {
+    static let maxSpread: CGFloat = 0.16
+    static let maxSag: CGFloat = 0.22
+    /// Silhouette harmonics, at their peak: 1 + 0.056 + 0.028.
+    static let lump: CGFloat = 1.084
+    /// Half the contour stroke.
+    static let contour: CGFloat = 0.036
+
+    static let armSpan: CGFloat = 1.42      // wrist, in bodyW
+    static let finger: CGFloat = 0.11       // in radius
+    static let eyeOffset: CGFloat = 0.30    // in bodyW
+    static let lens: CGFloat = 0.375        // in radius
+    static let templeSpan: CGFloat = 2.06   // hook end, in lensR
+    static let hip: CGFloat = 0.80          // in bodyH
+    static let legLength: CGFloat = 0.46    // in radius, before sag shortens it
+    static let shadow: CGFloat = 0.16       // centre offset plus half height
+
+    private static let widestBody: CGFloat = 1.30 + maxSpread
+    private static let tallestBody: CGFloat = 1.06
+
+    static var halfWidth: CGFloat {
+        max(widestBody * armSpan + finger,
+            max(widestBody * lump + contour,
+                widestBody * eyeOffset + lens * templeSpan))
+    }
+
+    /// Crown. Measured with the *tallest* body, which is the unspread one.
+    static var above: CGFloat { tallestBody * lump + contour }
+
+    /// Shadow's lower edge. Sag moves the whole creature down faster than it shortens
+    /// the legs, so the worst case is the most slumped stage.
+    static var below: CGFloat {
+        tallestBody * hip + (legLength - maxSag * 0.7) + shadow + maxSag
+    }
+}
+
 struct BlobView: View {
     let stage: BrainStage
     /// Draw one frame and stop. Widgets and Live Activities are static snapshots, so
@@ -172,17 +214,19 @@ struct BlobView: View {
 
         let cx = size.width / 2
 
-        // Fit the *whole* creature, not the head. The two extremes that bind:
+        // Fit the *whole* creature, not the head — and fit the *widest* stage, not this
+        // one. `Reach` computes the extents from the same constants the limbs and body
+        // use, so lengthening an arm moves the fit automatically.
         //
-        //   horizontally  fingertips at 1.42 × bodyW plus 0.10 × radius of finger, and
-        //                 bodyW is 1.30 × radius → 1.95 × radius from the centre
-        //   vertically    the crown at 1.13 × radius above a centre sitting at 42%, and
-        //                 the shadow's lower edge at 1.50 × radius below it
-        //
-        // Change a limb length and this line changes with it. The previous version put
-        // the gloves outside the canvas the moment the arms grew, and SwiftUI clipped
-        // them — a creature with no hands, in the gallery and the widget both.
-        let radius = min(size.width * 0.250, size.height * 0.335)
+        // Hand-computing this is how the hands got clipped, twice. The first time a glove
+        // grew past a hardcoded fraction. The second time the arithmetic was redone for
+        // `crisp` and never checked against `mush`, which spreads 16% wider — the
+        // fingertips reached 2.18 × radius against a budget of 2.00, and SwiftUI would
+        // have cut them off in the two stages that need to look worst.
+        let radius = min(
+            size.width * 0.5 / Reach.halfWidth,
+            min(size.height * 0.42 / Reach.above, size.height * 0.58 / Reach.below)
+        )
 
         // Idle breathing: slow, small, and the only thing that moves at rest.
         let breathe = CGFloat(sin(time * 0.9)) * radius * 0.014
