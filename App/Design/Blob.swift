@@ -1,6 +1,30 @@
 import SwiftUI
 import MushKit
 
+/// Drawn props, not tuned parameters.
+///
+/// The five stages used to differ only by degree — a little more sag, a little less
+/// gloss — and a spectrum of degrees reads as one creature in five moods rather than as
+/// two conditions. These are the things that are either there or not, and they are what
+/// makes a stage *identifiable* instead of merely darker.
+///
+/// They split the ladder in two on purpose. Sparkle belongs to healing, drip and crack
+/// belong to rot, and `buzzed` gets the pair that says overstimulated rather than
+/// damaged: a spiral pupil and a bead of sweat.
+struct Motifs: OptionSet, Equatable, Sendable {
+    let rawValue: Int
+    /// Four-pointed stars around the head. Healing only.
+    static let sparkle = Motifs(rawValue: 1 << 0)
+    /// Hypnotised pupils. The one drawing everybody already reads as brainrot.
+    static let spiral = Motifs(rawValue: 1 << 1)
+    /// A bead at the temple.
+    static let sweat = Motifs(rawValue: 1 << 2)
+    /// Teardrops hanging off the lower contour: the body itself going.
+    static let drip = Motifs(rawValue: 1 << 3)
+    /// Fissures across the surface that are not gyri.
+    static let crack = Motifs(rawValue: 1 << 4)
+}
+
 /// The character: an anthropomorphic brain in round wire glasses.
 ///
 /// No image assets. Every curve is generated from `BrainStage`, so the creature cannot
@@ -62,29 +86,43 @@ struct CreatureParameters: Equatable {
     var jitter: CGFloat
     /// Seconds between blinks. A duller creature blinks more slowly.
     var blinkInterval: Double
+    /// Rings of folds, and folds per ring.
+    ///
+    /// **This is the main signal now.** A brain losing its convolutions is the metaphor
+    /// the internet already reaches for — "smooth brain" — so fold density is not
+    /// texture, it is the reading. Sixteen folds a side at `crisp`, two at `mush`.
+    var foldRings: Int
+    var foldsPerRing: Int
+    /// What is drawn on and around it that is not the creature itself.
+    var motifs: Motifs
 
     static func forStage(_ stage: BrainStage) -> CreatureParameters {
         switch stage {
         case .crisp:
             .init(browTilt: -0.16, browLift: 0.10, lid: 0.00, open: 1.00, sag: 0.00,
                   spread: 0.00, sheen: 1.00, pupil: 0.10, mouth: 0.85, arms: 0.16,
-                  jitter: 0.000, blinkInterval: 3.2)
+                  jitter: 0.000, blinkInterval: 3.2,
+                  foldRings: 4, foldsPerRing: 4, motifs: [.sparkle])
         case .foggy:
             .init(browTilt: 0.12, browLift: 0.06, lid: 0.18, open: 0.92, sag: 0.05,
                   spread: 0.04, sheen: 0.66, pupil: 0.16, mouth: 0.22, arms: 0.40,
-                  jitter: 0.000, blinkInterval: 4.6)
+                  jitter: 0.000, blinkInterval: 4.6,
+                  foldRings: 3, foldsPerRing: 4, motifs: [])
         case .buzzed:
             .init(browTilt: -0.36, browLift: 0.14, lid: 0.00, open: 1.18, sag: 0.02,
                   spread: 0.03, sheen: 0.82, pupil: 0.42, mouth: -0.18, arms: 0.14,
-                  jitter: 0.050, blinkInterval: 1.9)
+                  jitter: 0.050, blinkInterval: 1.9,
+                  foldRings: 3, foldsPerRing: 3, motifs: [.spiral, .sweat])
         case .melting:
             .init(browTilt: 0.32, browLift: 0.04, lid: 0.40, open: 0.82, sag: 0.13,
                   spread: 0.10, sheen: 0.32, pupil: 0.14, mouth: -0.46, arms: 0.66,
-                  jitter: 0.000, blinkInterval: 6.4)
+                  jitter: 0.000, blinkInterval: 6.4,
+                  foldRings: 2, foldsPerRing: 2, motifs: [.drip, .sweat])
         case .mush:
             .init(browTilt: 0.44, browLift: 0.02, lid: 0.60, open: 0.72, sag: 0.22,
                   spread: 0.16, sheen: 0.14, pupil: 0.10, mouth: -0.62, arms: 0.86,
-                  jitter: 0.000, blinkInterval: 8.8)
+                  jitter: 0.000, blinkInterval: 8.8,
+                  foldRings: 1, foldsPerRing: 2, motifs: [.drip, .crack])
         }
     }
 }
@@ -255,6 +293,16 @@ struct BlobView: View {
                  palette: palette, detail: detail)
         drawFace(&context, center: center, bodyW: bodyW, bodyH: bodyH, radius: radius,
                  palette: palette, time: time, detail: detail)
+
+        // Last, and outside the silhouette. These are the props, and a prop drawn under
+        // the creature is just a smudge.
+        if detail && p.motifs.contains(.sweat) {
+            drawSweat(&context, center: center, bodyW: bodyW, bodyH: bodyH, radius: radius)
+        }
+        if detail && p.motifs.contains(.sparkle) {
+            drawSparkles(&context, center: center, bodyW: bodyW, bodyH: bodyH,
+                         radius: radius, time: time)
+        }
     }
 
     // MARK: Ground
@@ -404,6 +452,14 @@ struct BlobView: View {
     ) {
         let silhouette = bodyPath(center: center, bodyW: bodyW, bodyH: bodyH)
 
+        // Drips first, so the body is painted over the top of them and the seam where a
+        // drip leaves the head never shows. Drawn afterwards, every one of them would
+        // carry a contour line straight across its shoulder.
+        if p.motifs.contains(.drip) {
+            drawDrips(&context, center: center, bodyW: bodyW, bodyH: bodyH,
+                      radius: radius, palette: palette)
+        }
+
         context.fill(silhouette, with: .color(palette.base))
 
         // Folds and sheen live inside the contour, so the contour is stroked last and
@@ -412,6 +468,9 @@ struct BlobView: View {
             layer.clip(to: silhouette)
             if detail {
                 drawFolds(&layer, center: center, bodyW: bodyW, bodyH: bodyH, radius: radius, palette: palette)
+                if p.motifs.contains(.crack) {
+                    drawCracks(&layer, center: center, bodyW: bodyW, bodyH: bodyH, palette: palette)
+                }
                 drawSheen(&layer, center: center, bodyW: bodyW, bodyH: bodyH,
                           radius: radius, palette: palette)
             }
@@ -457,8 +516,8 @@ struct BlobView: View {
         let style = StrokeStyle(lineWidth: width, lineCap: .round)
 
         for side in [-1.0, 1.0] as [CGFloat] {
-            for ring in 0..<4 {
-                let count = 4
+            for ring in 0..<p.foldRings {
+                let count = p.foldsPerRing
                 for index in 0..<count {
                     let seed = ring * 17 + index * 5 + (side > 0 ? 101 : 3)
                     let j1 = rnd(seed) - 0.5
@@ -466,8 +525,8 @@ struct BlobView: View {
 
                     // Polar position inside the hemisphere. `radial` 0 is the fissure,
                     // 1 the outer edge; `arc` sweeps from crown to base.
-                    let radial = 0.30 + CGFloat(ring) * 0.16 + j1 * 0.07
-                    let arc = (CGFloat(index) + 0.5) / CGFloat(count) * 1.9 - 0.42 + j2 * 0.12
+                    let radial = 0.30 + CGFloat(ring) * (0.62 / CGFloat(max(p.foldRings, 1))) + j1 * 0.07
+                    let arc = (CGFloat(index) + 0.5) / CGFloat(max(count, 1)) * 1.9 - 0.42 + j2 * 0.12
 
                     let px = center.x + side * bodyW * radial * CGFloat(cos(Double(arc) - 0.35))
                     let py = center.y - bodyH * 0.74 + bodyH * 1.86 * arc / 1.9 + bodyH * j2 * 0.06
@@ -545,6 +604,151 @@ struct BlobView: View {
                 mark, with: .color(palette.shine.opacity(Double(0.62 * p.sheen))), style: style
             )
         }
+    }
+
+    // MARK: Motifs
+
+    /// The body going. Three teardrops hanging off the lower contour, each starting well
+    /// inside the silhouette so the body can be painted over their shoulders.
+    private func drawDrips(
+        _ context: inout GraphicsContext, center: CGPoint,
+        bodyW: CGFloat, bodyH: CGFloat, radius: CGFloat, palette: Palette
+    ) {
+        let yTop = center.y + bodyH * 0.72
+        let stroke = StrokeStyle(lineWidth: max(radius * 0.072, 1.4), lineJoin: .round)
+
+        // Uneven on purpose. Three drips of one length at even spacing read as a
+        // decorative fringe, and melting is not tidy.
+        for (offset, length, width) in [
+            (CGFloat(-0.46), CGFloat(0.52), CGFloat(0.13)),
+            (CGFloat(0.08), CGFloat(0.34), CGFloat(0.10)),
+            (CGFloat(0.54), CGFloat(0.44), CGFloat(0.11))
+        ] {
+            let x = center.x + bodyW * offset
+            let w = radius * width
+            let len = radius * length
+
+            var drip = Path()
+            drip.move(to: CGPoint(x: x - w, y: yTop))
+            drip.addQuadCurve(
+                to: CGPoint(x: x - w * 0.72, y: yTop + len),
+                control: CGPoint(x: x - w * 1.06, y: yTop + len * 0.62)
+            )
+            drip.addQuadCurve(
+                to: CGPoint(x: x + w * 0.72, y: yTop + len),
+                control: CGPoint(x: x, y: yTop + len * 1.44)
+            )
+            drip.addQuadCurve(
+                to: CGPoint(x: x + w, y: yTop),
+                control: CGPoint(x: x + w * 1.06, y: yTop + len * 0.62)
+            )
+            drip.closeSubpath()
+
+            context.fill(drip, with: .color(palette.base))
+            context.stroke(drip, with: .color(palette.ink), style: stroke)
+        }
+    }
+
+    /// Fissures that are not gyri. A fold curves and closes; a crack veers and stops, and
+    /// that difference is the whole point — one is structure, the other is damage.
+    private func drawCracks(
+        _ context: inout GraphicsContext, center: CGPoint,
+        bodyW: CGFloat, bodyH: CGFloat, palette: Palette
+    ) {
+        let style = StrokeStyle(lineWidth: max(bodyW * 0.026, 1), lineCap: .round, lineJoin: .miter)
+
+        for (index, seed) in [7, 23, 51].enumerated() {
+            let originX = center.x + bodyW * (CGFloat(index) - 1) * 0.52
+            let originY = center.y - bodyH * (0.62 - CGFloat(index) * 0.12)
+
+            var crack = Path()
+            crack.move(to: CGPoint(x: originX, y: originY))
+            var point = CGPoint(x: originX, y: originY)
+            // Five short segments, each veering. A smooth line reads as a fold; the
+            // veering is what makes it read as a break.
+            for step in 1...5 {
+                let jitter = rnd(seed + step * 13) - 0.5
+                point = CGPoint(
+                    x: point.x + bodyW * (0.10 + jitter * 0.16),
+                    y: point.y + bodyH * (0.16 + jitter * 0.10)
+                )
+                crack.addLine(to: point)
+            }
+            context.stroke(crack, with: .color(palette.ink.opacity(0.9)), style: style)
+        }
+    }
+
+    /// Four-pointed stars, waisted so they read as a sparkle and not as a plus sign.
+    /// Healing only — this is the one motif that says the number went up.
+    private func drawSparkles(
+        _ context: inout GraphicsContext, center: CGPoint,
+        bodyW: CGFloat, bodyH: CGFloat, radius: CGFloat, time: TimeInterval
+    ) {
+        // Kept inside 1.10 x bodyH vertically so the fit in `Reach` still holds: the crown
+        // already sits at 1.09, and a sparkle above that would be clipped off the canvas.
+        let places: [(CGFloat, CGFloat, CGFloat, Double)] = [
+            (-1.16, -0.52, 0.135, 0.0),
+            (1.08, -0.78, 0.100, 1.7),
+            (0.50, -1.06, 0.075, 3.1)
+        ]
+
+        for (mx, my, size, phase) in places {
+            // A twinkle, not a spin: scale only, slow, out of phase with its neighbours.
+            // At `time == 0` — every widget, every static render — it sits at full size.
+            let twinkle: CGFloat = time > 0
+                ? 0.72 + 0.28 * CGFloat(sin(time * 1.8 + phase))
+                : 1
+            let r = radius * size * twinkle
+            let sx = center.x + bodyW * mx
+            let sy = center.y + bodyH * my
+
+            let arms: [(CGFloat, CGFloat)] = [(0, -1), (1, 0), (0, 1), (-1, 0)]
+            var star = Path()
+            star.move(to: CGPoint(x: sx, y: sy - r))
+            for index in 0..<4 {
+                let here = arms[index]
+                let next = arms[(index + 1) % 4]
+                star.addQuadCurve(
+                    to: CGPoint(x: sx + next.0 * r, y: sy + next.1 * r),
+                    control: CGPoint(
+                        x: sx + (here.0 + next.0) * r * 0.15,
+                        y: sy + (here.1 + next.1) * r * 0.15
+                    )
+                )
+            }
+            star.closeSubpath()
+            context.fill(star, with: .color(Token.Color.specular.opacity(0.92)))
+        }
+    }
+
+    /// One bead at the temple. The oldest shorthand in cartooning for "this is a lot".
+    private func drawSweat(
+        _ context: inout GraphicsContext, center: CGPoint,
+        bodyW: CGFloat, bodyH: CGFloat, radius: CGFloat
+    ) {
+        let x = center.x + bodyW * 0.70
+        let y = center.y - bodyH * 0.46
+        let w = radius * 0.10
+        let h = radius * 0.20
+
+        var bead = Path()
+        bead.move(to: CGPoint(x: x, y: y - h))
+        bead.addQuadCurve(to: CGPoint(x: x + w, y: y + h * 0.25),
+                          control: CGPoint(x: x + w * 0.55, y: y - h * 0.25))
+        bead.addQuadCurve(to: CGPoint(x: x - w, y: y + h * 0.25),
+                          control: CGPoint(x: x, y: y + h * 1.15))
+        bead.addQuadCurve(to: CGPoint(x: x, y: y - h),
+                          control: CGPoint(x: x - w * 0.55, y: y - h * 0.25))
+        bead.closeSubpath()
+
+        // Blue, because it is the one colour in the system that is not the creature and
+        // not a status: it reads as water rather than as a reading.
+        context.fill(bead, with: .color(Token.Color.eyeIris))
+        context.fill(
+            Path(ellipseIn: CGRect(x: x - w * 0.50, y: y - h * 0.05,
+                                   width: w * 0.40, height: w * 0.40)),
+            with: .color(Token.Color.specular.opacity(0.85))
+        )
     }
 
     // MARK: Face
@@ -639,29 +843,53 @@ struct BlobView: View {
         let ix = ex + gaze
         let iy = eyeY + ry * 0.05
 
-        // Flat discs, no radial gradient. The blue is a *ring* around a large pupil, which
-        // is what an eye behind a lens actually looks like at this scale, and it keeps the
-        // one blue in the system (brand.json component_rules.eyes) without the eye turning
-        // into a marble.
-        context.fill(
-            Path(ellipseIn: CGRect(x: ix - irisR, y: iy - irisR,
-                                   width: irisR * 2, height: irisR * 2)),
-            with: .color(Token.Color.eyeIris)
-        )
+        // Hypnotised. A spiral where the pupil should be is the one drawing the whole
+        // internet already reads as brainrot, and it costs sixty line segments. It turns
+        // slowly, and slowly is the point — a fast spin would be a loading indicator.
+        if p.motifs.contains(.spiral) {
+            var spiral = Path()
+            let steps = 60
+            let spin = time > 0 ? time * 0.7 : 0
+            for step in 0...steps {
+                let progress = Double(step) / Double(steps)
+                let angle = progress * 2.7 * 2 * .pi + spin
+                let r = rx * 0.94 * CGFloat(progress)
+                let point = CGPoint(
+                    x: ix + r * CGFloat(cos(angle)),
+                    y: iy + r * CGFloat(sin(angle))
+                )
+                if step == 0 { spiral.move(to: point) } else { spiral.addLine(to: point) }
+            }
+            context.stroke(
+                spiral, with: .color(Token.Color.eyePupil),
+                style: StrokeStyle(lineWidth: max(rx * 0.20, 1), lineCap: .round, lineJoin: .round)
+            )
+        } else {
+            // Flat discs, no radial gradient. The blue is a *ring* around a large pupil, which
+            // is what an eye behind a lens actually looks like at this scale, and it keeps the
+            // one blue in the system (brand.json component_rules.eyes) without the eye turning
+            // into a marble.
+            context.fill(
+                Path(ellipseIn: CGRect(x: ix - irisR, y: iy - irisR,
+                                       width: irisR * 2, height: irisR * 2)),
+                with: .color(Token.Color.eyeIris)
+            )
 
-        let pupilR = irisR * (0.94 - p.pupil * 0.5)
-        context.fill(
-            Path(ellipseIn: CGRect(x: ix - pupilR, y: iy - pupilR,
-                                   width: pupilR * 2, height: pupilR * 2)),
-            with: .color(Token.Color.eyePupil)
-        )
+            let pupilR = irisR * (0.94 - p.pupil * 0.5)
+            context.fill(
+                Path(ellipseIn: CGRect(x: ix - pupilR, y: iy - pupilR,
+                                       width: pupilR * 2, height: pupilR * 2)),
+                with: .color(Token.Color.eyePupil)
+            )
 
-        let glintR = irisR * 0.28
-        context.fill(
-            Path(ellipseIn: CGRect(x: ix - irisR * 0.30 - glintR, y: iy - irisR * 0.38 - glintR,
-                                   width: glintR * 2, height: glintR * 2)),
-            with: .color(Token.Color.specular)
-        )
+            let glintR = irisR * 0.28
+            context.fill(
+                Path(ellipseIn: CGRect(x: ix - irisR * 0.30 - glintR,
+                                       y: iy - irisR * 0.38 - glintR,
+                                       width: glintR * 2, height: glintR * 2)),
+                with: .color(Token.Color.specular)
+            )
+        }
 
         // Heavy lid, in the body colour, so it reads as the brain closing over the eye
         // rather than a grey bar laid on top.

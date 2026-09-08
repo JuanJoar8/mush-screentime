@@ -20,21 +20,22 @@ jobs:
   # where the brain-health model is actually proven correct.
   kit:
     name: MushKit tests
-    # Linux, not macOS. GitHub bills macOS runners at 10x the Linux rate, and this job
-    # never needed a Mac: MushKit imports Foundation and nothing else, and
-    # MushScreenTime — the only target that touches FamilyControls — is wrapped in
-    # `#if os(iOS)` from its first line, so it compiles to nothing here.
+    # This job spent one commit on ubuntu-latest and came straight back.
     #
-    # Measured saving: 9% of a run, not the third it looked like. This job averages 0.7
-    # minutes against the macOS build's 6.6, so 72.6 billed minutes per run become 66.4.
-    # Worth doing and nowhere near enough — the lever that actually matters is running
-    # this workflow fewer times, which is a habit, not a setting.
-    runs-on: ubuntu-latest
-    container: swift:6.1
+    # The move was for cost — macOS bills at 10x — and the reasoning was that MushKit
+    # "imports Foundation and nothing else". That is true and it is not the same claim as
+    # portable: `FileManager.containerURL(forSecurityApplicationGroupIdentifier:)` is App
+    # Group API and exists only on Darwin, so the package does not build on Linux at all.
+    #
+    # The fix would have been a fake container path under `#if canImport(Darwin)` — a code
+    # path for a platform this app will never run on, behaving differently in tests than in
+    # production. The repository went public in the same hour, which makes Actions free, so
+    # the reason for the contortion evaporated before the contortion was written.
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
       - name: Show toolchain
-        run: swift --version
+        run: swift --version && xcodebuild -version
 
       - name: Test
         working-directory: Packages/MushKit
@@ -190,6 +191,12 @@ jobs:
             --style compact --last 10m \
             --predicate 'process == "Mush" OR senderImagePath CONTAINS "Mush"' 2>/dev/null \
             | tail -60 || echo "(no log)"
+
+      # The progress page shipped twice with an invisible creature: a name collision threw
+      # inside requestAnimationFrame, and a canvas nothing draws on looks exactly like a
+      # canvas nothing was meant to be on. No linter sees that; only running it does.
+      - name: The console still draws its creature
+        run: node scripts/check-console.js
 
       - name: Upload screenshots
         if: always()

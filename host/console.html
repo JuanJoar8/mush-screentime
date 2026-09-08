@@ -1,0 +1,1103 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>Mush Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,500;12..96,75..100,700;12..96,75..100,800&display=swap">
+
+<style>
+  /* Tokens are the app's own, from brand/brand.json. Nothing is invented here.
+     Single dark theme on purpose - the app commits to one visual world. */
+  :root {
+    --color-ground: #140B2E;
+    --color-ground-deep: #0C0620;
+    --color-panel: #1E1240;
+    --color-panel-raised: #2A1B55;
+    --color-line: #3B2A70;
+    --color-ink: #F1ECFF;
+    --color-ink-dim: #A093CC;
+    --color-primary: #7C5CFA;
+    --color-accent: #22D3C6;
+    --color-good: #34D399;
+    --color-warn: #FBBF24;
+    --color-bad: #F4436B;
+    --color-specular: #FFFFFF;
+    --color-eye-iris: #4FA8DF;
+    --color-eye-pupil: #0B1A2A;
+
+    --color-stage-crisp: #FFB3C1;
+    --color-stage-foggy: #E7A7BE;
+    --color-stage-buzzed: #FFC24D;
+    --color-stage-melting: #B08A94;
+    --color-stage-mush: #7A7391;
+
+    --font-display: "Bricolage Grotesque", "Arial Black", sans-serif;
+    --font-body: ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", sans-serif;
+    --font-data: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+
+    --radius-viewport: 28px;
+    --radius-panel: 12px;
+    --radius-pill: 999px;
+
+    --duration-instant: 80ms;
+    --duration-fast: 160ms;
+    --duration-base: 240ms;
+    --duration-slow: 360ms;
+
+    /* Built-in easings are too weak for UI. These are the strong ones. */
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
+    --stage-tint: var(--color-stage-buzzed);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: radial-gradient(120% 80% at 50% -10%, var(--color-panel) 0%, var(--color-ground) 45%, var(--color-ground-deep) 100%) fixed;
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    font-size: 15px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 26px 20px 60px; }
+
+  .masthead { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; padding-bottom: 15px; border-bottom: 1px solid var(--color-line); margin-bottom: 24px; }
+  .masthead h1 { font-family: var(--font-display); font-weight: 800; font-size: 32px; letter-spacing: -0.015em; margin: 0; }
+  .masthead p { margin: 0; color: var(--color-ink-dim); font-size: 13.5px; max-width: 58ch; }
+
+  .console { display: grid; grid-template-columns: minmax(320px, 384px) 1fr; gap: 26px; align-items: start; }
+  @media (max-width: 920px) { .console { grid-template-columns: 1fr; } }
+
+  /* ── device ───────────────────────────────────────────────── */
+  .device {
+    background: linear-gradient(180deg, var(--color-panel) 0%, var(--color-ground) 55%, var(--color-ground-deep) 100%);
+    border: 7px solid var(--color-panel-raised);
+    border-radius: 46px; padding: 10px 9px 8px;
+    box-shadow: 0 34px 80px rgb(0 0 0 / 0.6);
+    position: sticky; top: 18px;
+  }
+  .screen {
+    position: relative; height: 720px; overflow: hidden;
+    border-radius: 38px; background: var(--color-ground-deep);
+  }
+  .scroller {
+    position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden;
+    scrollbar-width: none; scroll-behavior: smooth;
+  }
+  .scroller::-webkit-scrollbar { display: none; }
+
+  /* sticky condensing header */
+  .topbar {
+    position: sticky; top: 0; z-index: 5;
+    display: flex; align-items: center; gap: 9px;
+    padding: 13px 16px 11px;
+    background: linear-gradient(180deg, var(--color-ground) 55%, transparent);
+  }
+  .topbar .brand { font-family: var(--font-display); font-weight: 800; font-size: 19px; letter-spacing: 0.02em; }
+  /* The score flies into the bar as the hero scrolls away: same object, new place. */
+  .topbar .mini {
+    display: flex; align-items: baseline; gap: 5px;
+    opacity: 0; transform: translateY(6px);
+    transition: opacity var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
+  }
+  .topbar .mini b { font-family: var(--font-display); font-size: 17px; color: var(--stage-tint); }
+  .topbar .mini span { font-size: 9px; letter-spacing: 0.12em; color: var(--color-ink-dim); }
+  .topbar.condensed .mini { opacity: 1; transform: translateY(0); }
+  .topbar .streak {
+    margin-left: auto; display: flex; align-items: baseline; gap: 5px;
+    padding: 5px 10px; border-radius: var(--radius-pill);
+    background: var(--color-panel-raised); border: 1px solid var(--color-line);
+  }
+  .topbar .streak b { font-family: var(--font-data); font-size: 12.5px; color: var(--color-warn); }
+  .topbar .streak span { font-size: 8.5px; letter-spacing: 0.11em; color: var(--color-ink-dim); }
+
+  .hero { position: relative; }
+  #hero { display: block; width: 100%; height: 236px; }
+
+  .score { text-align: center; margin-top: -14px; position: relative; z-index: 1; }
+  .score .n {
+    font-family: var(--font-display); font-weight: 800; font-size: 64px; line-height: 1;
+    letter-spacing: -0.035em; font-variant-numeric: tabular-nums; display: inline-block;
+  }
+  /* Pop only on a committed change - never on every slider tick. */
+  .score .n.pop { animation: pop var(--duration-base) var(--ease-out); }
+  @keyframes pop { 0% { transform: scale(1); } 45% { transform: scale(1.06); } 100% { transform: scale(1); } }
+  .score .lbl { font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--color-ink-dim); margin-top: 3px; }
+  .score .mood { font-size: 12.5px; color: var(--color-ink-dim); margin-top: 5px; }
+
+  .hbar { height: 8px; border-radius: var(--radius-pill); background: var(--color-panel-raised); position: relative; overflow: hidden; margin: 14px 18px 0; }
+  /* scaleX, never width: animating width forces a layout recalculation each frame. */
+  .hbar i {
+    position: absolute; inset: 0; border-radius: var(--radius-pill);
+    background: var(--stage-tint); transform-origin: left center; transform: scaleX(0);
+    transition: transform var(--duration-base) var(--ease-out), background-color var(--duration-slow) var(--ease-out);
+  }
+
+  .body { padding: 0 16px 96px; }
+  .sect { margin-top: 20px; }
+  .sect h2 { font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-ink-dim); margin: 0 0 9px; font-weight: 700; }
+
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 16px; }
+  .tile { background: var(--color-panel); border: 1px solid var(--color-line); border-radius: var(--radius-panel); padding: 11px 6px; text-align: center; }
+  .tile b { display: block; font-family: var(--font-data); font-size: 16px; font-variant-numeric: tabular-nums; }
+  .tile span { display: block; font-size: 9px; letter-spacing: 0.07em; color: var(--color-ink-dim); margin-top: 3px; text-transform: uppercase; }
+
+  #ribbon, #curve { display: block; width: 100%; }
+  #ribbon { height: 62px; }
+  #curve { height: 92px; }
+
+  .off { display: flex; align-items: center; gap: 10px; background: var(--color-panel); border: 1px solid var(--color-line); border-radius: var(--radius-panel); padding: 9px 11px; margin-bottom: 6px; }
+  .off .dot { width: 26px; height: 26px; border-radius: 8px; flex: none; }
+  .off .nm { font-size: 13.5px; font-weight: 600; }
+  .off .cat { font-size: 10px; color: var(--color-ink-dim); }
+  .off .mins { margin-left: auto; font-family: var(--font-data); font-size: 12.5px; color: var(--color-ink-dim); }
+
+  .receipt-peek { background: var(--color-panel); border: 1px solid var(--color-line); border-radius: var(--radius-panel); padding: 13px; }
+  .peek-row { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 5px 0; }
+  .peek-row b { font-family: var(--font-data); font-size: 13px; }
+  .peek-cta { margin-top: 9px; font-size: 11.5px; color: var(--stage-tint); font-weight: 650; }
+
+  .caveat { font-size: 10.5px; color: var(--color-ink-dim); margin: 8px 0 0; line-height: 1.45; }
+
+  /* session bar - enters and exits through the bottom, the way it came */
+  .sessionbar {
+    position: absolute; left: 10px; right: 10px; bottom: 58px; z-index: 6;
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 14px; border-radius: var(--radius-panel);
+    background: var(--color-panel-raised);
+    box-shadow: 0 10px 30px rgb(0 0 0 / .45);
+    transform: translateY(140%);
+    transition: transform var(--duration-base) var(--ease-out);
+  }
+  .sessionbar.up { transform: translateY(0); }
+  .sessionbar .lbl { font-size: 12px; }
+  .sessionbar .t { margin-left: auto; font-family: var(--font-data); font-size: 14px; color: var(--color-accent); }
+
+  .tabbar {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 7;
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    padding: 9px 6px 12px;
+    background: linear-gradient(0deg, var(--color-ground-deep) 65%, transparent);
+  }
+  .tabbar button {
+    background: none; border: 0; cursor: pointer; padding: 2px;
+    font-family: var(--font-body); font-size: 9px; letter-spacing: .04em;
+    color: var(--color-ink-dim);
+    transition: color var(--duration-fast) var(--ease-out), transform var(--duration-instant) var(--ease-out);
+  }
+  .tabbar button i { display: block; width: 16px; height: 16px; margin: 0 auto 4px; border-radius: 5px; background: currentColor; opacity: .75; }
+  .tabbar button.on { color: var(--stage-tint); font-weight: 700; }
+  .tabbar button:active { transform: scale(.92); }
+  .tabbar button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; border-radius: 8px; }
+
+  /* entrance stagger - predetermined, so CSS animation, off the main thread */
+  .stagger > * { animation: rise var(--duration-slow) var(--ease-out) both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .stagger > *:nth-child(1) { animation-delay: 40ms; }
+  .stagger > *:nth-child(2) { animation-delay: 80ms; }
+  .stagger > *:nth-child(3) { animation-delay: 120ms; }
+  .stagger > *:nth-child(4) { animation-delay: 160ms; }
+  .stagger > *:nth-child(5) { animation-delay: 200ms; }
+  .stagger > *:nth-child(6) { animation-delay: 240ms; }
+
+  /* ── rig ──────────────────────────────────────────────────── */
+  .rig { display: grid; gap: 13px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+  @media (max-width: 660px) { .grid2 { grid-template-columns: 1fr; } }
+
+  .card { background: var(--color-panel); border: 1px solid var(--color-line); border-radius: var(--radius-panel); padding: 14px; }
+  .instrument { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--color-line); margin-bottom: 12px; }
+  .instrument .k { font-size: 10.5px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--color-ink-dim); }
+  .instrument .v { font-family: var(--font-data); font-size: 13px; font-variant-numeric: tabular-nums; }
+
+  .ctl { display: grid; gap: 6px; margin-bottom: 14px; }
+  .ctl:last-child { margin-bottom: 0; }
+  .ctl header { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .ctl label { font-size: 13.5px; }
+  .ctl output { font-family: var(--font-data); font-size: 13px; color: var(--color-ink-dim); font-variant-numeric: tabular-nums; }
+  .ctl .why { font-size: 11.5px; color: var(--color-ink-dim); }
+
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 22px; background: transparent; cursor: pointer; }
+  input[type=range]::-webkit-slider-runnable-track { height: 5px; border-radius: var(--radius-pill); background: var(--color-panel-raised); }
+  input[type=range]::-moz-range-track { height: 5px; border-radius: var(--radius-pill); background: var(--color-panel-raised); }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; width: 17px; height: 17px; margin-top: -6px;
+    border-radius: var(--radius-pill); background: var(--stage-tint); border: 0;
+    transition: transform var(--duration-instant) var(--ease-out);
+  }
+  input[type=range]::-moz-range-thumb { width: 17px; height: 17px; border: 0; border-radius: var(--radius-pill); background: var(--stage-tint); }
+  input[type=range]:active::-webkit-slider-thumb { transform: scale(1.18); }
+  input[type=range]:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+
+  .seg { display: flex; gap: 6px; flex-wrap: wrap; }
+  .seg button {
+    flex: 1 1 auto; padding: 7px 4px; background: var(--color-panel-raised); color: var(--color-ink-dim);
+    border: 1px solid var(--color-line); border-radius: var(--radius-panel);
+    font-family: var(--font-data); font-size: 12.5px; cursor: pointer;
+    transition: background-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), transform var(--duration-instant) var(--ease-out);
+  }
+  .seg button[aria-pressed="true"] { background: var(--stage-tint); color: var(--color-ground-deep); border-color: transparent; font-weight: 700; }
+  .seg button:active { transform: scale(.97); }
+  .seg button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+
+  .commit {
+    width: 100%; padding: 12px; cursor: pointer; background: var(--color-accent); color: var(--color-ground-deep);
+    border: 0; border-radius: var(--radius-panel); font-family: var(--font-body); font-size: 14px; font-weight: 650;
+    transition: transform var(--duration-instant) var(--ease-out), opacity var(--duration-fast) var(--ease-out);
+  }
+  .commit:active { transform: scale(.99); }
+  .commit:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+  @media (hover: hover) and (pointer: fine) { .commit:hover { opacity: .9; } }
+
+  .rrow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--color-line); font-size: 14px; }
+  .rrow:last-of-type { border-bottom: 0; }
+  .rrow b { font-family: var(--font-data); font-weight: 500; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .plus { color: var(--color-good); }
+  .minus { color: var(--color-bad); }
+  .total { margin-top: 5px; padding-top: 9px; border-top: 1px solid var(--color-ink-dim); font-weight: 700; }
+  .note { font-size: 12px; color: var(--color-ink-dim); margin-top: 9px; }
+
+  .strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 9px; margin-top: 26px; }
+  @media (max-width: 800px) { .strip { grid-template-columns: repeat(2, 1fr); } }
+  .stagecard {
+    background: var(--color-panel); border: 1px solid var(--color-line); border-radius: var(--radius-viewport);
+    overflow: hidden; padding-bottom: 12px; cursor: pointer; font-family: var(--font-body);
+    text-align: left; color: var(--color-ink);
+    transition: transform var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) { .stagecard:hover { transform: translateY(-4px); border-color: var(--color-primary); } }
+  .stagecard:active { transform: scale(.985); }
+  .stagecard:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 3px; }
+  .stagecard canvas { display: block; width: 100%; height: 132px; }
+  .stagecard h3 { font-family: var(--font-display); font-weight: 800; font-size: 19px; margin: 0 0 1px; padding: 0 13px; }
+  .stagecard p { margin: 0; padding: 0 13px; font-size: 11px; color: var(--color-ink-dim); }
+
+  .foot { margin-top: 28px; padding-top: 15px; border-top: 1px solid var(--color-line); font-size: 13px; color: var(--color-ink-dim); max-width: 78ch; }
+  .foot strong { color: var(--color-ink); font-weight: 650; }
+
+  /* Fewer and gentler, not zero: keep opacity, drop movement. */
+  @media (prefers-reduced-motion: reduce) {
+    .stagger > * { animation: fadeonly var(--duration-base) var(--ease-out) both; }
+    @keyframes fadeonly { from { opacity: 0; } to { opacity: 1; } }
+    .score .n.pop { animation: none; }
+    .scroller { scroll-behavior: auto; }
+    .sessionbar { transition-duration: 1ms; }
+  }
+</style>
+
+<div class="wrap">
+  <div class="masthead">
+    <h1>Mush Console</h1>
+    <p>The Home screen, live and scrollable. Move the day around on the right and watch the model, the ribbon and the creature respond &mdash; same arithmetic, same drawing maths as the Swift. <strong>The character was redrawn flat on 7 September:</strong> solid fill, one heavy contour, round wire glasses, no gradients and no blur anywhere on it.</p>
+  </div>
+
+  <div class="console">
+
+    <div class="device">
+      <div class="screen">
+        <div class="scroller" id="scroller">
+
+          <div class="topbar" id="topbar">
+            <span class="brand">MUSH</span>
+            <span class="mini"><b id="miniScore">54</b><span>HEALTH</span></span>
+            <span class="streak"><b id="streakN">3</b><span>DAY</span></span>
+          </div>
+
+          <div class="hero" id="heroWrap">
+            <canvas id="hero" width="820" height="528"></canvas>
+          </div>
+
+          <div class="score">
+            <span class="n" id="score">54</span>
+            <div class="lbl">Brain health</div>
+            <div class="mood" id="mood">overstimulated, twitchy</div>
+          </div>
+          <div class="hbar"><i id="hbar"></i></div>
+
+          <div class="body stagger">
+            <div class="tiles">
+              <div class="tile"><b id="tRot">25m</b><span>Rot time</span></div>
+              <div class="tile"><b id="tInt">2</b><span>Nudges</span></div>
+              <div class="tile"><b id="tOvr">0</b><span>Overrides</span></div>
+            </div>
+
+            <div class="sect">
+              <h2>Today, hour by hour</h2>
+              <canvas id="ribbon" width="760" height="150"></canvas>
+              <p class="caveat">Green is time you were off the watched apps. Hollow means the hour has not happened yet.</p>
+            </div>
+
+            <div class="sect">
+              <h2>Last 14 days</h2>
+              <canvas id="curve" width="760" height="230"></canvas>
+            </div>
+
+            <div class="sect">
+              <h2>Top offenders</h2>
+              <div id="offenders"></div>
+              <p class="caveat">Named because <em>you</em> chose them when you built the Shortcuts automations. iOS never tells us an app&rsquo;s name on its own.</p>
+            </div>
+
+            <div class="sect">
+              <h2>Why it moved</h2>
+              <div class="receipt-peek" id="peek"></div>
+              <p class="caveat">Opal shows a Focus Score and never tells you how it got there. This is the whole receipt.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="sessionbar" id="sessionbar">
+          <span class="lbl">Focus session</span>
+          <span class="t" id="sessionT">25:00</span>
+        </div>
+
+        <div class="tabbar">
+          <button class="on" type="button"><i></i>Home</button>
+          <button type="button" id="tabFocus"><i></i>Focus</button>
+          <button type="button"><i></i>Stats</button>
+          <button type="button"><i></i>Brain</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="rig">
+      <div class="grid2">
+        <div class="card">
+          <div class="instrument"><span class="k">The day</span><span class="v" id="ratioV">0.42&times;</span></div>
+          <div class="ctl">
+            <header><label for="minutes">Distracting minutes</label><output id="minutesV">25</output></header>
+            <input type="range" id="minutes" min="0" max="240" step="5" value="25">
+            <span class="why">Measured in 5-minute steps, so it is a floor, not an exact count.</span>
+          </div>
+          <div class="ctl">
+            <header><label for="budget">Daily budget</label><output id="budgetV">60</output></header>
+            <input type="range" id="budget" min="15" max="180" step="15" value="60">
+          </div>
+          <div class="ctl">
+            <header><label for="focus">Focus sessions</label><output id="focusV">0</output></header>
+            <input type="range" id="focus" min="0" max="5" step="1" value="0">
+            <span class="why">+3 each, capped at three. An abandoned one scores zero, never negative.</span>
+          </div>
+          <div class="ctl">
+            <header><label for="overrides">Overrides taken</label><output id="overridesV">0</output></header>
+            <input type="range" id="overrides" min="0" max="7" step="1" value="0">
+            <span class="why">&minus;2 each, capped at five &mdash; deliberately smaller than the budget term.</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="instrument"><span class="k">Context</span><span class="v" id="streakV">streak 0</span></div>
+          <div class="ctl">
+            <header><label for="health">Health going in</label><output id="healthV">70</output></header>
+            <input type="range" id="health" min="0" max="100" step="1" value="70">
+            <span class="why">Below 30 a green day earns the comeback bonus, which breaks the despair spiral.</span>
+          </div>
+          <div class="ctl">
+            <header><label for="streak">Green days before today</label><output id="streakOut">0</output></header>
+            <input type="range" id="streak" min="0" max="21" step="1" value="0">
+          </div>
+          <div class="ctl">
+            <header><label>Scheduled windows</label></header>
+            <div class="seg" role="group" aria-label="Scheduled windows">
+              <button type="button" data-sched="none" aria-pressed="true">none</button>
+              <button type="button" data-sched="held" aria-pressed="false">all held</button>
+              <button type="button" data-sched="missed" aria-pressed="false">one missed</button>
+            </div>
+          </div>
+          <div class="ctl">
+            <header><label>Did we measure it?</label></header>
+            <div class="seg" role="group" aria-label="Signal">
+              <button type="button" data-signal="yes" aria-pressed="true">measured</button>
+              <button type="button" data-signal="no" aria-pressed="false">no signal</button>
+            </div>
+            <span class="why">A blind day scores zero and is never counted as green. It is not a zero &mdash; it is a day we could not see.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="instrument"><span class="k">Why it moved</span><span class="v" id="deltaV">+0</span></div>
+        <div id="receipt"></div>
+        <div class="note" id="clampNote"></div>
+        <div style="margin-top:13px"><button class="commit" id="commitBtn">Commit the day &rarr; carry the health forward</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="strip" id="strip"></div>
+
+  <p class="foot">
+    <strong>This is the interface, not the app.</strong> There is no Screen Time here and nothing is being
+    blocked &mdash; a native iOS app only runs on an Xcode Simulator or an iPhone. What is real is the model:
+    the contributions, the caps, the hysteresis between stages and every parameter of the creature are
+    ported straight from the Swift, so what you deform here is what the app computes.
+  </p>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var css = getComputedStyle(document.documentElement);
+  function tk(n) { return css.getPropertyValue(n).trim(); }
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ── Stage table. Mirrors BrainStage + BlobParameters in the Swift. ─────────
+  // ── Stage table. Mirrors BrainStage + CreatureParameters in the Swift. ────
+  var STAGES = [
+    { key:"mush", name:"Mush", low:0, mood:"puddled",
+      browTilt:0.44, browLift:0.02, lid:0.60, open:0.72, sag:0.22, spread:0.16,
+      sheen:0.14, pupil:0.10, mouth:-0.62, arms:0.86, jitter:0.000, blinkInterval:8.8 },
+    { key:"melting", name:"Melting", low:25, mood:"drooping, losing shape",
+      browTilt:0.32, browLift:0.04, lid:0.40, open:0.82, sag:0.13, spread:0.10,
+      sheen:0.32, pupil:0.14, mouth:-0.46, arms:0.66, jitter:0.000, blinkInterval:6.4 },
+    { key:"buzzed", name:"Buzzed", low:45, mood:"overstimulated, twitchy",
+      browTilt:-0.36, browLift:0.14, lid:0.00, open:1.18, sag:0.02, spread:0.03,
+      sheen:0.82, pupil:0.42, mouth:-0.18, arms:0.14, jitter:0.050, blinkInterval:1.9 },
+    { key:"foggy", name:"Foggy", low:65, mood:"a bit hazy, still fine",
+      browTilt:0.12, browLift:0.06, lid:0.18, open:0.92, sag:0.05, spread:0.04,
+      sheen:0.66, pupil:0.16, mouth:0.22, arms:0.40, jitter:0.000, blinkInterval:4.6 },
+    { key:"crisp", name:"Crisp", low:85, mood:"alert, holding shape",
+      browTilt:-0.16, browLift:0.10, lid:0.00, open:1.00, sag:0.00, spread:0.00,
+      sheen:1.00, pupil:0.10, mouth:0.85, arms:0.16, jitter:0.000, blinkInterval:3.2 }
+  ];
+  var TINTS = {};
+  STAGES.forEach(function (s) { TINTS[s.key] = tk("--color-stage-" + s.key); });
+
+  function rgba(hex, a) {
+    var n = parseInt(hex.slice(1), 16);
+    return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a + ")";
+  }
+  // ── The creature ──────────────────────────────────────────────────────────
+  // Flat vector, ported constant for constant from App/Design/Blob.swift. Solid fill,
+  // one heavy contour, thin ink lines for the folds, wire limbs, round wire glasses.
+  // Nothing on the character is blurred or gradient-filled: the only soft edge in the
+  // whole drawing is the hero-glow behind it, and that is the point — it reads as
+  // ambient light rather than as an out-of-focus object.
+
+  function hexRGB(h) { var n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+  function mixRGB(a, b, k) { return [a[0]*(1-k)+b[0]*k, a[1]*(1-k)+b[1]*k, a[2]*(1-k)+b[2]*k]; }
+  function rgbCSS(c, a) {
+    var r = c[0] | 0, g = c[1] | 0, b = c[2] | 0;
+    return a === undefined ? "rgb(" + r + "," + g + "," + b + ")" : "rgba(" + r + "," + g + "," + b + "," + a + ")";
+  }
+
+  // The drawing's extents in units of radius, at their worst case across all five
+  // stages — `spread` widens the body 16% and `sag` drops it 22%. Worked out from the
+  // constants below rather than measured, because a hand-fitted number is what clipped
+  // the hands off the two spread stages the first time.
+  var REACH = (function () {
+    var maxSpread = 0.16, maxSag = 0.22, lump = 1.066, contour = 0.036;
+    var armSpan = 1.42, finger = 0.11, eyeOffset = 0.305, lens = 0.345, templeSpan = 2.06;
+    var hip = 0.80, legLength = 0.58, shadow = 0.16;
+    var wb = 1.30 + maxSpread, tb = 1.06;
+    return {
+      halfWidth: Math.max(wb * armSpan + finger, wb * lump + contour, wb * eyeOffset + lens * templeSpan),
+      above: tb * lump + contour,
+      below: tb * hip + (legLength - maxSag * 0.7) + shadow + maxSag
+    };
+  })();
+
+  function palette(tint) {
+    var t = hexRGB(tint), deep = hexRGB(tk("--color-ground-deep")), bad = hexRGB(tk("--color-bad"));
+    // Warmed toward `bad` before it is darkened: mixing a tint straight to the deep
+    // ground desaturates it on the way, and the amber stage came out olive.
+    var ink = mixRGB(mixRGB(t, bad, 0.20), deep, 0.46);
+    return { base: rgbCSS(t), ink: rgbCSS(ink), inkA: function (a) { return rgbCSS(ink, a); },
+             blush: mixRGB(t, bad, 0.52), tongue: rgbCSS(mixRGB(bad, deep, 0.10)) };
+  }
+
+  // Stable pseudo-random so the folds never shimmer between frames.
+  function rnd(i) { var x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+
+  // Amplitude per degree of arc is what decides whether a bump is a lobe or a cusp.
+  // Harmonic 6 at 0.072 swung the radius 15% across 60° and drew a five-pointed star;
+  // harmonic 8 at 0.048 swings 10% across 45° — the same lumpiness, curved.
+  function bodyPath(ctx, cx, cy, w, h) {
+    ctx.beginPath();
+    var steps = 120;
+    for (var i = 0; i <= steps; i++) {
+      var a = (i / steps) * Math.PI * 2 - Math.PI / 2;
+      var lumps = 1 + 0.048 * Math.sin(a * 8 + 0.9) + 0.018 * Math.sin(a * 13 - 0.4);
+      var fromTop = Math.abs(Math.atan2(Math.sin(a + Math.PI / 2), Math.cos(a + Math.PI / 2)));
+      var dip = 1 - 0.105 * Math.exp(-Math.pow(fromTop / 0.30, 2));
+      var x = cx + w * lumps * dip * Math.cos(a);
+      var y = cy + h * lumps * dip * Math.sin(a);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+  }
+
+  function drawFolds(ctx, cx, cy, bw, bh, R, pal) {
+    var lw = Math.max(bw * 0.038, 1);
+    ctx.lineWidth = lw; ctx.lineCap = "round"; ctx.strokeStyle = pal.inkA(0.92);
+
+    // Keep out of the face — but only out of the face. An ellipse 0.95 radius wide and a
+    // full radius tall covered 94% of the body and left three fold lines on the whole
+    // creature. This is the box the glasses and mouth actually occupy, so folds keep the
+    // crown above the brows and the flanks outside the frames.
+    var eyeY0 = cy + bh * 0.10;
+    var faceHalfW = bw * 0.305 + R * 0.345, faceTop = eyeY0 - R * (0.345 + 0.26);
+
+    for (var si = 0; si < 2; si++) {
+      var s = si === 0 ? -1 : 1;
+      for (var ring = 0; ring < 4; ring++) {
+        for (var k = 0; k < 4; k++) {
+          var seed = ring * 17 + k * 5 + (s > 0 ? 101 : 3);
+          var j1 = rnd(seed) - 0.5, j2 = rnd(seed + 41) - 0.5;
+          var radial = 0.30 + ring * 0.16 + j1 * 0.07;
+          var arc = (k + 0.5) / 4 * 1.9 - 0.42 + j2 * 0.12;
+          var px = cx + s * bw * radial * Math.cos(arc - 0.35);
+          var py = cy - bh * 0.74 + bh * 1.86 * arc / 1.9 + bh * j2 * 0.06;
+          if (Math.abs(px - cx) <= faceHalfW && py >= faceTop) continue;
+
+          var theta = Math.atan2(py - cy, px - cx) + Math.PI / 2;
+          var len = bw * (0.26 + rnd(seed + 7) * 0.12);
+          var bow = len * (0.44 + rnd(seed + 13) * 0.20);
+          ctx.beginPath();
+          ctx.moveTo(px - Math.cos(theta) * len / 2, py - Math.sin(theta) * len / 2);
+          ctx.quadraticCurveTo(
+            px + Math.cos(theta - Math.PI / 2) * bow * s,
+            py + Math.sin(theta - Math.PI / 2) * bow * s,
+            px + Math.cos(theta) * len / 2, py + Math.sin(theta) * len / 2);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Longitudinal fissure — the one line that splits the halves. It stops above the
+    // brow rather than landing on the bridge of the glasses.
+    ctx.strokeStyle = pal.ink; ctx.lineWidth = lw * 1.15;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - bh * 1.02);
+    ctx.bezierCurveTo(cx + bw * 0.05, cy - bh * 0.80, cx - bw * 0.05, cy - bh * 0.52, cx, cy - bh * 0.34);
+    ctx.stroke();
+  }
+
+  // Three flat strokes on the upper left. The flat-drawing substitute for a specular:
+  // it says where the light is, which is why it stays on one side.
+  function drawSheen(ctx, cx, cy, bw, bh, R, p) {
+    if (p.sheen <= 0.08) return;
+    ctx.lineWidth = Math.max(R * 0.062, 1); ctx.lineCap = "round";
+    ctx.strokeStyle = rgba(tk("--color-specular"), 0.62 * p.sheen);
+    [[-0.62, -0.60, 0.34], [-0.30, -0.82, 0.26], [-0.80, -0.24, 0.22]].forEach(function (m) {
+      var sx = cx + bw * m[0], sy = cy + bh * m[1];
+      var ex = sx + bw * m[2] * 0.75, ey = sy - bh * m[2] * 0.30;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.quadraticCurveTo((sx + ex) / 2, (sy + ey) / 2 - bh * m[2] * 0.34, ex, ey);
+      ctx.stroke();
+    });
+  }
+
+  function drawEye(ctx, ex, eyeY, rx, ry, blink, s, t, pal, p) {
+    // Shut is one ink curve. Scaling the white sclera to 0.08 left a pale sliver behind
+    // the lens that read as an empty frame.
+    if (blink <= 0.5) {
+      ctx.beginPath();
+      ctx.moveTo(ex - rx * 0.92, eyeY);
+      ctx.quadraticCurveTo(ex, eyeY + rx * 0.62, ex + rx * 0.92, eyeY);
+      ctx.strokeStyle = pal.ink; ctx.lineWidth = Math.max(rx * 0.30, 1.2); ctx.lineCap = "round";
+      ctx.stroke();
+      return;
+    }
+    ctx.beginPath();
+    ctx.ellipse(ex, eyeY, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = tk("--color-specular"); ctx.fill();
+
+    var gaze = p.jitter ? Math.sin(t * 5.3 + s) * rx * 0.14 : 0;
+    var irisR = rx * 0.78, ix = ex + gaze, iy = eyeY + ry * 0.05;
+
+    // Flat discs. The blue is a ring around a large pupil, which is what an eye behind
+    // a lens looks like at this size, and it keeps the one blue in the system.
+    ctx.beginPath(); ctx.arc(ix, iy, irisR, 0, Math.PI * 2);
+    ctx.fillStyle = tk("--color-eye-iris"); ctx.fill();
+    var pupilR = irisR * (0.94 - p.pupil * 0.5);
+    ctx.beginPath(); ctx.arc(ix, iy, pupilR, 0, Math.PI * 2);
+    ctx.fillStyle = tk("--color-eye-pupil"); ctx.fill();
+    var gR = irisR * 0.28;
+    ctx.beginPath(); ctx.arc(ix - irisR * 0.30, iy - irisR * 0.38, gR, 0, Math.PI * 2);
+    ctx.fillStyle = tk("--color-specular"); ctx.fill();
+
+    // A heavy lid in the body colour, so it reads as the brain closing over the eye
+    // rather than a grey bar laid on top.
+    if (p.lid > 0.01) {
+      ctx.save();
+      ctx.beginPath(); ctx.ellipse(ex, eyeY, rx + 1, ry + 1, 0, 0, Math.PI * 2); ctx.clip();
+      ctx.fillStyle = pal.base;
+      ctx.fillRect(ex - rx - 2, eyeY - ry - 2, rx * 2 + 4, (ry * 2 + 4) * p.lid * 0.62);
+      ctx.restore();
+    }
+  }
+
+  // Above 0.15 the mouth opens. The open smile is reserved for the good stages: it is
+  // the loudest thing on the face, and a creature grinning through a bad day is exactly
+  // the coach tone brand.json forbids.
+  function drawMouth(ctx, cx, eyeY, R, pal, p) {
+    var my = eyeY + R * 0.58;
+    if (p.mouth <= 0.15) {
+      var lw = R * 0.21;
+      ctx.beginPath();
+      ctx.moveTo(cx - lw, my);
+      ctx.quadraticCurveTo(cx, my + R * 0.34 * p.mouth, cx + lw, my);
+      ctx.strokeStyle = pal.ink; ctx.lineWidth = Math.max(R * 0.058, 1.2); ctx.lineCap = "round";
+      ctx.stroke();
+      return;
+    }
+    var mw = R * (0.19 + 0.09 * p.mouth), depth = R * (0.16 + 0.24 * p.mouth);
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(cx - mw, my);
+    ctx.quadraticCurveTo(cx, my - depth * 0.18, cx + mw, my);
+    ctx.quadraticCurveTo(cx, my + depth * 2.1, cx - mw, my);
+    ctx.closePath();
+    ctx.fillStyle = pal.ink; ctx.fill();
+    ctx.clip();
+    ctx.beginPath();
+    ctx.ellipse(cx, my + depth * 1.19, mw * 0.62, depth * 0.75, 0, 0, Math.PI * 2);
+    ctx.fillStyle = pal.tongue; ctx.fill();
+    // One tooth. Two would read as a grimace.
+    ctx.fillStyle = tk("--color-specular");
+    ctx.fillRect(cx - mw * 0.34, my - depth * 0.10, mw * 0.62, depth * 0.34);
+    ctx.restore();
+  }
+
+  // Round wire frames: two rings, a bowed bridge, a temple with a hook. The hook is not
+  // decoration — without it the temple ends in mid-air and the glasses read as two
+  // circles drawn on the face rather than an object that goes round a head.
+  function drawGlasses(ctx, cx, eyeX, eyeY, lensR, R, pal) {
+    var wire = Math.max(R * 0.050, 1.2);
+    ctx.lineWidth = wire; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    [-1, 1].forEach(function (s) {
+      var ex = cx + s * eyeX;
+      ctx.strokeStyle = pal.ink; ctx.lineWidth = wire;
+      ctx.beginPath(); ctx.arc(ex, eyeY, lensR, 0, Math.PI * 2); ctx.stroke();
+
+      ctx.strokeStyle = rgba(tk("--color-specular"), 0.42);
+      ctx.lineWidth = wire * 0.9;
+      ctx.beginPath();
+      ctx.moveTo(ex - lensR * 0.52, eyeY + lensR * 0.10);
+      ctx.lineTo(ex - lensR * 0.10, eyeY - lensR * 0.50);
+      ctx.stroke();
+
+      ctx.strokeStyle = pal.ink; ctx.lineWidth = wire;
+      var hx = ex + s * lensR * 1.90, hy = eyeY - lensR * 0.72;
+      ctx.beginPath();
+      ctx.moveTo(ex + s * lensR * 0.96, eyeY - lensR * 0.30);
+      ctx.quadraticCurveTo(ex + s * lensR * 1.44, eyeY - lensR * 0.74, hx, hy);
+      ctx.quadraticCurveTo(hx + s * lensR * 0.30, hy + lensR * 0.04, hx + s * lensR * 0.16, hy + lensR * 0.30);
+      ctx.stroke();
+    });
+    ctx.strokeStyle = pal.ink;
+    ctx.beginPath();
+    ctx.moveTo(cx - eyeX + lensR * 0.94, eyeY - lensR * 0.20);
+    ctx.quadraticCurveTo(cx, eyeY - lensR * 0.62, cx + eyeX - lensR * 0.94, eyeY - lensR * 0.20);
+    ctx.stroke();
+  }
+
+  // The brows do the acting. Tilt and lift on two short strokes carry almost all of the
+  // expression, which is why they move most between stages.
+  function drawBrows(ctx, cx, eyeX, eyeY, lensR, R, pal, p) {
+    ctx.strokeStyle = pal.ink; ctx.lineWidth = Math.max(R * 0.078, 1.4); ctx.lineCap = "round";
+    [-1, 1].forEach(function (s) {
+      ctx.save();
+      ctx.translate(cx + s * eyeX, eyeY - lensR - R * (0.07 + p.browLift));
+      ctx.rotate(s * p.browTilt);
+      var bw = lensR * 1.20;
+      ctx.beginPath();
+      ctx.moveTo(-bw * 0.5, R * 0.022);
+      ctx.quadraticCurveTo(0, -R * 0.050, bw * 0.5, R * 0.014);
+      ctx.stroke();
+      ctx.restore();
+    });
+  }
+
+  function drawCreature(ctx, W, H, p, tint, t) {
+    var pal = palette(tint);
+    var R = Math.min(W * 0.5 / REACH.halfWidth, H * 0.42 / REACH.above, H * 0.58 / REACH.below);
+    var breathe = Math.sin(t * 0.9) * R * 0.014;
+    var tremor = p.jitter ? Math.sin(t * 17) * R * p.jitter * 0.5 : 0;
+    var cx = W / 2 + tremor, cy = H * 0.42 + R * p.sag + breathe;
+    var bw = R * (1.30 + p.spread), bh = R * (1.06 - p.spread * 0.30);
+    var lw = Math.max(R * 0.052, 1.2);
+
+    // hero-glow. In the app this lives on the Viewport behind the Canvas; here it is
+    // painted first into the same canvas, which is the same picture by a shorter route.
+    var g = ctx.createRadialGradient(cx, cy, R * 0.1, cx, cy, R * 2.2);
+    g.addColorStop(0, rgba(tint, 0.30));
+    g.addColorStop(0.48, rgba(tint, 0.09));
+    g.addColorStop(1, rgba(tint, 0));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+    // Flat shadow. A soft shadow under a flat drawing is the fastest way to make it look
+    // like two illustrations stapled together.
+    var groundY = cy + bh * 0.80 + R * (0.58 - p.sag * 0.7) + R * 0.10;
+    ctx.beginPath();
+    ctx.ellipse(cx, groundY, bw * 0.58, R * 0.06, 0, 0, Math.PI * 2);
+    ctx.fillStyle = rgba(tk("--color-ground-deep"), Math.max(0, 0.42 - p.sag * 0.5));
+    ctx.fill();
+
+    // Legs. The foot is a kink in the same line, not an object.
+    ctx.strokeStyle = pal.ink; ctx.lineWidth = lw; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    var hipY = cy + bh * 0.80, footY = hipY + R * (0.58 - p.sag * 0.7);
+    var stance = bw * (0.30 + p.spread * 1.1);
+    [-1, 1].forEach(function (s) {
+      var x1 = cx + s * stance;
+      ctx.beginPath();
+      ctx.moveTo(cx + s * bw * 0.18, hipY);
+      ctx.lineTo(x1, footY);
+      ctx.lineTo(x1 + s * R * 0.17, footY - R * 0.015);
+      ctx.stroke();
+    });
+
+    // Arms, with three fingers fanned along the forearm's heading. A dot on the end of a
+    // stick reads as a pin; three short strokes read as a hand.
+    var sway = Math.sin(t * 0.7) * 0.03;
+    [-1, 1].forEach(function (s) {
+      var shX = cx + s * bw * 0.74, shY = cy + bh * 0.42;
+      var elX = cx + s * bw * (1.18 - p.arms * 0.08), elY = shY + R * (0.02 + p.arms * 0.26);
+      var wrX = cx + s * bw * (1.42 - p.arms * 0.16), wrY = shY + R * (0.22 + p.arms * 0.62 + sway);
+      ctx.lineWidth = lw;
+      ctx.beginPath(); ctx.moveTo(shX, shY); ctx.lineTo(elX, elY); ctx.lineTo(wrX, wrY); ctx.stroke();
+      var heading = Math.atan2(wrY - elY, wrX - elX);
+      ctx.lineWidth = lw * 0.85;
+      for (var f = -1; f <= 1; f++) {
+        var a = heading + f * 0.44;
+        ctx.beginPath();
+        ctx.moveTo(wrX, wrY);
+        ctx.lineTo(wrX + Math.cos(a) * R * 0.11, wrY + Math.sin(a) * R * 0.11);
+        ctx.stroke();
+      }
+    });
+
+    // Body. Folds and sheen live inside the contour, so the contour is stroked last and
+    // stays a clean unbroken edge.
+    bodyPath(ctx, cx, cy, bw, bh);
+    ctx.fillStyle = pal.base; ctx.fill();
+    ctx.save();
+    bodyPath(ctx, cx, cy, bw, bh); ctx.clip();
+    drawFolds(ctx, cx, cy, bw, bh, R, pal);
+    drawSheen(ctx, cx, cy, bw, bh, R, p);
+    ctx.restore();
+    bodyPath(ctx, cx, cy, bw, bh);
+    ctx.strokeStyle = pal.ink; ctx.lineWidth = Math.max(R * 0.072, 1.4); ctx.lineJoin = "round";
+    ctx.stroke();
+
+    // Face. Glasses over the eyes, brows over the glasses — the order a real pair sits in.
+    var eyeY = cy + bh * 0.10, eyeX = bw * 0.305, lensR = R * 0.345;
+    var rx = R * 0.160, ry = rx * 1.04 * p.open;
+    var blink = (t > 0 && (t % p.blinkInterval) < 0.09) ? 0 : 1;
+
+    if (p.sheen > 0.2) {
+      ctx.fillStyle = rgbCSS(pal.blush, 0.55 + 0.25 * p.sheen);
+      [-1, 1].forEach(function (s) {
+        ctx.beginPath();
+        ctx.ellipse(cx + s * (eyeX + R * 0.12), eyeY + lensR * 1.05, R * 0.15, R * 0.085, 0, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+    [-1, 1].forEach(function (s) { drawEye(ctx, cx + s * eyeX, eyeY, rx, ry, blink, s, t, pal, p); });
+    drawMouth(ctx, cx, eyeY, R, pal, p);
+    drawGlasses(ctx, cx, eyeX, eyeY, lensR, R, pal);
+    drawBrows(ctx, cx, eyeX, eyeY, lensR, R, pal, p);
+  }
+
+  // ── Engine, ported from BrainHealthEngine.swift ───────────────────────────
+  function budgetContribution(r) {
+    if (r <= 0.5) return 10;
+    if (r <= 1.0) return 10 - 20 * (r - 0.5);
+    if (r <= 2.0) return -25 * (r - 1.0);
+    return -25;
+  }
+  function contributions(d) {
+    if (!d.signal || d.budget <= 0) return [];
+    var out = [], r = d.minutes / d.budget, over = Math.max(0, d.minutes - d.budget);
+    out.push({ v: budgetContribution(r), t: over > 0 ? "Over budget by " + over + " min" : d.minutes + " min, under a " + d.budget + " min budget" });
+    var f = Math.min(d.focus, 3);
+    if (f > 0) out.push({ v: f * 3, t: f === 1 ? "One focus session" : f + " focus sessions" });
+    var o = Math.min(d.overrides, 5);
+    if (o > 0) out.push({ v: o * -2, t: o === 1 ? "One override" : o + " overrides" });
+    if (d.sched === "held" && d.overrides === 0) out.push({ v: 4, t: "Every scheduled block held" });
+    var green = r <= 1.0;
+    if (green) {
+      var s = d.streak + 1, pts = Math.min(Math.floor(s / 3), 5);
+      if (pts > 0) out.push({ v: pts, t: s + "-day streak" });
+    }
+    if (d.health < 30 && green) out.push({ v: 3, t: "Good day from a low place" });
+    return out;
+  }
+  function evaluate(d) {
+    var parts = contributions(d);
+    var raw = parts.reduce(function (a, c) { return a + c.v; }, 0);
+    var clamped = Math.min(Math.max(raw, -20), 15);
+    var delta = d.signal ? clamped : 0;
+    var after = Math.min(Math.max(d.health + delta, 0), 100);
+    var green = d.signal && d.budget > 0 && d.minutes / d.budget <= 1;
+    return { parts: parts, raw: raw, delta: delta, clamped: d.signal && raw !== clamped, after: after,
+             streakAfter: !d.signal ? d.streak : (green ? d.streak + 1 : 0) };
+  }
+  function rawStage(h) {
+    for (var i = STAGES.length - 1; i >= 0; i--) if (h >= STAGES[i].low) return STAGES[i];
+    return STAGES[0];
+  }
+  function resolveStage(h, prevKey) {
+    var i = STAGES.findIndex(function (s) { return s.key === prevKey; });
+    if (i < 0) return rawStage(h);
+    while (i < STAGES.length - 1 && h >= STAGES[i + 1].low + 3) i++;
+    while (i > 0 && h <= STAGES[i].low - 3) i--;
+    return STAGES[i];
+  }
+
+  // ── State ─────────────────────────────────────────────────────────────────
+  var HISTORY = [45, 52, 38, 120, 190, 240, 165, null, 95, 70, 55, 40, 35, 28];
+  var HOUR_W = [0,0,0,0,0,0,1,2,3,2,2,3,4,3,3,4,5,6,8,9,8,6,3,1];
+  var OFFENDERS = [
+    { n: "Instagram", c: "Distracting", m: 0.46, k: "--color-bad" },
+    { n: "TikTok", c: "Distracting", m: 0.34, k: "--color-primary" },
+    { n: "YouTube", c: "Neutral", m: 0.20, k: "--color-warn" }
+  ];
+  var NOW_HOUR = 20;
+
+  var day = { minutes: 25, budget: 60, focus: 0, overrides: 0, sched: "none", signal: true, health: 70, streak: 0 };
+  var stageKey = "foggy";
+  var $ = function (id) { return document.getElementById(id); };
+  var heroCtx = $("hero").getContext("2d");
+  var ribbonCtx = $("ribbon").getContext("2d");
+  var curveCtx = $("curve").getContext("2d");
+  function sign(v) { return (v >= 0 ? "+" : "−") + Math.abs(Math.round(v)); }
+
+  // ── Hour ribbon ───────────────────────────────────────────────────────────
+  function drawRibbon(tint) {
+    var w = 760, h = 150, ctx = ribbonCtx, gap = 4;
+    ctx.clearRect(0, 0, w, h);
+    var total = HOUR_W.reduce(function (a, b) { return a + b; }, 0);
+    var bw = (w - gap * 23) / 24;
+    for (var i = 0; i < 24; i++) {
+      var x = i * (bw + gap);
+      var mins = day.signal ? (HOUR_W[i] / total) * day.minutes : 0;
+      var future = i > NOW_HOUR;
+      var maxH = h - 22;
+      var hh = future ? maxH * 0.18 : Math.max(6, Math.min(maxH, (mins / 12) * maxH));
+      ctx.beginPath();
+      ctx.roundRect(x, h - 18 - hh, bw, hh, 3);
+      if (future || !day.signal) {
+        ctx.strokeStyle = rgba(tk("--color-ink-dim"), 0.45);
+        ctx.lineWidth = 1.2; ctx.setLineDash([2, 3]); ctx.stroke(); ctx.setLineDash([]);
+      } else {
+        ctx.fillStyle = mins < 1 ? rgba(tk("--color-good"), 0.55) : tint;
+        ctx.fill();
+      }
+      if (i % 6 === 0) {
+        ctx.fillStyle = tk("--color-ink-dim");
+        ctx.font = "16px ui-monospace, monospace";
+        ctx.fillText(i === 0 ? "12a" : (i === 12 ? "12p" : (i > 12 ? (i - 12) + "p" : i + "a")), x, h - 2);
+      }
+    }
+  }
+
+  // ── 14-day curve ──────────────────────────────────────────────────────────
+  function drawCurve(tint) {
+    var w = 760, h = 230, pad = 12, ctx = curveCtx;
+    ctx.clearRect(0, 0, w, h);
+    var max = Math.max.apply(null, HISTORY.filter(Boolean).concat([day.budget * 1.2]));
+    var xs = function (i) { return pad + (i / (HISTORY.length - 1)) * (w - pad * 2); };
+    var ys = function (v) { return h - pad - (v / max) * (h - pad * 2); };
+
+    ctx.strokeStyle = tk("--color-line"); ctx.lineWidth = 2; ctx.setLineDash([6, 6]);
+    ctx.beginPath(); ctx.moveTo(pad, ys(day.budget)); ctx.lineTo(w - pad, ys(day.budget)); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = tk("--color-ink-dim"); ctx.font = "15px ui-monospace, monospace";
+    ctx.fillText("budget", pad + 2, ys(day.budget) - 6);
+
+    var pts = [];
+    HISTORY.forEach(function (v, i) { if (v !== null) pts.push([xs(i), ys(v)]); });
+    if (pts.length > 1) {
+      ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+      for (var i = 1; i < pts.length; i++) {
+        var p0 = pts[i - 1], p1 = pts[i], mx = (p0[0] + p1[0]) / 2;
+        ctx.bezierCurveTo(mx, p0[1], mx, p1[1], p1[0], p1[1]);
+      }
+      ctx.save();
+      ctx.strokeStyle = tint; ctx.lineWidth = 3.5; ctx.lineJoin = "round"; ctx.stroke();
+      ctx.lineTo(pts[pts.length - 1][0], h - pad); ctx.lineTo(pts[0][0], h - pad); ctx.closePath();
+      var g = ctx.createLinearGradient(0, pad, 0, h - pad);
+      g.addColorStop(0, rgba(tint, 0.34)); g.addColorStop(1, rgba(tint, 0));
+      ctx.fillStyle = g; ctx.fill();
+      ctx.restore();
+    }
+    HISTORY.forEach(function (v, i) {
+      ctx.beginPath();
+      if (v === null) {
+        ctx.arc(xs(i), h - pad - 10, 5, 0, Math.PI * 2);
+        ctx.strokeStyle = tk("--color-ink-dim"); ctx.lineWidth = 2;
+        ctx.setLineDash([3, 3]); ctx.stroke(); ctx.setLineDash([]);
+      } else {
+        ctx.arc(xs(i), ys(v), 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = v <= day.budget ? tk("--color-good") : tk("--color-bad"); ctx.fill();
+      }
+    });
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  var lastStage = null;
+  function render(committed) {
+    var res = evaluate(day);
+    var stage = resolveStage(res.after, stageKey);
+    stageKey = stage.key;
+    var tint = TINTS[stage.key];
+    document.documentElement.style.setProperty("--stage-tint", tint);
+
+    var n = Math.round(res.after);
+    $("score").textContent = n;
+    $("miniScore").textContent = n;
+    $("mood").textContent = stage.mood;
+
+    // Delight budget: only on a stage change or an explicit commit, never per tick.
+    if (!reduce && (committed || (lastStage && lastStage !== stage.key))) {
+      var el = $("score");
+      el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop");
+    }
+    lastStage = stage.key;
+
+    var r = day.budget > 0 ? day.minutes / day.budget : 0;
+    $("ratioV").innerHTML = r.toFixed(2) + "&times;";
+    $("hbar").style.transform = "scaleX(" + (res.after / 100) + ")";
+    $("tRot").textContent = day.signal ? day.minutes + "m" : "—";
+    $("tInt").textContent = day.signal ? Math.max(0, day.overrides + (r > 1 ? 2 : 0)) : "—";
+    $("tOvr").textContent = day.signal ? day.overrides : "—";
+    $("streakN").textContent = res.streakAfter;
+    $("streakV").textContent = "streak " + day.streak;
+
+    $("offenders").innerHTML = OFFENDERS.map(function (o) {
+      return '<div class="off"><span class="dot" style="background:' + tk(o.k) + '"></span>' +
+        '<span><span class="nm">' + o.n + '</span><br><span class="cat">' + o.c + "</span></span>" +
+        '<span class="mins">' + Math.round(day.minutes * o.m) + "m</span></div>";
+    }).join("");
+
+    var rowsHTML = res.parts.map(function (c) {
+      return '<div class="rrow"><span>' + c.t + '</span><b class="' + (c.v >= 0 ? "plus" : "minus") + '">' + sign(c.v) + "</b></div>";
+    });
+    if (!res.parts.length) {
+      rowsHTML.push('<div class="rrow"><span>' + (day.signal ? "Nothing to score."
+        : "No signal that day, so nothing moved. A day we could not measure is never scored as a good one.") + "</span><b>0</b></div>");
+    }
+    rowsHTML.push('<div class="rrow total"><span>' + Math.round(day.health) + " → " + n +
+      '</span><b class="' + (res.delta >= 0 ? "plus" : "minus") + '">' + sign(res.delta) + "</b></div>");
+    $("receipt").innerHTML = rowsHTML.join("");
+    $("deltaV").textContent = sign(res.delta);
+    $("clampNote").textContent = res.clamped
+      ? "Capped. The day added up to " + sign(res.raw) + "; no single day may move more than 20 points down or 15 up." : "";
+
+    $("peek").innerHTML = (res.parts.length ? res.parts : [{ t: "No signal today", v: 0 }])
+      .slice(0, 3).map(function (c) {
+        return '<div class="peek-row"><span>' + c.t + '</span><b class="' + (c.v >= 0 ? "plus" : "minus") + '">' + sign(c.v) + "</b></div>";
+      }).join("") + '<div class="peek-cta">See the whole receipt &rarr;</div>';
+
+    drawRibbon(tint);
+    drawCurve(tint);
+    return res;
+  }
+
+  // ── Scroll: condensing header + hero parallax ─────────────────────────────
+  var scroller = $("scroller"), topbar = $("topbar"), heroWrap = $("heroWrap"), ticking = false;
+  function onScroll() {
+    var y = scroller.scrollTop;
+    topbar.classList.toggle("condensed", y > 130);
+    if (!reduce) {
+      // Parallax and fade: the hero recedes rather than simply sliding away.
+      var k = Math.min(y / 260, 1);
+      heroWrap.style.transform = "translateY(" + (y * 0.28) + "px) scale(" + (1 - k * 0.10) + ")";
+      heroWrap.style.opacity = String(1 - k * 0.85);
+    }
+    ticking = false;
+  }
+  scroller.addEventListener("scroll", function () {
+    if (!ticking) { ticking = true; requestAnimationFrame(onScroll); }
+  }, { passive: true });
+
+  // ── Controls ──────────────────────────────────────────────────────────────
+  [["minutes","minutesV"],["budget","budgetV"],["focus","focusV"],
+   ["overrides","overridesV"],["health","healthV"],["streak","streakOut"]].forEach(function (pair) {
+    var el = $(pair[0]), out = $(pair[1]);
+    el.addEventListener("input", function () {
+      var v = Number(el.value); out.textContent = v; day[pair[0]] = v;
+      if (pair[0] === "health") stageKey = rawStage(v).key;
+      render(false);
+    });
+  });
+  ["sched", "signal"].forEach(function (attr) {
+    document.querySelectorAll("[data-" + attr + "]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        document.querySelectorAll("[data-" + attr + "]").forEach(function (o) { o.setAttribute("aria-pressed", "false"); });
+        b.setAttribute("aria-pressed", "true");
+        day[attr] = attr === "signal" ? b.dataset.signal === "yes" : b.dataset.sched;
+        render(true);
+      });
+    });
+  });
+  $("commitBtn").addEventListener("click", function () {
+    var res = evaluate(day);
+    day.health = res.after; day.streak = res.streakAfter;
+    $("health").value = Math.round(res.after); $("healthV").textContent = Math.round(res.after);
+    $("streak").value = Math.min(res.streakAfter, 21); $("streakOut").textContent = res.streakAfter;
+    render(true);
+  });
+
+  // Session bar: enters and leaves through the bottom, the way it came.
+  var running = false, remain = 1500, timer = null;
+  $("tabFocus").addEventListener("click", function () {
+    running = !running;
+    $("sessionbar").classList.toggle("up", running);
+    clearInterval(timer);
+    if (running) {
+      timer = setInterval(function () {
+        remain = Math.max(0, remain - 1);
+        var m = String(Math.floor(remain / 60)).padStart(2, "0");
+        var s = String(remain % 60).padStart(2, "0");
+        $("sessionT").textContent = m + ":" + s;
+        if (remain === 0) { clearInterval(timer); }
+      }, 1000);
+    }
+  });
+
+  // ── Stage strip ───────────────────────────────────────────────────────────
+  var stripEls = [];
+  $("strip").innerHTML = STAGES.slice().reverse().map(function (s) {
+    return '<button class="stagecard" type="button" data-stage="' + s.key + '">' +
+      '<canvas width="440" height="250"></canvas><h3>' + s.name + "</h3>" +
+      "<p>" + s.mood + " · " + s.low + "+</p></button>";
+  }).join("");
+  document.querySelectorAll(".stagecard").forEach(function (card) {
+    var s = STAGES.find(function (x) { return x.key === card.dataset.stage; });
+    stripEls.push({ ctx: card.querySelector("canvas").getContext("2d"), s: s });
+    card.addEventListener("click", function () {
+      var target = Math.min(s.low + 12, 96);
+      day.health = target; stageKey = s.key;
+      $("health").value = target; $("healthV").textContent = target;
+      render(true);
+      scroller.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+    });
+  });
+
+  // ── Loop ──────────────────────────────────────────────────────────────────
+  function frame() {
+    var t = reduce ? 0 : performance.now() / 1000;
+    var stage = STAGES.find(function (s) { return s.key === stageKey; }) || STAGES[3];
+    heroCtx.clearRect(0, 0, 820, 528);
+    drawCreature(heroCtx, 820, 528, stage, TINTS[stage.key], t);
+    stripEls.forEach(function (e) {
+      e.ctx.clearRect(0, 0, 440, 250);
+      drawCreature(e.ctx, 440, 250, e.s, TINTS[e.s.key], t);
+    });
+    if (!reduce) requestAnimationFrame(frame);
+  }
+
+  render(false);
+  frame();
+  onScroll();
+})();
+</script>
+
+</body></html>
