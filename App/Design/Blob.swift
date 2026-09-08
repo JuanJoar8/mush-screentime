@@ -147,17 +147,17 @@ private enum Reach {
     static let maxSpread: CGFloat = 0.16
     static let maxSag: CGFloat = 0.22
     /// Silhouette harmonics, at their peak: 1 + 0.056 + 0.028.
-    static let lump: CGFloat = 1.092
+    static let lump: CGFloat = 1.066
     /// Half the contour stroke.
     static let contour: CGFloat = 0.036
 
     static let armSpan: CGFloat = 1.42      // wrist, in bodyW
     static let finger: CGFloat = 0.11       // in radius
-    static let eyeOffset: CGFloat = 0.33    // in bodyW
-    static let lens: CGFloat = 0.40         // in radius
+    static let eyeOffset: CGFloat = 0.305   // in bodyW
+    static let lens: CGFloat = 0.345        // in radius
     static let templeSpan: CGFloat = 2.06   // hook end, in lensR
     static let hip: CGFloat = 0.80          // in bodyH
-    static let legLength: CGFloat = 0.46    // in radius, before sag shortens it
+    static let legLength: CGFloat = 0.58    // in radius, before sag shortens it
     static let shadow: CGFloat = 0.16       // centre offset plus half height
 
     private static let widestBody: CGFloat = 1.30 + maxSpread
@@ -246,7 +246,7 @@ struct BlobView: View {
         let detail = min(size.width, size.height) >= 96
 
         // Same arithmetic the legs use, so the shadow cannot drift away from the feet.
-        let groundY = center.y + bodyH * 0.80 + radius * (0.46 - p.sag * 0.7) + radius * 0.10
+        let groundY = center.y + bodyH * 0.80 + radius * (0.58 - p.sag * 0.7) + radius * 0.10
         drawShadow(&context, center: center, groundY: groundY, bodyW: bodyW, radius: radius)
         drawLegs(&context, center: center, bodyH: bodyH, bodyW: bodyW, radius: radius, palette: palette)
         drawArms(&context, center: center, bodyW: bodyW, bodyH: bodyH, radius: radius,
@@ -297,8 +297,8 @@ struct BlobView: View {
         bodyH: CGFloat, bodyW: CGFloat, radius: CGFloat, palette: Palette
     ) {
         let hipY = center.y + bodyH * 0.80
-        let footY = hipY + radius * (0.46 - p.sag * 0.7)
-        let spread = bodyW * (0.26 + p.spread * 1.1)
+        let footY = hipY + radius * (0.58 - p.sag * 0.7)
+        let spread = bodyW * (0.30 + p.spread * 1.1)
         let width = limbWidth(radius)
 
         for side in [-1.0, 1.0] as [CGFloat] {
@@ -324,7 +324,7 @@ struct BlobView: View {
         let width = limbWidth(radius)
 
         for side in [-1.0, 1.0] as [CGFloat] {
-            let shoulder = CGPoint(x: center.x + side * bodyW * 0.74, y: center.y + bodyH * 0.26)
+            let shoulder = CGPoint(x: center.x + side * bodyW * 0.74, y: center.y + bodyH * 0.42)
             let elbow = CGPoint(
                 x: center.x + side * bodyW * (1.18 - drop * 0.08),
                 y: shoulder.y + radius * (0.02 + drop * 0.26)
@@ -373,12 +373,13 @@ struct BlobView: View {
         for step in 0...steps {
             let angle = Double(step) / Double(steps) * 2 * .pi - .pi / 2
 
-            // Harmonic 6 carries the lobes and 11 breaks up the regularity. The first
-            // version used 7 and 11 at half this amplitude and the silhouette read as a
-            // rock: too many bumps, none of them big enough to be a lobe.
+            // Amplitude matters more than count, and it is amplitude *per degree of arc*
+            // that decides whether a bump is a lobe or a cusp. Harmonic 6 at 0.072 swings
+            // the radius 15% across 60° and produced a five-pointed star. Harmonic 8 at
+            // 0.048 swings 10% across 45° — the same lumpiness, curved instead of pointed.
             let lumps = 1
-                + 0.072 * sin(angle * 6 + 0.9)
-                + 0.020 * sin(angle * 11 - 0.4)
+                + 0.048 * sin(angle * 8 + 0.9)
+                + 0.018 * sin(angle * 13 - 0.4)
 
             // Crown dip: the longitudinal fissure pulls the top centre down. Narrow, so
             // it reads as a cleft rather than a flat top.
@@ -439,25 +440,25 @@ struct BlobView: View {
         _ context: inout GraphicsContext, center: CGPoint,
         bodyW: CGFloat, bodyH: CGFloat, radius: CGFloat, palette: Palette
     ) {
-        // Keep out of the face. Without this the folds ran straight through the glasses
-        // and the mouth vanished into them — the drawing read as a cracked rock with eyes
-        // rather than as a creature. Elliptical, so the exclusion follows the face's own
-        // shape instead of cutting a rectangle out of the folds.
-        let faceY = center.y + bodyH * 0.10
-        let faceRX = bodyW * 0.33 + radius * 0.52
-        let faceRY = radius * 1.00
+        // Keep out of the face — but only out of the face. The first attempt used an
+        // ellipse 0.95 radius wide and a full radius tall, which covered 94% of the body
+        // and left three fold lines on the entire creature: a bald yellow field with
+        // glasses on it. This is the box the glasses and mouth actually occupy, so the
+        // folds keep the crown above the brows and the flanks outside the frames — which
+        // is also where a real brain shows them.
+        let eyeY = center.y + bodyH * 0.10
+        let faceHalfW = bodyW * 0.305 + radius * 0.345
+        let faceTop = eyeY - radius * (0.345 + 0.26)
         func clearsFace(_ point: CGPoint) -> Bool {
-            let dx = (point.x - center.x) / faceRX
-            let dy = (point.y - faceY) / faceRY
-            return dx * dx + dy * dy > 1
+            abs(point.x - center.x) > faceHalfW || point.y < faceTop
         }
 
         let width = max(bodyW * 0.038, 1)
         let style = StrokeStyle(lineWidth: width, lineCap: .round)
 
         for side in [-1.0, 1.0] as [CGFloat] {
-            for ring in 0..<2 {
-                let count = 3
+            for ring in 0..<3 {
+                let count = 4
                 for index in 0..<count {
                     let seed = ring * 17 + index * 5 + (side > 0 ? 101 : 3)
                     let j1 = rnd(seed) - 0.5
@@ -465,11 +466,11 @@ struct BlobView: View {
 
                     // Polar position inside the hemisphere. `radial` 0 is the fissure,
                     // 1 the outer edge; `arc` sweeps from crown to base.
-                    let radial = 0.34 + CGFloat(ring) * 0.30 + j1 * 0.08
-                    let arc = (CGFloat(index) + 0.5) / CGFloat(count) * 1.7 - 0.35 + j2 * 0.12
+                    let radial = 0.34 + CGFloat(ring) * 0.24 + j1 * 0.08
+                    let arc = (CGFloat(index) + 0.5) / CGFloat(count) * 1.9 - 0.42 + j2 * 0.12
 
                     let px = center.x + side * bodyW * radial * CGFloat(cos(Double(arc) - 0.35))
-                    let py = center.y - bodyH * 0.70 + bodyH * 1.80 * arc / 1.7 + bodyH * j2 * 0.06
+                    let py = center.y - bodyH * 0.74 + bodyH * 1.86 * arc / 1.9 + bodyH * j2 * 0.06
 
                     // Tangential: perpendicular to the line out from the centre, so folds
                     // wrap the dome rather than cutting across it.
@@ -557,9 +558,9 @@ struct BlobView: View {
         // now clearly larger than the eye it holds. At 0.375 against an eye of 0.205 the
         // wide-eyed `buzzed` sclera pushed past the rim and the frames read as goggles.
         let eyeY = center.y + bodyH * 0.10
-        let eyeX = bodyW * 0.33
-        let lensR = radius * 0.40
-        let rx = radius * 0.185
+        let eyeX = bodyW * 0.305
+        let lensR = radius * 0.345
+        let rx = radius * 0.160
         let ry = rx * 1.04 * p.open
 
         // Blink. Cheap, and most of what makes something read as alive.
@@ -750,7 +751,7 @@ struct BlobView: View {
         _ context: inout GraphicsContext, center: CGPoint, eyeY: CGFloat,
         radius: CGFloat, palette: Palette
     ) {
-        let my = eyeY + radius * 0.64
+        let my = eyeY + radius * 0.58
 
         guard p.mouth > 0.15 else {
             let mw = radius * 0.21
