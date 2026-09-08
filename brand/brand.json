@@ -1,11 +1,11 @@
 {
   "name": "Mush",
   "archetype": "jester",
-  "direction": "Objeto vivo suspendido en la noche. Fondo indigo profundo con degradado y una criatura iluminada desde dentro que flota sobre su propia sombra. La referencia de acabado es Opal: profundidad, glow, un solo objeto heroico; la referencia de caracter es el genero del cerebro antropomorfico. Todo lo demas es panel translucido sobre la noche.",
+  "direction": "Objeto vivo suspendido en la noche. Fondo indigo profundo y una criatura que flota sobre su propia sombra dentro del unico rectangulo iluminado. El acabado de la criatura NO es 3D: es vector plano tipo sticker - relleno solido, contorno grueso, cero degradados y cero blur - sobre un halo suave que es la unica orilla blanda del dibujo. Todo lo demas es panel mate sobre la noche.",
   "referencias": {
     "estilo": "Opal para el acabado (indigo nocturno, objeto heroico con glow y sombra de suelo, cifra grande, fila de metricas, curva del dia)",
-    "caracter": "genero del cerebro antropomorfico con surcos, extremidades y cara expresiva - dibujo propio, no calcado",
-    "no_es": "no es un panel de bienestar plano; no es una mascota de productividad con lanyard"
+    "caracter": "cerebro antropomorfico en gafas redondas de alambre, vector plano: relleno solido, contorno pesado, surcos como lineas finas, extremidades de alambre con tres dedos, chapetas y boca abierta con lengua. Dibujo propio, no calcado.",
+    "no_es": "no es un panel de bienestar plano; no es una mascota de productividad con lanyard; y ya no es un render 3D con gradientes, guantes y zapatos - eso se probo y se leia como stock."
   },
   "axes": {
     "hype": 1,
@@ -95,15 +95,17 @@
     }
   },
   "component_rules": {
-    "viewport": "Radio 28. Es el UNICO rectangulo claro de la app. Lleva sombra interior de 1px para leerse iluminado desde dentro. Nunca se usa para nada que no sea la criatura.",
+    "viewport": "Radio 28. Es el UNICO rectangulo claro de la app. Lleva el hero-glow detras del contenido y un filete de 1px. Nunca se usa para nada que no sea la criatura.",
     "panel": "Radio 12. Superficie mate para agrupar instrumentos. Sin sombra, se separa por color y por filete.",
     "pill": "Radio 999. Solo para estado y racha: lo que esta encendido ahora.",
     "receipt-row": "Fila de recibo: razon a la izquierda en texto normal, valor con signo a la derecha en mono. Es la pantalla que hace creible el numero, no una vista de debug.",
-    "blob": "Ilustracion propia dibujada en Canvas, sin assets. Contorno relleno, sin borde. El color sale de stage-*, jamas se escribe a mano.",
+    "blob": "Ilustracion propia dibujada en Canvas, sin assets. VECTOR PLANO: relleno solido del color de etapa, un contorno de radius*0.072 y una sola tinta derivada (tint mezclado 44% hacia ground-deep) para contorno, surcos, gafas, extremidades, cejas y boca. Prohibidos aqui: degradados de relleno, blur y cualquier capa especular. El color sale de stage-*, jamas se escribe a mano.",
     "provenance-chip": "Todo dato que venga del report de Apple lleva un chip diminuto. Es obligatorio: son las unicas cifras cuya derivacion no podemos explicar.",
     "focus": "Contorno de 2px en el color de estado con 2px de separacion. Visible siempre.",
-    "specular": "Brillo especular y realce de los giros. Es el unico blanco puro del sistema y solo se usa con alpha, nunca en plano.",
-    "eyes": "Iris azul con anillo limbal y un punto especular. Es el unico azul del sistema y existe solo en la cara del personaje: da vida sin competir con el acento."
+    "specular": "Blanco puro. Con alpha para el brillo plano de los lobulos, el reflejo del cristal y el halo. En plano y sin alpha SOLO en tres sitios de la cara -esclerotica, punto de luz de la pupila y el diente-, donde un blanco translucido se ensuciaria con el color del cuerpo que tiene debajo.",
+    "eyes": "Disco de iris azul plano con una pupila grande encima y un punto especular. Sin gradiente radial y sin anillo limbal: a este tamano y detras de un cristal, el azul funciona como aro alrededor de la pupila. Es el unico azul del sistema y existe solo en la cara del personaje.",
+    "glasses": "Gafas redondas de alambre: dos aros, puente arqueado y patilla con gancho. Se dibujan ENCIMA de los ojos y DEBAJO de las cejas, el orden en que se apoyan de verdad. Son el elemento firma del personaje: si hay que sacrificar detalle por tamano, se sacrifica el reflejo del cristal, nunca el aro.",
+    "hero-glow": "Halo radial detras de la criatura, dentro del viewport, en su propio color de etapa: 30% de alpha en el centro, 0 en el borde. Es la unica orilla blanda del sistema, y por eso se lee como luz ambiente y no como un objeto desenfocado."
   },
   "anti_slop": {
     "forbidden_patterns": [
@@ -116,7 +118,8 @@
       "Emojis como iconos de interfaz.",
       "Culpar al usuario por perder la racha.",
       "Calcar la ilustracion de Brainrot. Mismo genero y mismo nivel de craft, dibujo propio.",
-      "Fondo crema con un unico acento brillante."
+      "Fondo crema con un unico acento brillante.",
+      "Devolver el personaje al acabado 3D: degradado radial de relleno, realce especular sobre el cuerpo, guantes o zapatos. Se probo, se envio y se leia como render de stock."
     ]
   },
   "validation": {

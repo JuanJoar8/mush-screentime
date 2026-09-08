@@ -78,7 +78,7 @@ struct HomeView: View {
     // MARK: The creature and its number, as one object
 
     private var creature: some View {
-        Viewport {
+        Viewport(glow: model.stage.tint) {
             VStack(spacing: 0) {
                 // The creature gets its face to itself. Nothing overlaps it.
                 BlobView(stage: model.stage)

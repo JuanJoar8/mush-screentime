@@ -17,7 +17,7 @@ struct StageGalleryView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 ForEach(BrainStage.allCases.reversed(), id: \.self) { stage in
-                    Viewport {
+                    Viewport(glow: stage.tint) {
                         HStack(spacing: 0) {
                             BlobView(stage: stage, isStatic: true)
                                 .frame(width: 140, height: 130)

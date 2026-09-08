@@ -1,20 +1,34 @@
 import SwiftUI
 import MushKit
 
-/// The character: an anthropomorphic brain with gloves and shoes.
+/// The character: an anthropomorphic brain in round wire glasses.
 ///
 /// No image assets. Every curve is generated from `BrainStage`, so the creature cannot
 /// drift out of sync with the number beside it — change the stage and the whole drawing
-/// follows: colour, posture, brow angle, gloss, gaze.
+/// follows: colour, posture, brow angle, gaze, how far the mouth opens.
 ///
-/// **What makes it read as rubber rather than a flat shape.** Each gyrus is stroked three
-/// times: a blurred dark groove offset *down*, the fold itself, and a thin bright crest
-/// offset *up*. That trio is the whole trick. Drop the highlight and it collapses back
-/// into a pink blob immediately.
+/// **It is drawn flat, in one ink.** The previous version was moulded rubber: radial
+/// gradients, thirty blurred layers, a specular ellipse, gloves and shoes. It was
+/// technically impressive and it read as a stock 3D render. This one is a sticker —
+/// solid fill, one heavy contour, thin ink lines for the folds, spindly limbs — which
+/// is the genre the reference actually belongs to, and which survives being shrunk to
+/// 20pt in the Dynamic Island where a blur is sub-pixel and simply wasted.
+///
+/// **One ink, not black.** The reference draws its outline, glasses and limbs in black
+/// on white. Black on our indigo ground disappears the moment a temple arm or a
+/// fingertip leaves the body, so the ink is derived from the creature's own stage tint
+/// instead: dark enough to read as a drawn line on the body, light enough to stay
+/// visible off it. Adapting the ink to the ground is the translation; keeping the black
+/// would have been the copy.
+///
+/// **The glasses are the signature.** They are the one element you would describe first,
+/// they carry the "thinking" reading the product needs, and they give the face a
+/// structure that survives at widget size. They are drawn last, over the eyes, exactly
+/// as a real pair sits.
 ///
 /// **The brows do the acting.** Eyes and mouth help, but tilt and lift on two short
-/// strokes carry almost all of the expression — which is why they are the parameters that
-/// move most between stages.
+/// strokes carry almost all of the expression — which is why they are the parameters
+/// that move most between stages.
 ///
 /// Note the progression is not a dimmer switch. `buzzed` sits in the middle and is the
 /// *most agitated* state — small pupils, wide eyes, a fine tremor — because that is what
@@ -23,7 +37,7 @@ struct CreatureParameters: Equatable {
     /// Brow rotation. Negative raises the outer end (alert); positive raises the inner
     /// end, which is the universal shape of worry.
     var browTilt: CGFloat
-    /// How far the brows sit above the eyes.
+    /// How far the brows sit above the glasses.
     var browLift: CGFloat
     /// Eyelid coverage, 0...1.
     var lid: CGFloat
@@ -33,12 +47,14 @@ struct CreatureParameters: Equatable {
     var sag: CGFloat
     /// It widens as it loses structure.
     var spread: CGFloat
-    /// Specular strength, and the crest/groove contrast with it. A dulled brain does not
-    /// merely darken — it stops reflecting.
-    var gloss: CGFloat
-    /// Pupil size as a fraction of the iris. Small reads as startled.
+    /// Sheen strength: how present the flat white highlight strokes are, and how far the
+    /// blush carries. A dulled brain does not merely darken — it stops catching light.
+    var sheen: CGFloat
+    /// How much iris shows around the pupil. Low is a blown pupil; high is a startled
+    /// ring of colour. `buzzed` is the high one.
     var pupil: CGFloat
-    /// Mouth curvature. Positive smiles.
+    /// Mouth. Above ~0.15 it opens; below, it is a single stroked curve, and negative
+    /// turns it down.
     var mouth: CGFloat
     /// Arm droop, 0 held up to 1 hanging.
     var arms: CGFloat
@@ -50,24 +66,24 @@ struct CreatureParameters: Equatable {
     static func forStage(_ stage: BrainStage) -> CreatureParameters {
         switch stage {
         case .crisp:
-            .init(browTilt: -0.14, browLift: 0.10, lid: 0.00, open: 1.00, sag: 0.00,
-                  spread: 0.00, gloss: 1.00, pupil: 0.52, mouth: 0.52, arms: 0.22,
+            .init(browTilt: -0.16, browLift: 0.10, lid: 0.00, open: 1.00, sag: 0.00,
+                  spread: 0.00, sheen: 1.00, pupil: 0.10, mouth: 0.85, arms: 0.16,
                   jitter: 0.000, blinkInterval: 3.2)
         case .foggy:
-            .init(browTilt: 0.10, browLift: 0.06, lid: 0.20, open: 0.92, sag: 0.05,
-                  spread: 0.04, gloss: 0.62, pupil: 0.50, mouth: 0.06, arms: 0.40,
+            .init(browTilt: 0.12, browLift: 0.06, lid: 0.18, open: 0.92, sag: 0.05,
+                  spread: 0.04, sheen: 0.66, pupil: 0.16, mouth: 0.22, arms: 0.40,
                   jitter: 0.000, blinkInterval: 4.6)
         case .buzzed:
-            .init(browTilt: -0.34, browLift: 0.13, lid: 0.00, open: 1.16, sag: 0.02,
-                  spread: 0.03, gloss: 0.78, pupil: 0.30, mouth: -0.16, arms: 0.18,
+            .init(browTilt: -0.36, browLift: 0.14, lid: 0.00, open: 1.18, sag: 0.02,
+                  spread: 0.03, sheen: 0.82, pupil: 0.42, mouth: -0.18, arms: 0.14,
                   jitter: 0.050, blinkInterval: 1.1)
         case .melting:
-            .init(browTilt: 0.30, browLift: 0.04, lid: 0.42, open: 0.82, sag: 0.13,
-                  spread: 0.10, gloss: 0.30, pupil: 0.46, mouth: -0.42, arms: 0.65,
+            .init(browTilt: 0.32, browLift: 0.04, lid: 0.40, open: 0.82, sag: 0.13,
+                  spread: 0.10, sheen: 0.32, pupil: 0.14, mouth: -0.46, arms: 0.66,
                   jitter: 0.000, blinkInterval: 6.4)
         case .mush:
-            .init(browTilt: 0.42, browLift: 0.02, lid: 0.62, open: 0.72, sag: 0.22,
-                  spread: 0.16, gloss: 0.16, pupil: 0.40, mouth: -0.58, arms: 0.85,
+            .init(browTilt: 0.44, browLift: 0.02, lid: 0.60, open: 0.72, sag: 0.22,
+                  spread: 0.16, sheen: 0.14, pupil: 0.10, mouth: -0.62, arms: 0.86,
                   jitter: 0.000, blinkInterval: 8.8)
         }
     }
@@ -90,27 +106,31 @@ extension BrainStage {
 /// Built with `Color.mix(with:by:)` rather than stored hexes: the token contract says a
 /// colour literal in a view is a bug, and mixing keeps every shade tied to the one value
 /// in `brand.json`.
+///
+/// Five entries, where the old one had seven. Flat drawing needs fewer shades than
+/// moulded drawing does — that is most of why it reads as cleaner.
 private struct Palette {
+    /// Solid body fill.
     let base: Color
-    let light: Color
-    let lighter: Color
-    let dark: Color
-    let darker: Color
-    let shell: Color
-    let brow: Color
+    /// The one ink: contour, folds, glasses, limbs, mouth, brows.
+    let ink: Color
+    /// Cheeks. Warmed toward `bad`, which is the only warm red in the system.
+    let blush: Color
+    /// Flat highlight strokes. The only white in the drawing besides the sclera.
+    let shine: Color
+    /// Tongue.
+    let tongue: Color
 
-    init(stage: BrainStage, gloss: CGFloat) {
+    init(stage: BrainStage) {
         let tint = stage.tint
-        let white = Token.Color.specular
         base = tint
-        light = tint.mix(with: white, by: Double(0.34 * gloss + 0.10))
-        lighter = tint.mix(with: white, by: Double(0.62 * gloss + 0.12))
-        dark = tint.mix(with: Token.Color.groundDeep, by: 0.24)
-        darker = tint.mix(with: Token.Color.groundDeep, by: 0.46)
-        // Gloves and shoes: white, warmed very slightly by the body so they belong to the
-        // same creature rather than being pasted on.
-        shell = white.mix(with: tint, by: 0.06)
-        brow = tint.mix(with: Token.Color.groundDeep, by: 0.66)
+
+        // Toward the deep ground, but capped short of it: at 0.55 the dull stages sank
+        // into the background and the creature lost its outline entirely.
+        ink = tint.mix(with: Token.Color.groundDeep, by: 0.44)
+        blush = tint.mix(with: Token.Color.bad, by: 0.52)
+        shine = Token.Color.specular
+        tongue = Token.Color.bad.mix(with: Token.Color.groundDeep, by: 0.10)
     }
 }
 
@@ -148,24 +168,21 @@ struct BlobView: View {
 
     private func draw(context: GraphicsContext, size: CGSize, time: TimeInterval) {
         var context = context
-        let palette = Palette(stage: stage, gloss: p.gloss)
+        let palette = Palette(stage: stage)
 
         let cx = size.width / 2
 
-        // Fit the *whole* creature, not the head.
+        // Fit the *whole* creature, not the head. The two extremes that bind:
         //
-        // Taking a flat fraction of the short side put the gloves outside the canvas the
-        // moment the arms were lengthened, and SwiftUI clipped them off — a creature with
-        // no hands, in the gallery and the widget both. So the radius is derived from the
-        // two extremes that actually bind:
+        //   horizontally  fingertips at 1.42 × bodyW plus 0.10 × radius of finger, and
+        //                 bodyW is 1.30 × radius → 1.95 × radius from the centre
+        //   vertically    the crown at 1.13 × radius above a centre sitting at 42%, and
+        //                 the shadow's lower edge at 1.50 × radius below it
         //
-        //   horizontally  wrist at 1.34 × bodyW, plus a glove of 0.215 × radius, and
-        //                 bodyW is 1.30 × radius → 1.96 × radius from the centre
-        //   vertically    the crown, at about 1.18 × radius above the centre, which sits
-        //                 at 42% of the height
-        //
-        // Change an arm length or a glove size and this line has to change with it.
-        let radius = min(size.width * 0.245, size.height * 0.30)
+        // Change a limb length and this line changes with it. The previous version put
+        // the gloves outside the canvas the moment the arms grew, and SwiftUI clipped
+        // them — a creature with no hands, in the gallery and the widget both.
+        let radius = min(size.width * 0.250, size.height * 0.335)
 
         // Idle breathing: slow, small, and the only thing that moves at rest.
         let breathe = CGFloat(sin(time * 0.9)) * radius * 0.014
@@ -176,96 +193,78 @@ struct BlobView: View {
         let bodyH = radius * (1.06 - p.spread * 0.30)
         let center = CGPoint(x: cx + tremor, y: cy)
 
-        // Level of detail. Every blurred layer is an offscreen render, and there are
-        // thirty of them; in the Dynamic Island at 20pt each blur is sub-pixel and pure
-        // waste. Below this size the softening is dropped and the offsets do the work.
+        // Level of detail. Not a blur budget any more — there are no blurs left — but at
+        // Dynamic Island size the fold lines and sheen strokes collapse into a smudge and
+        // are better dropped than drawn.
         let detail = min(size.width, size.height) >= 96
 
-        // Same arithmetic the legs use, so the shadow cannot drift away from the shoes.
-        let groundY = center.y + bodyH * 0.80 + radius * (0.46 - p.sag * 0.7) + radius * 0.13
+        // Same arithmetic the legs use, so the shadow cannot drift away from the feet.
+        let groundY = center.y + bodyH * 0.80 + radius * (0.46 - p.sag * 0.7) + radius * 0.10
         drawShadow(&context, center: center, groundY: groundY, bodyW: bodyW, radius: radius)
-        drawLegs(&context, center: center, bodyW: bodyW, bodyH: bodyH, radius: radius, palette: palette)
+        drawLegs(&context, center: center, bodyH: bodyH, bodyW: bodyW, radius: radius, palette: palette)
         drawArms(&context, center: center, bodyW: bodyW, bodyH: bodyH, radius: radius,
                  palette: palette, time: time)
-        drawBody(&context, center: center, bodyW: bodyW, bodyH: bodyH, palette: palette, detail: detail)
+        drawBody(&context, center: center, bodyW: bodyW, bodyH: bodyH, radius: radius,
+                 palette: palette, detail: detail)
         drawFace(&context, center: center, bodyW: bodyW, bodyH: bodyH, radius: radius,
-                 palette: palette, time: time)
+                 palette: palette, time: time, detail: detail)
     }
 
     // MARK: Ground
 
+    /// Flat, not blurred. A soft shadow under a flat drawing is the single easiest way to
+    /// make it look like two different illustrations stapled together.
     private func drawShadow(
         _ context: inout GraphicsContext, center: CGPoint, groundY: CGFloat,
         bodyW: CGFloat, radius: CGFloat
     ) {
         let rect = CGRect(
-            x: center.x - bodyW * 0.62, y: groundY - radius * 0.09,
-            width: bodyW * 1.24, height: radius * 0.18
+            x: center.x - bodyW * 0.58, y: groundY - radius * 0.06,
+            width: bodyW * 1.16, height: radius * 0.12
         )
-        context.drawLayer { layer in
-            layer.addFilter(.blur(radius: radius * 0.09))
-            layer.opacity = 0.34 - p.sag * 0.4
-            layer.fill(Path(ellipseIn: rect), with: .color(Token.Color.groundDeep))
-        }
+        context.fill(
+            Path(ellipseIn: rect),
+            with: .color(Token.Color.groundDeep.opacity(0.42 - Double(p.sag) * 0.5))
+        )
     }
 
     // MARK: Limbs
 
-    /// A rounded limb: one thick stroke, then a thin light stroke along its upper edge.
-    /// Two strokes is the cheapest thing that stops a line reading as a line.
-    private func limb(
-        _ context: inout GraphicsContext, points: [CGPoint], width: CGFloat,
-        colour: Color, highlight: Color
+    /// Spindly. One thin round-capped stroke, no highlight, no glove, no shoe — the whole
+    /// charm of the reference is a heavy body on wire limbs, and thickening them to make
+    /// them "readable" is exactly what kills it.
+    ///
+    /// Floored at 1.2pt because below about a point a stroke stops anti-aliasing into
+    /// anything and the limbs vanish from the widget.
+    private func limbWidth(_ radius: CGFloat) -> CGFloat { max(radius * 0.052, 1.2) }
+
+    private func stroke(
+        _ context: inout GraphicsContext, _ path: Path, _ colour: Color, _ width: CGFloat
     ) {
-        var path = Path()
-        path.move(to: points[0])
-        for point in points.dropFirst() { path.addLine(to: point) }
-
-        let style = StrokeStyle(lineWidth: width, lineCap: .round, lineJoin: .round)
-        context.stroke(path, with: .color(colour), style: style)
-
-        context.drawLayer { layer in
-            layer.translateBy(x: -width * 0.12, y: -width * 0.16)
-            layer.stroke(
-                path, with: .color(highlight),
-                style: StrokeStyle(lineWidth: width * 0.30, lineCap: .round, lineJoin: .round)
-            )
-        }
+        context.stroke(path, with: .color(colour),
+                       style: StrokeStyle(lineWidth: width, lineCap: .round, lineJoin: .round))
     }
 
     private func drawLegs(
         _ context: inout GraphicsContext, center: CGPoint,
-        bodyW: CGFloat, bodyH: CGFloat, radius: CGFloat, palette: Palette
+        bodyH: CGFloat, bodyW: CGFloat, radius: CGFloat, palette: Palette
     ) {
         let hipY = center.y + bodyH * 0.80
         let footY = hipY + radius * (0.46 - p.sag * 0.7)
-        let spread = bodyW * (0.30 + p.spread * 1.1)
+        let spread = bodyW * (0.26 + p.spread * 1.1)
+        let width = limbWidth(radius)
 
         for side in [-1.0, 1.0] as [CGFloat] {
-            let x0 = center.x + side * bodyW * 0.20
+            let x0 = center.x + side * bodyW * 0.18
             let x1 = center.x + side * spread
-            limb(&context, points: [CGPoint(x: x0, y: hipY), CGPoint(x: x1, y: footY)],
-                 width: radius * 0.185, colour: palette.base,
-                 highlight: palette.light.opacity(0.75))
 
-            // Shoe: a squat wedge plus a darker sole, tilted outward.
-            context.drawLayer { layer in
-                layer.translateBy(x: x1, y: footY)
-                layer.rotate(by: .radians(Double(side) * 0.12))
-                let upper = CGRect(
-                    x: side * radius * 0.08 - radius * 0.30, y: radius * 0.045 - radius * 0.170,
-                    width: radius * 0.60, height: radius * 0.34
-                )
-                layer.fill(Path(ellipseIn: upper), with: .color(palette.shell))
-                let sole = CGRect(
-                    x: side * radius * 0.08 - radius * 0.30, y: radius * 0.12 - radius * 0.055,
-                    width: radius * 0.60, height: radius * 0.11
-                )
-                layer.fill(
-                    Path(ellipseIn: sole),
-                    with: .color(palette.shell.mix(with: Token.Color.groundDeep, by: 0.12))
-                )
-            }
+            var leg = Path()
+            leg.move(to: CGPoint(x: x0, y: hipY))
+            leg.addLine(to: CGPoint(x: x1, y: footY))
+            // The foot is a kink in the same line, not an object. Outward, so the stance
+            // reads as planted rather than pigeon-toed.
+            leg.addLine(to: CGPoint(x: x1 + side * radius * 0.17, y: footY - radius * 0.015))
+            stroke(&context, leg, palette.ink, width)
         }
     }
 
@@ -275,35 +274,39 @@ struct BlobView: View {
     ) {
         let drop = p.arms
         let sway = CGFloat(sin(time * 0.7)) * 0.03
+        let width = limbWidth(radius)
 
         for side in [-1.0, 1.0] as [CGFloat] {
-            let shoulder = CGPoint(x: center.x + side * bodyW * 0.80, y: center.y + bodyH * 0.28)
+            let shoulder = CGPoint(x: center.x + side * bodyW * 0.74, y: center.y + bodyH * 0.26)
             let elbow = CGPoint(
-                x: center.x + side * bodyW * (1.20 - drop * 0.10),
-                y: shoulder.y + radius * (0.04 + drop * 0.28)
+                x: center.x + side * bodyW * (1.18 - drop * 0.08),
+                y: shoulder.y + radius * (0.02 + drop * 0.26)
             )
             let wrist = CGPoint(
-                x: center.x + side * bodyW * (1.34 - drop * 0.14),
-                y: shoulder.y + radius * (0.30 + drop * 0.60 + sway)
+                x: center.x + side * bodyW * (1.42 - drop * 0.16),
+                y: shoulder.y + radius * (0.22 + drop * 0.62 + sway)
             )
 
-            limb(&context, points: [shoulder, elbow, wrist], width: radius * 0.175,
-                 colour: palette.base, highlight: palette.light.opacity(0.7))
+            var arm = Path()
+            arm.move(to: shoulder)
+            arm.addLine(to: elbow)
+            arm.addLine(to: wrist)
+            stroke(&context, arm, palette.ink, width)
 
-            // Glove: a ball and a thumb. Two circles is all it takes to stop reading as
-            // a dot on the end of a stick.
-            let palm = CGRect(
-                x: wrist.x - radius * 0.215, y: wrist.y - radius * 0.215,
-                width: radius * 0.43, height: radius * 0.43
-            )
-            context.fill(Path(ellipseIn: palm), with: .color(palette.shell))
-
-            let thumb = CGRect(
-                x: wrist.x - side * radius * 0.160 - radius * 0.090,
-                y: wrist.y - radius * 0.090 - radius * 0.090,
-                width: radius * 0.18, height: radius * 0.18
-            )
-            context.fill(Path(ellipseIn: thumb), with: .color(palette.shell))
+            // Three fingers, fanned along the direction the forearm is already travelling.
+            // A dot on the end of a stick reads as a pin; three short strokes read as a
+            // hand, and cost four lines of maths.
+            let heading = atan2(Double(wrist.y - elbow.y), Double(wrist.x - elbow.x))
+            for finger in -1...1 {
+                let angle = heading + Double(finger) * 0.44
+                var digit = Path()
+                digit.move(to: wrist)
+                digit.addLine(to: CGPoint(
+                    x: wrist.x + CGFloat(cos(angle)) * radius * 0.11,
+                    y: wrist.y + CGFloat(sin(angle)) * radius * 0.11
+                ))
+                stroke(&context, digit, palette.ink, width * 0.85)
+            }
         }
     }
 
@@ -311,22 +314,21 @@ struct BlobView: View {
 
     /// The silhouette, sampled rather than drawn with four beziers.
     ///
-    /// The first version was a smooth ellipse with a dip at the crown, and in a shipped
-    /// screenshot it read as a bread roll. A brain's outline is *lumpy* — the folds reach
-    /// the edge and push it out — so the radius carries two small harmonics on top of the
-    /// ellipse. Amplitudes stay under 5%: any more and it turns into a cloud.
+    /// A brain's outline is *lumpy* — the folds reach the edge and push it out — so the
+    /// radius carries two small harmonics on top of the ellipse. Harmonics 7 and 11 are
+    /// mutually prime, so the bumps never line up into a regular rosette the way 4-and-8
+    /// would. Amplitudes are larger than the moulded version used, because a flat drawing
+    /// has no shading to describe the lobes and the contour has to do all of it.
     private func bodyPath(center c: CGPoint, bodyW w: CGFloat, bodyH h: CGFloat) -> Path {
         var path = Path()
-        let steps = 96
+        let steps = 120
 
         for step in 0...steps {
             let angle = Double(step) / Double(steps) * 2 * .pi - .pi / 2
 
-            // Lumps. Harmonics 7 and 11 are mutually prime, so the bumps never line up
-            // into a regular rosette the way 4-and-8 would.
             let lumps = 1
-                + 0.040 * sin(angle * 7 + 0.9)
-                + 0.022 * sin(angle * 11 - 0.4)
+                + 0.056 * sin(angle * 7 + 0.9)
+                + 0.028 * sin(angle * 11 - 0.4)
 
             // Crown dip: the longitudinal fissure pulls the top centre down. Narrow, so
             // it reads as a cleft rather than a flat top.
@@ -347,48 +349,27 @@ struct BlobView: View {
 
     private func drawBody(
         _ context: inout GraphicsContext, center: CGPoint,
-        bodyW: CGFloat, bodyH: CGFloat, palette: Palette, detail: Bool
+        bodyW: CGFloat, bodyH: CGFloat, radius: CGFloat, palette: Palette, detail: Bool
     ) {
         let silhouette = bodyPath(center: center, bodyW: bodyW, bodyH: bodyH)
 
-        context.fill(
-            silhouette,
-            with: .radialGradient(
-                Gradient(colors: [palette.lighter, palette.base, palette.dark]),
-                center: CGPoint(x: center.x - bodyW * 0.34, y: center.y - bodyH * 0.52),
-                startRadius: bodyW * 0.08,
-                endRadius: bodyW * 1.25
-            )
-        )
+        context.fill(silhouette, with: .color(palette.base))
 
+        // Folds and sheen live inside the contour, so the contour is stroked last and
+        // stays a clean unbroken edge.
         context.drawLayer { layer in
             layer.clip(to: silhouette)
-            drawGyri(&layer, center: center, bodyW: bodyW, bodyH: bodyH,
-                     palette: palette, detail: detail)
-
-            // Rim occlusion: a thick blurred stroke *inside* the silhouette, so the volume
-            // does not end at a flat edge.
-            layer.drawLayer { rim in
-                if detail { rim.addFilter(.blur(radius: bodyW * 0.07)) }
-                rim.stroke(
-                    silhouette, with: .color(palette.darker.opacity(0.5)),
-                    style: StrokeStyle(lineWidth: bodyW * 0.20)
-                )
-            }
-
-            if p.gloss > 0.05 {
-                let spec = CGRect(
-                    x: center.x - bodyW * 0.44 - bodyW * 0.22,
-                    y: center.y - bodyH * 0.62 - bodyH * 0.14,
-                    width: bodyW * 0.44, height: bodyH * 0.28
-                )
-                layer.drawLayer { highlight in
-                    if detail { highlight.addFilter(.blur(radius: bodyW * 0.05)) }
-                    highlight.opacity = 0.30 * p.gloss
-                    highlight.fill(Path(ellipseIn: spec), with: .color(Token.Color.specular))
-                }
+            if detail {
+                drawFolds(&layer, center: center, bodyW: bodyW, bodyH: bodyH, palette: palette)
+                drawSheen(&layer, center: center, bodyW: bodyW, bodyH: bodyH,
+                          radius: radius, palette: palette)
             }
         }
+
+        context.stroke(
+            silhouette, with: .color(palette.ink),
+            style: StrokeStyle(lineWidth: max(radius * 0.072, 1.4), lineJoin: .round)
+        )
     }
 
     /// Deterministic pseudo-random. The same fold pattern every frame and every launch —
@@ -398,25 +379,22 @@ struct BlobView: View {
         return CGFloat(x - x.rounded(.down))
     }
 
-    /// The folds.
+    /// The folds, as ink lines.
     ///
-    /// **The first version drew long strokes across each hemisphere and it was wrong.** In
-    /// a shipped screenshot they flattened into horizontal bands and the creature read as
-    /// a bread roll. A brain surface is not striped — it is covered in many *short* lobes,
-    /// each curving around the dome.
-    ///
-    /// So: short arcs on a jittered polar grid, each angled tangentially to the radius, so
-    /// the pattern wraps the volume instead of cutting across it.
-    private func drawGyri(
+    /// Twelve of them, not thirty-six. The moulded version stroked every fold three times
+    /// — blurred groove, fold, blurred crest — because it was describing a surface. A flat
+    /// drawing describes a *boundary*, so one thin line each, longer and more bowed, and
+    /// far fewer: at this weight anything denser turns the body into hatching.
+    private func drawFolds(
         _ context: inout GraphicsContext, center: CGPoint,
-        bodyW: CGFloat, bodyH: CGFloat, palette: Palette, detail: Bool
+        bodyW: CGFloat, bodyH: CGFloat, palette: Palette
     ) {
-        let tube = bodyW * 0.155
-        let round = StrokeStyle(lineWidth: tube, lineCap: .round, lineJoin: .round)
+        let width = max(bodyW * 0.038, 1)
+        let style = StrokeStyle(lineWidth: width, lineCap: .round)
 
         for side in [-1.0, 1.0] as [CGFloat] {
-            for ring in 0..<4 {
-                let count = 3 + ring
+            for ring in 0..<2 {
+                let count = 3
                 for index in 0..<count {
                     let seed = ring * 17 + index * 5 + (side > 0 ? 101 : 3)
                     let j1 = rnd(seed) - 0.5
@@ -424,75 +402,81 @@ struct BlobView: View {
 
                     // Polar position inside the hemisphere. `radial` 0 is the fissure,
                     // 1 the outer edge; `arc` sweeps from crown to base.
-                    let radial = 0.26 + CGFloat(ring) * 0.22 + j1 * 0.09
-                    let arc = (CGFloat(index) + 0.5) / CGFloat(count) * 1.7 - 0.35 + j2 * 0.14
+                    let radial = 0.34 + CGFloat(ring) * 0.30 + j1 * 0.08
+                    let arc = (CGFloat(index) + 0.5) / CGFloat(count) * 1.7 - 0.35 + j2 * 0.12
 
                     let px = center.x + side * bodyW * radial * CGFloat(cos(Double(arc) - 0.35))
-                    let py = center.y - bodyH * 0.74 + bodyH * 1.92 * arc / 1.7 + bodyH * j2 * 0.06
+                    let py = center.y - bodyH * 0.70 + bodyH * 1.80 * arc / 1.7 + bodyH * j2 * 0.06
 
                     // Tangential: perpendicular to the line out from the centre, so folds
                     // wrap the dome rather than cutting across it.
                     let theta = atan2(Double(py - center.y), Double(px - center.x)) + .pi / 2
-                    let length = bodyW * (0.30 + rnd(seed + 7) * 0.14)
+                    let length = bodyW * (0.46 + rnd(seed + 7) * 0.16)
 
                     let ax = px - CGFloat(cos(theta)) * length / 2
                     let ay = py - CGFloat(sin(theta)) * length / 2
                     let bx = px + CGFloat(cos(theta)) * length / 2
                     let by = py + CGFloat(sin(theta)) * length / 2
-                    // Bow the arc outward from the centre, which is the direction a fold
-                    // bulges on a curved surface.
-                    let bow = length * (0.26 + rnd(seed + 13) * 0.16)
-                    let cxp = px + CGFloat(cos(theta - .pi / 2)) * bow * CGFloat(side)
-                    let cyp = py + CGFloat(sin(theta - .pi / 2)) * bow * CGFloat(side)
+                    // Bow outward from the centre, the direction a fold bulges.
+                    let bow = length * (0.32 + rnd(seed + 13) * 0.18)
+                    let cxp = px + CGFloat(cos(theta - .pi / 2)) * bow * side
+                    let cyp = py + CGFloat(sin(theta - .pi / 2)) * bow * side
 
                     var fold = Path()
                     fold.move(to: CGPoint(x: ax, y: ay))
                     fold.addQuadCurve(to: CGPoint(x: bx, y: by), control: CGPoint(x: cxp, y: cyp))
-
-                    if detail {
-                        // Groove shadow, offset down and softened.
-                        context.drawLayer { layer in
-                            layer.translateBy(x: 0, y: tube * 0.34)
-                            layer.addFilter(.blur(radius: tube * 0.20))
-                            layer.stroke(fold, with: .color(palette.darker.opacity(0.55)), style: round)
-                        }
-                    } else {
-                        context.drawLayer { layer in
-                            layer.translateBy(x: 0, y: tube * 0.34)
-                            layer.stroke(fold, with: .color(palette.darker.opacity(0.40)), style: round)
-                        }
-                    }
-
-                    // The fold itself.
-                    context.stroke(fold, with: .color(palette.base.opacity(0.95)), style: round)
-
-                    // Crest highlight, offset up. This is the stroke that makes it rubber.
-                    context.drawLayer { layer in
-                        layer.translateBy(x: 0, y: -tube * 0.28)
-                        if detail { layer.addFilter(.blur(radius: tube * 0.12)) }
-                        layer.stroke(
-                            fold,
-                            with: .color(palette.lighter.opacity(0.34 + 0.40 * p.gloss)),
-                            style: StrokeStyle(lineWidth: tube * 0.40, lineCap: .round)
-                        )
-                    }
+                    context.stroke(fold, with: .color(palette.ink.opacity(0.85)), style: style)
                 }
             }
         }
 
-        // Longitudinal fissure: deeper than any groove, and what splits the two halves.
+        // Longitudinal fissure: the one line that splits the two halves, and the only fold
+        // drawn at full strength.
         var fissure = Path()
         fissure.move(to: CGPoint(x: center.x, y: center.y - bodyH * 1.02))
         fissure.addCurve(
-            to: CGPoint(x: center.x, y: center.y + bodyH * 0.30),
-            control1: CGPoint(x: center.x + bodyW * 0.03, y: center.y - bodyH * 0.55),
-            control2: CGPoint(x: center.x - bodyW * 0.03, y: center.y - bodyH * 0.10)
+            to: CGPoint(x: center.x, y: center.y + bodyH * 0.34),
+            control1: CGPoint(x: center.x + bodyW * 0.05, y: center.y - bodyH * 0.55),
+            control2: CGPoint(x: center.x - bodyW * 0.05, y: center.y - bodyH * 0.10)
         )
-        context.drawLayer { layer in
-            if detail { layer.addFilter(.blur(radius: bodyW * 0.020)) }
-            layer.stroke(
-                fissure, with: .color(palette.darker.opacity(0.62)),
-                style: StrokeStyle(lineWidth: bodyW * 0.045, lineCap: .round)
+        context.stroke(
+            fissure, with: .color(palette.ink),
+            style: StrokeStyle(lineWidth: width * 1.15, lineCap: .round)
+        )
+    }
+
+    /// Three flat white strokes on the upper left, following the lobe curvature.
+    ///
+    /// This is the flat-drawing substitute for a specular highlight, and it is doing the
+    /// same job: saying which way the light comes from. It stays on one side for exactly
+    /// that reason — sheen sprinkled evenly is glitter, not light.
+    private func drawSheen(
+        _ context: inout GraphicsContext, center: CGPoint,
+        bodyW: CGFloat, bodyH: CGFloat, radius: CGFloat, palette: Palette
+    ) {
+        guard p.sheen > 0.08 else { return }
+        let style = StrokeStyle(lineWidth: max(radius * 0.062, 1), lineCap: .round)
+        let marks: [(CGFloat, CGFloat, CGFloat)] = [
+            (-0.62, -0.60, 0.34),
+            (-0.30, -0.82, 0.26),
+            (-0.80, -0.24, 0.22)
+        ]
+
+        for (mx, my, length) in marks {
+            let start = CGPoint(x: center.x + bodyW * mx, y: center.y + bodyH * my)
+            let end = CGPoint(
+                x: start.x + bodyW * length * 0.75,
+                y: start.y - bodyH * length * 0.30
+            )
+            let control = CGPoint(
+                x: (start.x + end.x) / 2,
+                y: (start.y + end.y) / 2 - bodyH * length * 0.34
+            )
+            var mark = Path()
+            mark.move(to: start)
+            mark.addQuadCurve(to: end, control: control)
+            context.stroke(
+                mark, with: .color(palette.shine.opacity(Double(0.62 * p.sheen))), style: style
             )
         }
     }
@@ -501,12 +485,14 @@ struct BlobView: View {
 
     private func drawFace(
         _ context: inout GraphicsContext, center: CGPoint,
-        bodyW: CGFloat, bodyH: CGFloat, radius: CGFloat, palette: Palette, time: TimeInterval
+        bodyW: CGFloat, bodyH: CGFloat, radius: CGFloat, palette: Palette,
+        time: TimeInterval, detail: Bool
     ) {
-        let eyeY = center.y + bodyH * 0.06
-        let eyeX = bodyW * 0.31
-        let rx = radius * 0.255
-        let ry = rx * 1.06 * p.open
+        let eyeY = center.y + bodyH * 0.04
+        let eyeX = bodyW * 0.30
+        let lensR = radius * 0.375
+        let rx = radius * 0.205
+        let ry = rx * 1.04 * p.open
 
         // Blink. Cheap, and most of what makes something read as alive.
         //
@@ -516,92 +502,234 @@ struct BlobView: View {
         let cycle = time.truncatingRemainder(dividingBy: p.blinkInterval)
         let blink: CGFloat = (time > 0 && cycle < 0.12) ? 0.08 : 1
 
+        drawBlush(&context, center: center, eyeX: eyeX, eyeY: eyeY,
+                  lensR: lensR, radius: radius, palette: palette)
+
         for side in [-1.0, 1.0] as [CGFloat] {
             let ex = center.x + side * eyeX
+            drawEye(&context, ex: ex, eyeY: eyeY, rx: rx, ry: ry, blink: blink,
+                    side: side, time: time, palette: palette)
+        }
 
-            let sclera = CGRect(x: ex - rx, y: eyeY - ry * blink,
-                                width: rx * 2, height: ry * blink * 2)
-            context.fill(Path(ellipseIn: sclera), with: .color(Token.Color.specular))
+        drawMouth(&context, center: center, eyeY: eyeY, radius: radius, palette: palette)
 
-            if blink > 0.5 {
-                // Buzzed cannot hold a gaze.
-                let gaze = p.jitter > 0 ? CGFloat(sin(time * 5.3 + Double(side))) * rx * 0.16 : 0
-                let irisR = rx * (0.60 + p.pupil * 0.10)
-                let ix = ex + gaze
-                let iy = eyeY + ry * 0.06
+        // Glasses over the eyes, brows over the glasses — the order a real pair sits in.
+        drawGlasses(&context, center: center, eyeX: eyeX, eyeY: eyeY,
+                    lensR: lensR, radius: radius, palette: palette, detail: detail)
+        drawBrows(&context, center: center, eyeX: eyeX, eyeY: eyeY,
+                  lensR: lensR, radius: radius, palette: palette)
+    }
 
-                // A limbal ring, so the iris is not a flat dot.
-                let iris = CGRect(x: ix - irisR, y: iy - irisR, width: irisR * 2, height: irisR * 2)
-                context.fill(
-                    Path(ellipseIn: iris),
-                    with: .radialGradient(
-                        Gradient(colors: [Token.Color.eyeIris, Token.Color.eyeIrisDeep]),
-                        center: CGPoint(x: ix, y: iy - irisR * 0.3),
-                        startRadius: irisR * 0.15, endRadius: irisR
-                    )
-                )
+    private func drawBlush(
+        _ context: inout GraphicsContext, center: CGPoint, eyeX: CGFloat, eyeY: CGFloat,
+        lensR: CGFloat, radius: CGFloat, palette: Palette
+    ) {
+        guard p.sheen > 0.2 else { return }
+        let w = radius * 0.30
+        let h = radius * 0.17
+        for side in [-1.0, 1.0] as [CGFloat] {
+            let cxp = center.x + side * (eyeX + radius * 0.12)
+            let rect = CGRect(x: cxp - w / 2, y: eyeY + lensR * 0.82 - h / 2, width: w, height: h)
+            context.fill(
+                Path(ellipseIn: rect),
+                with: .color(palette.blush.opacity(Double(0.55 + 0.25 * p.sheen)))
+            )
+        }
+    }
 
-                let pupilR = irisR * p.pupil
-                context.fill(
-                    Path(ellipseIn: CGRect(x: ix - pupilR, y: iy - pupilR,
-                                           width: pupilR * 2, height: pupilR * 2)),
-                    with: .color(Token.Color.eyePupil)
-                )
+    private func drawEye(
+        _ context: inout GraphicsContext, ex: CGFloat, eyeY: CGFloat,
+        rx: CGFloat, ry: CGFloat, blink: CGFloat, side: CGFloat,
+        time: TimeInterval, palette: Palette
+    ) {
+        let sclera = CGRect(x: ex - rx, y: eyeY - ry * blink,
+                            width: rx * 2, height: ry * blink * 2)
+        context.fill(Path(ellipseIn: sclera), with: .color(Token.Color.specular))
 
-                let glintR = irisR * 0.26
-                context.fill(
-                    Path(ellipseIn: CGRect(x: ix - irisR * 0.34 - glintR,
-                                           y: iy - irisR * 0.40 - glintR,
-                                           width: glintR * 2, height: glintR * 2)),
-                    with: .color(Token.Color.specular.opacity(0.92))
-                )
+        guard blink > 0.5 else { return }
 
-                // Heavy lid, in the body colour, so it reads as the brain closing over
-                // the eye rather than a grey bar laid on top.
-                if p.lid > 0.01 {
-                    context.drawLayer { layer in
-                        layer.clip(to: Path(ellipseIn: sclera.insetBy(dx: -1, dy: -1)))
-                        let depth = (ry * 2 + 4) * p.lid * 0.62
-                        layer.fill(
-                            Path(CGRect(x: sclera.minX - 2, y: sclera.minY - 2,
-                                        width: sclera.width + 4, height: depth)),
-                            with: .color(palette.base)
-                        )
-                    }
-                }
-            }
+        // Buzzed cannot hold a gaze.
+        let gaze = p.jitter > 0 ? CGFloat(sin(time * 5.3 + Double(side))) * rx * 0.14 : 0
+        let irisR = rx * 0.78
+        let ix = ex + gaze
+        let iy = eyeY + ry * 0.05
 
-            // Brow. Inner end lifts for worry, drops for alert.
+        // Flat discs, no radial gradient. The blue is a *ring* around a large pupil, which
+        // is what an eye behind a lens actually looks like at this scale, and it keeps the
+        // one blue in the system (brand.json component_rules.eyes) without the eye turning
+        // into a marble.
+        context.fill(
+            Path(ellipseIn: CGRect(x: ix - irisR, y: iy - irisR,
+                                   width: irisR * 2, height: irisR * 2)),
+            with: .color(Token.Color.eyeIris)
+        )
+
+        let pupilR = irisR * (0.94 - p.pupil * 0.5)
+        context.fill(
+            Path(ellipseIn: CGRect(x: ix - pupilR, y: iy - pupilR,
+                                   width: pupilR * 2, height: pupilR * 2)),
+            with: .color(Token.Color.eyePupil)
+        )
+
+        let glintR = irisR * 0.28
+        context.fill(
+            Path(ellipseIn: CGRect(x: ix - irisR * 0.30 - glintR, y: iy - irisR * 0.38 - glintR,
+                                   width: glintR * 2, height: glintR * 2)),
+            with: .color(Token.Color.specular)
+        )
+
+        // Heavy lid, in the body colour, so it reads as the brain closing over the eye
+        // rather than a grey bar laid on top.
+        if p.lid > 0.01 {
             context.drawLayer { layer in
-                layer.translateBy(x: ex, y: eyeY - ry - radius * (0.10 + p.browLift))
-                layer.rotate(by: .radians(Double(side * p.browTilt)))
-                let bw = rx * 1.02
-                var brow = Path()
-                brow.move(to: CGPoint(x: -bw * 0.5, y: radius * 0.02))
-                brow.addQuadCurve(
-                    to: CGPoint(x: bw * 0.5, y: radius * 0.012),
-                    control: CGPoint(x: 0, y: -radius * 0.045)
-                )
-                layer.stroke(
-                    brow, with: .color(palette.brow),
-                    style: StrokeStyle(lineWidth: radius * 0.088, lineCap: .round)
+                layer.clip(to: Path(ellipseIn: sclera.insetBy(dx: -1, dy: -1)))
+                let depth = (ry * 2 + 4) * p.lid * 0.62
+                layer.fill(
+                    Path(CGRect(x: sclera.minX - 2, y: sclera.minY - 2,
+                                width: sclera.width + 4, height: depth)),
+                    with: .color(palette.base)
                 )
             }
         }
+    }
 
-        // Mouth: one curve, and the control point carries the whole mood.
-        let my = eyeY + radius * 0.46
-        let mw = radius * 0.20
-        var mouth = Path()
-        mouth.move(to: CGPoint(x: center.x - mw, y: my))
-        mouth.addQuadCurve(
+    /// Round wire frames: two rings, a bowed bridge, and a temple arm with a hook.
+    ///
+    /// The hook is not decoration. Without it the temple ends in mid-air and the glasses
+    /// read as two circles someone drew on the face; with it they read as an object that
+    /// goes round the back of a head.
+    private func drawGlasses(
+        _ context: inout GraphicsContext, center: CGPoint, eyeX: CGFloat, eyeY: CGFloat,
+        lensR: CGFloat, radius: CGFloat, palette: Palette, detail: Bool
+    ) {
+        let wire = max(radius * 0.050, 1.2)
+        let style = StrokeStyle(lineWidth: wire, lineCap: .round, lineJoin: .round)
+
+        for side in [-1.0, 1.0] as [CGFloat] {
+            let ex = center.x + side * eyeX
+            let lens = CGRect(x: ex - lensR, y: eyeY - lensR, width: lensR * 2, height: lensR * 2)
+            context.stroke(Path(ellipseIn: lens), with: .color(palette.ink), style: style)
+
+            // A single diagonal glint says "there is glass here". Skipped at widget size,
+            // where it lands on the same pixel as the pupil's own glint.
+            if detail {
+                var glint = Path()
+                glint.move(to: CGPoint(x: ex - lensR * 0.52, y: eyeY + lensR * 0.10))
+                glint.addLine(to: CGPoint(x: ex - lensR * 0.10, y: eyeY - lensR * 0.50))
+                context.stroke(
+                    glint, with: .color(Token.Color.specular.opacity(0.42)),
+                    style: StrokeStyle(lineWidth: wire * 0.9, lineCap: .round)
+                )
+            }
+
+            // Temple: out and slightly up, then a short hook down.
+            var temple = Path()
+            let start = CGPoint(x: ex + side * lensR * 0.96, y: eyeY - lensR * 0.30)
+            let hinge = CGPoint(x: ex + side * lensR * 1.90, y: eyeY - lensR * 0.72)
+            temple.move(to: start)
+            temple.addQuadCurve(
+                to: hinge,
+                control: CGPoint(x: ex + side * lensR * 1.44, y: eyeY - lensR * 0.74)
+            )
+            temple.addQuadCurve(
+                to: CGPoint(x: hinge.x + side * lensR * 0.16, y: hinge.y + lensR * 0.30),
+                control: CGPoint(x: hinge.x + side * lensR * 0.30, y: hinge.y + lensR * 0.04)
+            )
+            context.stroke(temple, with: .color(palette.ink), style: style)
+        }
+
+        // Bridge, bowed upward between the two rings.
+        var bridge = Path()
+        bridge.move(to: CGPoint(x: center.x - eyeX + lensR * 0.94, y: eyeY - lensR * 0.20))
+        bridge.addQuadCurve(
+            to: CGPoint(x: center.x + eyeX - lensR * 0.94, y: eyeY - lensR * 0.20),
+            control: CGPoint(x: center.x, y: eyeY - lensR * 0.62)
+        )
+        context.stroke(bridge, with: .color(palette.ink), style: style)
+    }
+
+    private func drawBrows(
+        _ context: inout GraphicsContext, center: CGPoint, eyeX: CGFloat, eyeY: CGFloat,
+        lensR: CGFloat, radius: CGFloat, palette: Palette
+    ) {
+        for side in [-1.0, 1.0] as [CGFloat] {
+            let ex = center.x + side * eyeX
+            context.drawLayer { layer in
+                layer.translateBy(x: ex, y: eyeY - lensR - radius * (0.07 + p.browLift))
+                layer.rotate(by: .radians(Double(side * p.browTilt)))
+                let bw = lensR * 1.20
+                var brow = Path()
+                brow.move(to: CGPoint(x: -bw * 0.5, y: radius * 0.022))
+                brow.addQuadCurve(
+                    to: CGPoint(x: bw * 0.5, y: radius * 0.014),
+                    control: CGPoint(x: 0, y: -radius * 0.050)
+                )
+                layer.stroke(
+                    brow, with: .color(palette.ink),
+                    style: StrokeStyle(lineWidth: max(radius * 0.078, 1.4), lineCap: .round)
+                )
+            }
+        }
+    }
+
+    /// Above 0.15 the mouth opens — a filled shape with a tongue and one tooth. Below, it
+    /// is a single stroked curve that turns down as the number falls.
+    ///
+    /// The open mouth is reserved for the good stages on purpose. An open smile is the
+    /// loudest thing on the face, and a creature grinning through a bad day is the exact
+    /// coach tone `brand.json` forbids.
+    private func drawMouth(
+        _ context: inout GraphicsContext, center: CGPoint, eyeY: CGFloat,
+        radius: CGFloat, palette: Palette
+    ) {
+        let my = eyeY + radius * 0.52
+
+        guard p.mouth > 0.15 else {
+            let mw = radius * 0.21
+            var line = Path()
+            line.move(to: CGPoint(x: center.x - mw, y: my))
+            line.addQuadCurve(
+                to: CGPoint(x: center.x + mw, y: my),
+                control: CGPoint(x: center.x, y: my + radius * 0.34 * p.mouth)
+            )
+            context.stroke(
+                line, with: .color(palette.ink),
+                style: StrokeStyle(lineWidth: max(radius * 0.058, 1.2), lineCap: .round)
+            )
+            return
+        }
+
+        let mw = radius * (0.19 + 0.09 * p.mouth)
+        let depth = radius * (0.16 + 0.24 * p.mouth)
+
+        var shape = Path()
+        shape.move(to: CGPoint(x: center.x - mw, y: my))
+        shape.addQuadCurve(
             to: CGPoint(x: center.x + mw, y: my),
-            control: CGPoint(x: center.x, y: my + radius * 0.30 * p.mouth)
+            control: CGPoint(x: center.x, y: my - depth * 0.18)
         )
-        context.stroke(
-            mouth, with: .color(palette.darker.opacity(0.85)),
-            style: StrokeStyle(lineWidth: radius * 0.052, lineCap: .round)
+        shape.addQuadCurve(
+            to: CGPoint(x: center.x - mw, y: my),
+            control: CGPoint(x: center.x, y: my + depth * 2.1)
         )
+        shape.closeSubpath()
+        context.fill(shape, with: .color(palette.ink))
+
+        context.drawLayer { layer in
+            layer.clip(to: shape)
+            // Tongue, resting on the lower lip.
+            let tongue = CGRect(
+                x: center.x - mw * 0.62, y: my + depth * 0.44,
+                width: mw * 1.24, height: depth * 1.5
+            )
+            layer.fill(Path(ellipseIn: tongue), with: .color(palette.tongue))
+            // One tooth on the upper lip. Two would read as a grimace.
+            let tooth = CGRect(
+                x: center.x - mw * 0.34, y: my - depth * 0.10,
+                width: mw * 0.62, height: depth * 0.34
+            )
+            layer.fill(Path(tooth), with: .color(Token.Color.specular))
+        }
     }
 }
 

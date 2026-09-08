@@ -8,13 +8,40 @@ import MushKit
 
 /// The one lit window. It is the only light surface in the app and it is reserved for
 /// the creature. Nothing else goes in here.
+///
+/// `glow` is the `hero-glow` signature that `brand.json` has declared since the first
+/// commit and that nothing ever drew: a halo in the creature's own stage tint, behind it,
+/// so the light in the viewport comes *from* the character rather than from a flat fill.
+/// It is the one soft edge in a drawing that is otherwise entirely hard — which is what
+/// makes it read as ambient light instead of as a blurred object.
 struct Viewport<Content: View>: View {
+    /// Halo colour. `nil` for a viewport with nothing lit in it.
+    var glow: Color?
     @ViewBuilder var content: Content
 
     var body: some View {
         content
             .frame(maxWidth: .infinity)
-            .background(Token.Color.viewport)
+            .background {
+                ZStack {
+                    Token.Color.viewport
+                    if let glow {
+                        GeometryReader { geo in
+                            RadialGradient(
+                                gradient: Gradient(stops: [
+                                    .init(color: glow.opacity(0.30), location: 0),
+                                    .init(color: glow.opacity(0.09), location: 0.48),
+                                    .init(color: glow.opacity(0), location: 1)
+                                ]),
+                                center: UnitPoint(x: 0.5, y: 0.34),
+                                startRadius: 0,
+                                endRadius: max(geo.size.width, geo.size.height) * 0.66
+                            )
+                        }
+                        .animation(.easeInOut(duration: Token.Duration.slow), value: glow)
+                    }
+                }
+            }
             .clipShape(RoundedRectangle(cornerRadius: Token.Radius.viewport, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Token.Radius.viewport, style: .continuous)
