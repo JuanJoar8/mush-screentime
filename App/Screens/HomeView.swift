@@ -17,6 +17,7 @@ struct HomeView: View {
                 header
                 creature
                 action
+                if model.activeFocus != nil { sound }
                 today
                 if model.streak > 0 || model.provisionalDelta != 0 { progress }
             }
@@ -25,6 +26,38 @@ struct HomeView: View {
         }
         .background(Token.Color.ground)
         .scrollBounceBehavior(.basedOnSize)
+    }
+
+    // MARK: Sound
+
+    /// Only while a session is running. Noise played at someone who is not focusing is
+    /// just noise, and a control for it the rest of the time is clutter.
+    private var sound: some View {
+        Panel {
+            VStack(alignment: .leading, spacing: 12) {
+                InstrumentLabel(title: "Sound", value: model.soundscape.title)
+
+                HStack(spacing: 8) {
+                    ForEach(Soundscape.allCases) { choice in
+                        Button {
+                            model.setSoundscape(choice)
+                        } label: {
+                            Pill(
+                                text: choice.title,
+                                tint: choice == model.soundscape ? model.stage.tint : Token.Color.inkDim,
+                                filled: choice == model.soundscape
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    Spacer()
+                }
+
+                Text(model.soundscape.explanation)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Token.Color.inkDim)
+            }
+        }
     }
 
     // MARK: Header

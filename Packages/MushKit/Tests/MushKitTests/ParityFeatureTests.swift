@@ -394,3 +394,60 @@ func gemsBackfillQuietly() {
     )
     #expect(announced.contains { $0.id == "streak-7" })
 }
+
+// MARK: - Soundscapes
+
+@Test("Silence generates exactly zero, not near-zero")
+func soundscapeOffIsSilent() {
+    var generator = NoiseGenerator(soundscape: .off)
+    #expect(generator.fill(512).allSatisfy { $0 == 0 })
+}
+
+@Test("Every soundscape is audible and none of them clips")
+func soundscapeLevels() {
+    for soundscape in Soundscape.allCases where !soundscape.isSilent {
+        var generator = NoiseGenerator(soundscape: soundscape, sampleRate: 48_000)
+        let samples = generator.fill(48_000)          // one second
+
+        #expect(samples.allSatisfy { $0 >= -1 && $0 <= 1 }, "\(soundscape) left the legal range")
+        let level = samples.rootMeanSquare
+        #expect(level > 0.01, "\(soundscape) is inaudible at RMS \(level)")
+        #expect(level < 0.9, "\(soundscape) is far too hot at RMS \(level)")
+    }
+}
+
+@Test("The same seed produces the same stream, so the output can be asserted at all")
+func soundscapeIsDeterministic() {
+    var a = NoiseGenerator(soundscape: .rain, seed: 99)
+    var b = NoiseGenerator(soundscape: .rain, seed: 99)
+    #expect(a.fill(2048) == b.fill(2048))
+
+    var c = NoiseGenerator(soundscape: .rain, seed: 100)
+    #expect(a.fill(64) != c.fill(64))
+}
+
+@Test("Brown noise does not wander off to a DC offset over minutes")
+func brownNoiseStaysCentred() {
+    var generator = NoiseGenerator(soundscape: .room, sampleRate: 48_000)
+    _ = generator.fill(48_000 * 5)                    // settle for five seconds
+    let samples = generator.fill(48_000 * 10)         // then measure ten
+
+    let mean = samples.reduce(0, +) / Double(samples.count)
+    // A pure integrator drifts; the leak in the filter is what keeps this near zero. A
+    // drifting stream sounds fine and then clips without warning.
+    #expect(abs(mean) < 0.05, "drifted to \(mean)")
+}
+
+@Test("Tide swells but never fades to nothing — silence reads as a fault")
+func tideNeverGoesSilent() {
+    var generator = NoiseGenerator(soundscape: .tide, sampleRate: 48_000)
+    _ = generator.fill(48_000)
+    // Six-second cycle, so seven seconds covers a full trough.
+    let samples = generator.fill(48_000 * 7)
+
+    let windows = stride(from: 0, to: samples.count - 4800, by: 4800).map { start in
+        Array(samples[start..<(start + 4800)]).rootMeanSquare
+    }
+    #expect(windows.allSatisfy { $0 > 0.005 }, "went silent at some point in the cycle")
+    #expect((windows.max() ?? 0) > (windows.min() ?? 0) * 1.15, "did not actually swell")
+}

@@ -52,7 +52,7 @@ struct RootView: View {
             InterruptionView(
                 interruption: pending.value,
                 stage: model.stage,
-                costPerOpen: 2
+                costPerOpen: model.overrideCost
             ) { outcome in
                 model.resolveInterruption(outcome)
             }

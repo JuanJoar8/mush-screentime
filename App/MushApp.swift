@@ -133,6 +133,14 @@ final class AppModel {
     var strictness: Strictness = .standard
     var budgetMinutes: Int = 60
 
+    /// Sound for focus sessions. Persisted only in memory for now — it is a preference,
+    /// not a measurement, and nothing else reads it.
+    private(set) var soundscape: Soundscape = .off
+
+    /// What one push past a shield costs, taken from the model rather than typed into a
+    /// view. The pause screen quotes this number, so a config change has to move it.
+    var overrideCost: Double { abs(ledger.engine.config.overridePenalty) }
+
     init() {
         let mocked = AppModel.shouldUseMock
         self.isMocked = mocked
@@ -389,6 +397,7 @@ final class AppModel {
             let session = FocusSession(startedAt: Date(), plannedMinutes: 25)
             try? ledger.recordFocus(session: session)
             try? await provider.applyShield(.all, store: StoreName.focus.rawValue)
+            SoundscapePlayer.shared.play(soundscape)
             await refresh()
         case .endFocus:
             if var session = activeFocus {
@@ -400,6 +409,7 @@ final class AppModel {
                 try? ledger.recordFocus(session: session)
             }
             try? await provider.clearShield(store: StoreName.focus.rawValue)
+            SoundscapePlayer.shared.stop()
             await refresh()
         case .blockEverything:
             try? await provider.applyShield(.all, store: StoreName.manual.rawValue)
@@ -414,6 +424,17 @@ final class AppModel {
             loadError = String(describing: error)
         }
         await refresh()
+    }
+
+    func setSoundscape(_ choice: Soundscape) {
+        soundscape = choice
+        // Only audible during a session. Playing noise at someone who is not focusing is
+        // just noise.
+        if activeFocus != nil {
+            SoundscapePlayer.shared.play(choice)
+        } else {
+            SoundscapePlayer.shared.stop()
+        }
     }
 
     func setStrictness(_ level: Strictness) { strictness = level }
