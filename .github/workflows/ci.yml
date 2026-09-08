@@ -198,6 +198,23 @@ jobs:
             done
           done
 
+      # A crashed app screenshots the iOS home screen, and a home screen has plenty of
+      # luminance variance, so the blank-screen guard below waves it straight through. It
+      # catches "nothing rendered"; it cannot catch "something else rendered". This
+      # catches the crash itself, which is the only version of the question with a
+      # definite answer.
+      - name: The app did not crash
+        run: |
+          REPORTS=$(find ~/Library/Logs/DiagnosticReports -name 'Mush*' -newermt '-30 minutes' 2>/dev/null || true)
+          if [ -n "$REPORTS" ]; then
+            echo "$REPORTS" | while read -r REPORT; do
+              echo "===== $REPORT ====="
+              head -70 "$REPORT"
+            done
+            exit 1
+          fi
+          echo "No crash reports."
+
       # A screen that renders nothing still screenshots fine, and the build stays green
       # while the app is visibly broken - which is exactly what happened to the stage
       # gallery: five animated canvases never presented a frame inside the wait below, and

@@ -43,7 +43,12 @@ final class SafariBlockerModel {
             // refuses to build it. A Bool and a String are.
             let enabled = blockerState?.isEnabled
             let message = error?.localizedDescription
-            MainActor.assumeIsolated {
+            // `Task { @MainActor in }`, not `MainActor.assumeIsolated`. The latter is a
+            // precondition rather than a hop: it aborts the process when the callback
+            // arrives anywhere but the main thread, and SafariServices promises no queue.
+            // It crashed the Blocks screen, and the screenshot that caught it looked like
+            // the iOS home screen — which sails past a blank-screen check.
+            Task { @MainActor in
                 if let enabled {
                     self.state = enabled ? .on : .off
                 } else {
@@ -59,7 +64,7 @@ final class SafariBlockerModel {
     /// `FeedRuleSet.identifier` is versioned to avoid inside the app.
     func reload() {
         SFContentBlockerManager.reloadContentBlocker(withIdentifier: Self.identifier) { _ in
-            MainActor.assumeIsolated { self.refresh() }
+            Task { @MainActor in self.refresh() }
         }
     }
 }

@@ -60,7 +60,7 @@ final class CleanFeedModel {
             forIdentifier: FeedRuleSet.identifier,
             encodedContentRuleList: json
         ) { list, error in
-            MainActor.assumeIsolated {
+            Task { @MainActor in
                 if let list {
                     self.compilation = .ready(list)
                 } else {
