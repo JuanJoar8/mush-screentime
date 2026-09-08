@@ -3,73 +3,129 @@ import MushKit
 
 /// A gem, drawn rather than shipped.
 ///
-/// No image assets and no emoji: the shape is a polygon whose side count and rotation are
-/// derived from the gem's id, so every one in the catalogue is visibly distinct and stays
-/// that way for the life of the app.
+/// No image assets and no emoji. The geometry comes from `GemShape` in `MushKit`, where
+/// it can be — and is — tested: `gemShapesAreAllDistinct` asserts that the twelve ids in
+/// the catalogue produce twelve different drawings. This view is only the rendering.
 ///
-/// The derivation uses the id's unicode scalars, **not** `hashValue`. Swift's string
-/// hashing is seeded per process, so a `hashValue`-driven shape would be a different gem
-/// on every launch.
+/// A locked gem is drawn with its own outline dashed, not as a generic placeholder, so
+/// the shelf shows you the shape you are going to earn.
 struct GemBadge: View {
     let gem: Gem
     let isUnlocked: Bool
     /// Unlocked gems take the creature's current colour, so the shelf reads as part of
-    /// the same object rather than a separate reward currency.
+    /// the same object rather than a separate reward currency (docs/08-DECISIONS.md D14).
     let tint: Color
 
-    private var seed: Int {
-        gem.id.unicodeScalars.reduce(0) { $0 &+ Int($1.value) }
-    }
-
-    private var sides: Int { 5 + seed % 4 }
-    private var rotation: Double { Double(seed % 12) / 12 * .pi }
+    private var shape: GemShape { .of(gem.id) }
 
     var body: some View {
         Canvas { context, size in
             let center = CGPoint(x: size.width / 2, y: size.height / 2)
             let radius = min(size.width, size.height) * 0.44
+            let outer = vertices(center: center, radius: radius, turn: 0)
 
-            var outline = Path()
-            var vertices: [CGPoint] = []
-            for index in 0..<sides {
-                let angle = rotation - .pi / 2 + Double(index) / Double(sides) * 2 * .pi
-                let point = CGPoint(
-                    x: center.x + radius * CGFloat(cos(angle)),
-                    y: center.y + radius * CGFloat(sin(angle))
-                )
-                vertices.append(point)
-                if index == 0 { outline.move(to: point) } else { outline.addLine(to: point) }
-            }
-            outline.closeSubpath()
+            let outline = polygon(outer)
 
-            if isUnlocked {
-                context.fill(outline, with: .color(tint.opacity(0.22)))
-                context.stroke(outline, with: .color(tint), lineWidth: 1.5)
-
-                // Facets: the crown lines from the top vertex. This is the whole reason a
-                // flat polygon reads as a cut stone rather than a badge.
-                var facets = Path()
-                for vertex in vertices.dropFirst().dropLast() {
-                    facets.move(to: vertices[0])
-                    facets.addLine(to: vertex)
-                }
-                context.stroke(facets, with: .color(tint.opacity(0.55)), lineWidth: 0.75)
-
-                var table = Path()
-                table.move(to: vertices[1])
-                table.addLine(to: vertices[vertices.count - 1])
-                context.stroke(table, with: .color(Token.Color.specular.opacity(0.5)), lineWidth: 0.75)
-            } else {
+            guard isUnlocked else {
                 context.stroke(
-                    outline,
-                    with: .color(Token.Color.line),
+                    outline, with: .color(Token.Color.line),
                     style: StrokeStyle(lineWidth: 1, dash: [3, 3])
                 )
+                return
             }
+
+            context.fill(outline, with: .color(tint.opacity(0.22)))
+            context.stroke(outline, with: .color(tint), lineWidth: 1.5)
+            drawFacets(&context, center: center, radius: radius, outer: outer)
         }
         .accessibilityLabel(
             isUnlocked ? "\(gem.title), earned" : "\(gem.title), locked. \(gem.requirement)"
         )
+    }
+
+    // MARK: Geometry
+
+    /// `turn` is in whole steps: 0.5 rotates by half a side, which is what makes an inner
+    /// polygon present an edge to the outer polygon's vertex rather than lining up with it.
+    private func vertices(center: CGPoint, radius: CGFloat, turn: Double) -> [CGPoint] {
+        (0..<shape.sides).map { index in
+            let angle = shape.rotation - .pi / 2
+                + (Double(index) + turn) / Double(shape.sides) * 2 * .pi
+            return CGPoint(
+                x: center.x + radius * CGFloat(cos(angle)),
+                y: center.y + radius * CGFloat(sin(angle))
+            )
+        }
+    }
+
+    private func polygon(_ points: [CGPoint]) -> Path {
+        var path = Path()
+        for (index, point) in points.enumerated() {
+            if index == 0 { path.move(to: point) } else { path.addLine(to: point) }
+        }
+        path.closeSubpath()
+        return path
+    }
+
+    /// The four cuts. This is the difference between a shelf of twelve rewards and a
+    /// shelf of one reward printed twelve times.
+    private func drawFacets(
+        _ context: inout GraphicsContext, center: CGPoint, radius: CGFloat, outer: [CGPoint]
+    ) {
+        let hairline = StrokeStyle(lineWidth: 0.75)
+
+        switch shape.facet {
+        case .crown:
+            var facets = Path()
+            for vertex in outer.dropFirst().dropLast() {
+                facets.move(to: outer[0])
+                facets.addLine(to: vertex)
+            }
+            context.stroke(facets, with: .color(tint.opacity(0.55)), style: hairline)
+
+            var table = Path()
+            table.move(to: outer[1])
+            table.addLine(to: outer[outer.count - 1])
+            context.stroke(table, with: .color(Token.Color.specular.opacity(0.5)), style: hairline)
+
+        case .brilliant:
+            var spokes = Path()
+            for vertex in outer {
+                spokes.move(to: center)
+                spokes.addLine(to: vertex)
+            }
+            context.stroke(spokes, with: .color(tint.opacity(0.5)), style: hairline)
+
+            let culet = polygon(vertices(center: center, radius: radius * 0.30, turn: 0.5))
+            context.fill(culet, with: .color(tint.opacity(0.35)))
+            context.stroke(culet, with: .color(Token.Color.specular.opacity(0.45)), style: hairline)
+
+        case .step:
+            let inner = vertices(center: center, radius: radius * 0.58, turn: 0)
+            context.stroke(polygon(inner), with: .color(tint.opacity(0.7)), style: hairline)
+
+            var risers = Path()
+            for (index, vertex) in outer.enumerated() {
+                risers.move(to: vertex)
+                risers.addLine(to: inner[index])
+            }
+            context.stroke(risers, with: .color(tint.opacity(0.40)), style: hairline)
+
+        case .table:
+            let inner = vertices(center: center, radius: radius * 0.62, turn: 0.5)
+            context.fill(polygon(inner), with: .color(tint.opacity(0.18)))
+            context.stroke(
+                polygon(inner), with: .color(Token.Color.specular.opacity(0.45)), style: hairline
+            )
+
+            // One bevel line per corner, from the outer vertex to the table edge it faces.
+            var bevels = Path()
+            for (index, vertex) in outer.enumerated() {
+                bevels.move(to: vertex)
+                bevels.addLine(to: inner[index])
+            }
+            context.stroke(bevels, with: .color(tint.opacity(0.45)), style: hairline)
+        }
     }
 }
 

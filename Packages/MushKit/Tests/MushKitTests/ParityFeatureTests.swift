@@ -369,13 +369,37 @@ func ledgerDecodesLeniently() throws {
 
 @Test("Gem shapes are stable across launches, not seeded by the process hash")
 func gemSeedIsDeterministic() {
-    // The badge derives its polygon from this sum. `hashValue` would differ per launch,
-    // so the same gem would be a different shape every time the app opened.
-    func seed(_ id: String) -> Int { id.unicodeScalars.reduce(0) { $0 &+ Int($1.value) } }
-    #expect(seed("streak-7") == seed("streak-7"))
-    // Sides and rotation, joined — a tuple cannot be a Set element in Swift.
-    let shapes = Set(GemCatalog.all.map { "\(seed($0.id) % 4)/\(seed($0.id) % 12)" })
-    #expect(shapes.count >= 8, "twelve gems should not collapse into a handful of shapes")
+    // `hashValue` is seeded per process, so a hash-driven gem would be a different shape
+    // every time the app opened.
+    #expect(GemShape.of("streak-7") == GemShape.of("streak-7"))
+    #expect(GemShape.of("streak-7") != GemShape.of("streak-30"))
+}
+
+@Test("All twelve gems are visibly distinct, not four shapes repeated")
+func gemShapesAreAllDistinct() {
+    // The version of this test that shipped first counted `seed % 4` and `seed % 12`
+    // together and reported eight distinct shapes. Only four were on screen: the second
+    // term was rotation, which on a near-regular polygon is close to invisible. It
+    // measured a proxy and passed while the thing it named was broken.
+    //
+    // `visibleIdentity` is side count and facet family — what a person can actually tell
+    // apart from across a shelf, and nothing else.
+    let shapes = Set(GemCatalog.all.map { GemShape.of($0.id).visibleIdentity })
+    #expect(
+        shapes.count == GemCatalog.all.count,
+        "\(GemCatalog.all.count) gems produced \(shapes.count) distinct shapes"
+    )
+}
+
+@Test("Gem geometry stays inside what the badge can draw")
+func gemShapesAreDrawable() {
+    for gem in GemCatalog.all {
+        let shape = GemShape.of(gem.id)
+        // A polygon with fewer than three sides is a line, and the facet drawing indexes
+        // `vertices[1]` and `vertices[count - 1]`.
+        #expect(shape.sides >= 5 && shape.sides <= 10, "\(gem.id) has \(shape.sides) sides")
+        #expect(shape.rotation >= 0 && shape.rotation < .pi)
+    }
 }
 
 @Test("The first evaluation backfills history silently, the next one announces")
