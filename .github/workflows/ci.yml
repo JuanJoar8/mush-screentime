@@ -50,6 +50,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Before the build, because the build's own message for this points two steps
+      # downstream: a plist without CFBundleIdentifier fails at the embed step with
+      # "Embedded binary's bundle identifier is not prefixed with the parent app's",
+      # which names neither the key nor the target.
+      - name: Extension plists are complete
+        run: python3 scripts/check-plists.py
+
       # The Screen Time frameworks are Swift-only, so the iOS SDK ships their full public
       # interface as text. Printing the enums we switch over is how we find out that a new
       # SDK added a case *without guessing its name* — the one rule this project cannot
