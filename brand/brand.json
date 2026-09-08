@@ -99,13 +99,17 @@
     "panel": "Radio 12. Superficie mate para agrupar instrumentos. Sin sombra, se separa por color y por filete.",
     "pill": "Radio 999. Solo para estado y racha: lo que esta encendido ahora.",
     "receipt-row": "Fila de recibo: razon a la izquierda en texto normal, valor con signo a la derecha en mono. Es la pantalla que hace creible el numero, no una vista de debug.",
-    "blob": "Ilustracion propia dibujada en Canvas, sin assets. VECTOR PLANO: relleno solido del color de etapa, un contorno de radius*0.072 y una sola tinta derivada (tint mezclado 44% hacia ground-deep) para contorno, surcos, gafas, extremidades, cejas y boca. Prohibidos aqui: degradados de relleno, blur y cualquier capa especular. El color sale de stage-*, jamas se escribe a mano.",
+    "blob": "Ilustracion propia dibujada en Canvas, sin assets. VECTOR PLANO: relleno solido del color de etapa, contorno de radius*0.072 y una sola tinta derivada (tint 20% hacia bad, luego 46% hacia ground-deep - se calienta ANTES de oscurecer, porque mezclar directo al fondo desatura y la etapa ambar salia oliva). Prohibidos: degradados de relleno, blur, capas especulares, guantes y zapatos.",
     "provenance-chip": "Todo dato que venga del report de Apple lleva un chip diminuto. Es obligatorio: son las unicas cifras cuya derivacion no podemos explicar.",
     "focus": "Contorno de 2px en el color de estado con 2px de separacion. Visible siempre.",
     "specular": "Blanco puro. Con alpha para el brillo plano de los lobulos, el reflejo del cristal y el halo. En plano y sin alpha SOLO en tres sitios de la cara -esclerotica, punto de luz de la pupila y el diente-, donde un blanco translucido se ensuciaria con el color del cuerpo que tiene debajo.",
     "eyes": "Disco de iris azul plano con una pupila grande encima y un punto especular. Sin gradiente radial y sin anillo limbal: a este tamano y detras de un cristal, el azul funciona como aro alrededor de la pupila. Es el unico azul del sistema y existe solo en la cara del personaje.",
     "glasses": "Gafas redondas de alambre: dos aros, puente arqueado y patilla con gancho. Se dibujan ENCIMA de los ojos y DEBAJO de las cejas, el orden en que se apoyan de verdad. Son el elemento firma del personaje: si hay que sacrificar detalle por tamano, se sacrifica el reflejo del cristal, nunca el aro.",
-    "hero-glow": "Halo radial detras de la criatura, dentro del viewport, en su propio color de etapa: 30% de alpha en el centro, 0 en el borde. Es la unica orilla blanda del sistema, y por eso se lee como luz ambiente y no como un objeto desenfocado."
+    "hero-glow": "Halo radial detras de la criatura, dentro del viewport, en su propio color de etapa: 30% de alpha en el centro, 0 en el borde. Es la unica orilla blanda del sistema, y por eso se lee como luz ambiente y no como un objeto desenfocado.",
+    "fold-density": "LA senal principal, no textura. Los surcos por lado bajan 16/12/9/4/2 de crisp a mush: un cerebro que pierde sus circunvoluciones es la metafora que internet ya usa ('smooth brain'). Por eso el umbral de nivel de detalle es 64 y no 96 - una miniatura sin surcos son cinco bultos identicos en cinco colores. Los surcos se excluyen de la CAJA de la cara (no de una elipse: una elipse de 0.95 radios cubria el 94% del cuerpo y dejaba tres lineas en toda la criatura).",
+    "motifs": "Props dibujados que estan o no estan, y son lo que hace una etapa IDENTIFICABLE en vez de solo mas oscura. Parten la escalera en dos: sparkle (destellos de cuatro puntas) solo en healing; drip y crack solo en rot; buzzed lleva el par que dice sobreestimulado y no danado, espiral hipnotica y gota de sudor. Reglas de dibujo: los goteos van ANTES del cuerpo para que los pinte encima y no quede costura, llevan perla en la punta y una gota ya caida suelta - una forma colgando de un cuerpo es ambigua, una debajo no. Las grietas se desvian y cortan donde un pliegue curva y cierra, y corren hacia el borde, nunca hacia la cara.",
+    "pose": "Ningun estado da el mismo numero a los dos brazos. La simetria es lo unico que hace que una figura dibujada parezca apagada. Los terminos horizontales usan |altura|: un brazo se escorza igual al subir que al bajar, y asi el alcance maximo queda en altura cero, que es el numero del que se deriva el encuadre.",
+    "mouth": "Tres bocas, no una escala. Abierta con lengua y un diente por encima de 0.15; arco simple entre -0.35 y 0.15; ondulada por debajo de -0.35. Un arco hacia abajo es un estado de animo, una linea ondulada es una condicion - y esa distincion es la que separa rot de healing."
   },
   "anti_slop": {
     "forbidden_patterns": [
@@ -119,7 +123,8 @@
       "Culpar al usuario por perder la racha.",
       "Calcar la ilustracion de Brainrot. Mismo genero y mismo nivel de craft, dibujo propio.",
       "Fondo crema con un unico acento brillante.",
-      "Devolver el personaje al acabado 3D: degradado radial de relleno, realce especular sobre el cuerpo, guantes o zapatos. Se probo, se envio y se leia como render de stock."
+      "Devolver el personaje al acabado 3D: degradado radial de relleno, realce especular sobre el cuerpo, guantes o zapatos. Se probo, se envio y se leia como render de stock.",
+      "Dibujar las cinco etapas como la misma criatura con mas o menos sag. La escalera son dos condiciones, no cinco estados de animo: si una etapa solo se distingue por el color, esta mal."
     ]
   },
   "validation": {

@@ -37,6 +37,24 @@ too (shield can open our app, shield submenus, token refresh).
 
 ---
 
+## Two operational facts a new session needs
+
+**The repository is public.** It was made public on 2026-09-07 because GitHub refused to
+start any job: 31 runs in one day on `macos-26`, which bills at 10x the Linux rate, spent
+the account's entire monthly Actions allowance in an afternoon. Public repositories get
+Actions free and unlimited, so CI costs nothing now — but the habit that emptied it was
+one push per edit, and that is still the lever. Batch.
+
+**CI is the only compiler.** The owner's machine is Windows; there is no Xcode. Nothing
+in this project is verified until a run goes green, and the screenshots are the only way
+anyone sees the UI. Three separate guards have shipped this year that reported success
+while the thing they named was broken — an ImageMagick check that printed `sigma=-1` for
+every image, a gem test that counted an invisible rotation, and a blank-screen guard that
+was measuring the iOS status bar. **A green check does not say the thing works. It says
+whatever the check looks at is fine.** Read what a guard measures before trusting it.
+
+---
+
 ## Environment
 
 - Owner is on **Windows 11**. No Mac, no Xcode locally.
@@ -56,7 +74,7 @@ too (shield can open our app, shield submenus, token refresh).
 | 4 · Monitoring + ladder | **blocked** — needs paid membership |
 | 5 · Limits, schedules, focus | partial — focus sessions work against the mock |
 | 6 · Statistics | **done** for our ledger; Apple plane needs a device |
-| 7 · Brain system + UI | **done** — design system, creature (flat vector, redrawn 2026-09-07), 6 screens, widget, Live Activity |
+| 7 · Brain system + UI | **done** — design system, creature (flat vector with per-stage motifs, 2026-09-07), 7 screens, widget, Live Activity |
 | 7.5 · Competitive parity | **done** — every Opal/Brainrot feature classified in `10-FEATURE-PARITY.md`; the missing ones built |
 | 8 · Interventions | **done** — Path B Shortcuts onboarding (`PathBSetupView`), the hold-to-continue pause, four synthesised soundscapes |
 | 9 · Feed Quarantine | partial — **layer 2 (Clean Feed) built and tested**; layers 1 and 4 need the membership, layer 3 needs a Safari extension target |
