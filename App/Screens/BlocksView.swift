@@ -15,6 +15,7 @@ struct BlocksView: View {
             VStack(spacing: 20) {
                 capability
                 cleanFeed
+                SafariBlockerPanel()
                 rules
                 strictness
                 limits
