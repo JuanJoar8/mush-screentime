@@ -1,9 +1,14 @@
 name: CI
 
+# Documentation changes spend nothing. Several of the runs that emptied this
+# account's Actions allowance on 2026-09-07 were doc-only commits that rebuilt
+# the whole app on a macOS runner, which bills at ten times the Linux rate.
 on:
   push:
     branches: [main]
+    paths-ignore: ['docs/**', '**/*.md']
   pull_request:
+    paths-ignore: ['docs/**', '**/*.md']
   workflow_dispatch:
 
 concurrency:
@@ -15,54 +20,21 @@ jobs:
   # where the brain-health model is actually proven correct.
   kit:
     name: MushKit tests
-    runs-on: macos-26
+    # Linux, not macOS. GitHub bills macOS runners at 10x the Linux rate, and this job
+    # never needed a Mac: MushKit imports Foundation and nothing else, and
+    # MushScreenTime — the only target that touches FamilyControls — is wrapped in
+    # `#if os(iOS)` from its first line, so it compiles to nothing here.
+    #
+    # Measured saving: 9% of a run, not the third it looked like. This job averages 0.7
+    # minutes against the macOS build's 6.6, so 72.6 billed minutes per run become 66.4.
+    # Worth doing and nowhere near enough — the lever that actually matters is running
+    # this workflow fewer times, which is a habit, not a setting.
+    runs-on: ubuntu-latest
+    container: swift:6.1
     steps:
       - uses: actions/checkout@v4
       - name: Show toolchain
-        run: swift --version && xcodebuild -version
-
-      # The Screen Time frameworks are Swift-only, so the iOS SDK ships their full public
-      # interface as text. Printing the enums we switch over is how we find out that a new
-      # SDK added a case *without guessing its name* — the one rule this project cannot
-      # break (docs/00-STATUS.md housekeeping rule 3).
-      - name: Screen Time enum surface
-        run: |
-          SDK=$(xcrun --sdk iphonesimulator --show-sdk-path)
-          for FRAMEWORK in FamilyControls ManagedSettings ManagedSettingsUI DeviceActivity; do
-            IFACE=$(find "$SDK/System/Library/Frameworks/$FRAMEWORK.framework" \
-              -name 'arm64*.swiftinterface' -print -quit)
-            [ -n "$IFACE" ] || { echo "===== $FRAMEWORK: no interface ====="; continue; }
-            echo "===== $FRAMEWORK enums ====="
-            grep -nE "public enum (AuthorizationStatus|ShieldAction|ShieldActionResponse|ActivityCategoryPolicy)" \
-              -A 34 "$IFACE" || true
-            # Everything the 26.x SDKs added. This whole architecture is built on two
-            # limitations — the report-extension sandbox and a shield's inability to open
-            # our app (docs/01-FEASIBILITY.md L2 and section 3) — and the 26.4/26.5 SDK
-            # visibly moves at least one of them. Reading the shipped interface is the
-            # only way to find out what changed without guessing an API into existence.
-            echo "===== $FRAMEWORK: new in iOS 26.x ====="
-            grep -nE "@available\(iOS 26" -A 10 "$IFACE" \
-              | grep -vE "@available\((macOS|tvOS|watchOS|visionOS|macCatalyst|iOS)" \
-              | grep -E "(func|var|case|init|struct|enum|protocol|typealias) " \
-              | head -120 || echo "(none)"
-            cp "$IFACE" "interface-$FRAMEWORK.swiftinterface"
-          done
-
-      # DeviceActivity is where this architecture is decided. iOS 26 added
-      # `activityData(filteredBy:using:)` returning an AsyncSequence with a `.live` policy
-      # and an `.unauthorized` error - which is exactly what an API for reading usage
-      # *outside* the report extension would look like. Section 3 of 01-FEASIBILITY.md
-      # says that is impossible. Print the declarations before believing either version.
-      - name: DeviceActivity, in full
-        run: |
-          grep -nE "^(@available\(iOS|public|  public|  @available\(iOS|})"             interface-DeviceActivity.swiftinterface | head -220
-
-      - name: Keep the interfaces
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: screen-time-interfaces
-          path: interface-*.swiftinterface
+        run: swift --version
 
       - name: Test
         working-directory: Packages/MushKit
@@ -77,7 +49,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The Screen Time frameworks are Swift-only, so the iOS SDK ships their full public
+      # interface as text. Printing the enums we switch over is how we find out that a new
+      # SDK added a case *without guessing its name* — the one rule this project cannot
+      # break (docs/00-STATUS.md housekeeping rule 3). It lives in this job rather than in
+      # the test job because it needs the iOS SDK, which only exists on a Mac.
+      - name: Screen Time enum surface
+        run: |
+          SDK=$(xcrun --sdk iphonesimulator --show-sdk-path)
+          for FRAMEWORK in FamilyControls ManagedSettings ManagedSettingsUI DeviceActivity; do
+            IFACE=$(find "$SDK/System/Library/Frameworks/$FRAMEWORK.framework"               -name 'arm64*.swiftinterface' -print -quit)
+            [ -n "$IFACE" ] || { echo "===== $FRAMEWORK: no interface ====="; continue; }
+            echo "===== $FRAMEWORK enums ====="
+            grep -nE "public enum (AuthorizationStatus|ShieldAction|ShieldActionResponse|ActivityCategoryPolicy)"               -A 34 "$IFACE" || true
+            echo "===== $FRAMEWORK: new in iOS 26.x ====="
+            grep -nE "@available\(iOS 26" -A 10 "$IFACE"               | grep -vE "@available\((macOS|tvOS|watchOS|visionOS|macCatalyst|iOS)"               | grep -E "(func|var|case|init|struct|enum|protocol|typealias) "               | head -120 || echo "(none)"
+            cp "$IFACE" "interface-$FRAMEWORK.swiftinterface"
+          done
+
+      - name: Keep the interfaces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screen-time-interfaces
+          path: interface-*.swiftinterface
+
       - name: Install XcodeGen
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
+          HOMEBREW_NO_INSTALL_CLEANUP: 1
         run: brew install xcodegen
 
       - name: Generate project
@@ -157,7 +157,7 @@ jobs:
           for SCREEN in home blocks stats brain gallery setup cleanfeed; do
             xcrun simctl terminate "$UDID" com.mush.app || true
             xcrun simctl launch "$UDID" com.mush.app -MushScreen "$SCREEN"
-            sleep 8
+            sleep 5
             xcrun simctl io "$UDID" screenshot "screenshots/$SCREEN.png"
           done
 
