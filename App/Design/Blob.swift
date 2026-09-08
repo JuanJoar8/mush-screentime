@@ -80,8 +80,14 @@ struct CreatureParameters: Equatable {
     /// Mouth. Above ~0.15 it opens; below, it is a single stroked curve, and negative
     /// turns it down.
     var mouth: CGFloat
-    /// Arm droop, 0 held up to 1 hanging.
-    var arms: CGFloat
+    /// Arm height, per side, and they are never equal.
+    ///
+    /// Zero is a shoulder-height arm, positive hangs, negative raises — so `crisp` waves
+    /// with one and rests the other, and `mush` lets both hang dead. Symmetry is the
+    /// single thing that makes a drawn figure look switched off, which is why no stage
+    /// gets the same number twice.
+    var armLeft: CGFloat
+    var armRight: CGFloat
     /// High-frequency tremor. Only `buzzed` has one.
     var jitter: CGFloat
     /// Seconds between blinks. A duller creature blinks more slowly.
@@ -100,27 +106,27 @@ struct CreatureParameters: Equatable {
         switch stage {
         case .crisp:
             .init(browTilt: -0.16, browLift: 0.10, lid: 0.00, open: 1.00, sag: 0.00,
-                  spread: 0.00, sheen: 1.00, pupil: 0.10, mouth: 0.85, arms: 0.16,
+                  spread: 0.00, sheen: 1.00, pupil: 0.10, mouth: 0.85, armLeft: 0.34, armRight: -1.90,
                   jitter: 0.000, blinkInterval: 3.2,
                   foldRings: 4, foldsPerRing: 4, motifs: [.sparkle])
         case .foggy:
             .init(browTilt: 0.12, browLift: 0.06, lid: 0.18, open: 0.92, sag: 0.05,
-                  spread: 0.04, sheen: 0.66, pupil: 0.16, mouth: 0.22, arms: 0.40,
+                  spread: 0.04, sheen: 0.66, pupil: 0.16, mouth: 0.22, armLeft: 0.38, armRight: 0.46,
                   jitter: 0.000, blinkInterval: 4.6,
                   foldRings: 3, foldsPerRing: 4, motifs: [])
         case .buzzed:
             .init(browTilt: -0.36, browLift: 0.14, lid: 0.00, open: 1.18, sag: 0.02,
-                  spread: 0.03, sheen: 0.82, pupil: 0.42, mouth: -0.18, arms: 0.14,
+                  spread: 0.03, sheen: 0.82, pupil: 0.42, mouth: -0.18, armLeft: -0.38, armRight: -0.26,
                   jitter: 0.050, blinkInterval: 1.9,
                   foldRings: 3, foldsPerRing: 3, motifs: [.spiral, .sweat])
         case .melting:
             .init(browTilt: 0.32, browLift: 0.04, lid: 0.40, open: 0.82, sag: 0.13,
-                  spread: 0.10, sheen: 0.32, pupil: 0.14, mouth: -0.46, arms: 0.66,
+                  spread: 0.10, sheen: 0.32, pupil: 0.14, mouth: -0.46, armLeft: 0.62, armRight: 0.76,
                   jitter: 0.000, blinkInterval: 6.4,
                   foldRings: 2, foldsPerRing: 2, motifs: [.drip, .sweat])
         case .mush:
             .init(browTilt: 0.44, browLift: 0.02, lid: 0.60, open: 0.72, sag: 0.22,
-                  spread: 0.16, sheen: 0.14, pupil: 0.10, mouth: -0.62, arms: 0.86,
+                  spread: 0.16, sheen: 0.14, pupil: 0.10, mouth: -0.62, armLeft: 0.94, armRight: 0.86,
                   jitter: 0.000, blinkInterval: 8.8,
                   foldRings: 1, foldsPerRing: 2, motifs: [.drip, .crack])
         }
@@ -367,18 +373,21 @@ struct BlobView: View {
         _ context: inout GraphicsContext, center: CGPoint,
         bodyW: CGFloat, bodyH: CGFloat, radius: CGFloat, palette: Palette, time: TimeInterval
     ) {
-        let drop = p.arms
         let sway = CGFloat(sin(time * 0.7)) * 0.03
         let width = limbWidth(radius)
 
         for side in [-1.0, 1.0] as [CGFloat] {
+            let drop = side < 0 ? p.armLeft : p.armRight
             let shoulder = CGPoint(x: center.x + side * bodyW * 0.74, y: center.y + bodyH * 0.42)
+            // `abs` on the horizontal terms: an arm is foreshortened whether it is raised
+            // or lowered, and it keeps the widest reach at drop zero, which is the number
+            // `Reach.armSpan` is derived from.
             let elbow = CGPoint(
-                x: center.x + side * bodyW * (1.18 - drop * 0.08),
+                x: center.x + side * bodyW * (1.18 - abs(drop) * 0.08),
                 y: shoulder.y + radius * (0.02 + drop * 0.26)
             )
             let wrist = CGPoint(
-                x: center.x + side * bodyW * (1.42 - drop * 0.16),
+                x: center.x + side * bodyW * (1.42 - abs(drop) * 0.16),
                 y: shoulder.y + radius * (0.22 + drop * 0.62 + sway)
             )
 
