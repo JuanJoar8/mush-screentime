@@ -177,6 +177,10 @@ jobs:
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" "$APP"
           mkdir -p screenshots
+          # Compile the checker once. `swift file.swift` rebuilds it on every invocation,
+          # and the retry loop calls it once per screen: the run log showed 147 seconds
+          # between two screens that each reported rendering in three.
+          swiftc -O -o /tmp/notblank scripts/screen-not-blank.swift
           # Capture, measure, retry — rather than sleeping a fixed time and hoping.
           #
           # A flat `sleep 8` was cut to 5 to save runner minutes and made this flaky: the
@@ -190,7 +194,7 @@ jobs:
             for ATTEMPT in 1 2 3 4 5; do
               sleep 3
               xcrun simctl io "$UDID" screenshot "screenshots/$SCREEN.png"
-              if swift scripts/screen-not-blank.swift 10 "screenshots/$SCREEN.png" > /dev/null 2>&1; then
+              if /tmp/notblank 10 "screenshots/$SCREEN.png" > /dev/null 2>&1; then
                 echo "$SCREEN rendered after $((ATTEMPT * 3))s"
                 break
               fi
@@ -227,7 +231,7 @@ jobs:
       - name: Screens actually rendered
         # Threshold 10, not 6. At 6 a screen showing nothing but the iOS status bar
         # scored 6.70 and passed.
-        run: swift scripts/screen-not-blank.swift 10 screenshots/*.png
+        run: /tmp/notblank 10 screenshots/*.png
 
       # A blank screen is almost always a crash on launch, and the difference between
       # "blank" and a stack trace is the difference between guessing and knowing. Only

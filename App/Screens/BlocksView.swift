@@ -45,7 +45,7 @@ struct BlocksView: View {
                 InstrumentLabel(title: "Clean Feed", value: "No entitlement needed")
 
                 Text("""
-                Instagram and YouTube inside Mush, with Reels and Shorts removed by                 content rules rather than hidden by a shield. Messages, subscriptions,                 search and posting all work.
+                Instagram and YouTube inside Mush, with Reels and Shorts removed by content rules rather than hidden by a shield. Messages, subscriptions, search and posting all work.
                 """)
                     .font(.system(size: 13))
                     .foregroundStyle(Token.Color.inkDim)
