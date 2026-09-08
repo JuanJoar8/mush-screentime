@@ -130,7 +130,30 @@ public enum FeedRuleSet {
         )
     ]
 
-    public static var all: [FeedRule] { instagram + youtube }
+    // MARK: Shared
+
+    /// Links that leave Clean Feed for the native app.
+    ///
+    /// The logged-out Instagram page puts an "Open Instagram" button front and centre,
+    /// and it is a deep link into the app with the Reels in it — the single most
+    /// counterproductive control that could exist on this screen. The navigation delegate
+    /// already refuses the tap, but a button that visibly does nothing is its own bug.
+    ///
+    /// Matching on the URL *scheme* rather than on a class name is deliberate: it depends
+    /// on what the link does instead of on what the markup calls it, which makes it the
+    /// one selector in this file that section 5's warning about rot barely applies to.
+    public static let leaveTheWeb: [FeedRule] = [
+        FeedRule(
+            urlFilter: ".*",
+            action: .hide(
+                selector: "a[href^=\"instagram:\"], a[href^=\"youtube:\"], "
+                    + "a[href^=\"vnd.youtube:\"], a[href^=\"intent:\"], a[href^=\"fb:\"]"
+            ),
+            note: "Deep links back into the native apps, which is where Reels lives."
+        )
+    ]
+
+    public static var all: [FeedRule] { instagram + youtube + leaveTheWeb }
 
     /// The compiled-list source. Throws only if `JSONSerialization` refuses, which would
     /// mean a rule was built with something that is not JSON.

@@ -161,11 +161,19 @@ Genuinely unknown to me. Must not be assumed:
 
 Every one of these needs the $99 membership before it can be answered.
 
-**Q10 is the exception — it needs only a device.** Does WebKit compile our
+**Q10 was the exception, and it is now half answered.** Does WebKit compile our
 `WKContentRuleList`? `FeedRuleTests` proves the patterns mean what we intend and that
 they avoid the constructs WebKit does not implement, but `NSRegularExpression` is a
-superset of WebKit's `url-filter` grammar, so a test passing is not proof the browser
-accepts it. Clean Feed refuses to load anything if compilation fails, so the failure
-would be loud rather than silent — but it would still be a failure, and it is unverified
-until the app runs on hardware or a Simulator with a network. Simulator CI captures the
-screen; it does not sign in to Instagram.
+superset of WebKit's `url-filter` grammar, so those tests passing is not proof the
+browser accepts them.
+
+**Answered 2026-09-07, run 34183244652:** it compiles. Clean Feed loads nothing at all
+when compilation fails, so a screenshot of Instagram rendering inside the web view is
+proof the eleven rules compiled on the iOS 26 Simulator. That is the whole of what the
+screenshot proves.
+
+**Q10b, still open.** Whether the rules do the right thing on a *signed-in* feed. CI has
+no Instagram account and will not be given one, so the `css-display-none` selectors — the
+Reels tab, the Shorts shelf, the suggested rails — are unverified against the markup a
+logged-in user actually sees. This needs a person with an account, once, and then again
+every time those sites change (section 5 of `05-SHORTS-REELS.md`).

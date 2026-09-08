@@ -95,6 +95,17 @@ tests. Two decisions worth recording:
   ordinary app with an extra step, and it fails open *invisibly*: the page renders
   perfectly and the user believes the product is working.
 
+**Verified in CI on 2026-09-07:** the rules compile and Instagram renders inside the web
+view. Because the screen loads nothing when compilation fails, that screenshot *is* the
+proof — see Q10 in `01-FEASIBILITY.md`. What it does not prove is Q10b: whether the
+`css-display-none` selectors match the markup a signed-in user sees. CI has no account.
+
+One rule came straight out of that screenshot. Instagram's logged-out page leads with an
+"Open Instagram" button, which is a deep link into the app with the Reels in it — the most
+counterproductive control that could appear on this screen. It is matched by URL *scheme*
+rather than by class name, which makes it the one selector here that section 5's warning
+barely applies to: it depends on what the link does, not on what the markup calls it.
+
 A `WKUserScript` wraps `pushState`/`replaceState` because these are single-page apps —
 tapping Reels swaps the view without a document navigation, so a `block` rule never sees
 it. It deliberately does not run on first load: a guard firing on the entry URL can

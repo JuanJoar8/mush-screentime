@@ -134,3 +134,22 @@ func feedRuleIdentifierIsVersioned() {
     // rule and shipping the update would keep serving last month's rules from the cache.
     #expect(FeedRuleSet.identifier.contains("\(FeedRuleSet.version)"))
 }
+
+@Test("Deep links back into the native apps are hidden, not just refused")
+func feedRulesHideAppDeepLinks() {
+    // The logged-out Instagram page leads with an "Open Instagram" button. Tapping it
+    // would leave Clean Feed for the app with the Reels in it, which is the single most
+    // counterproductive control that could appear on this screen. The navigation delegate
+    // refuses the tap; this makes sure the button is not there to tap.
+    let selectors = FeedRuleSet.leaveTheWeb.compactMap { rule -> String? in
+        if case .hide(let selector) = rule.action { return selector }
+        return nil
+    }
+    let joined = selectors.joined()
+    for scheme in ["instagram:", "youtube:", "intent:"] {
+        #expect(joined.contains(scheme), "no rule hides \(scheme) links")
+    }
+    // Scheme-matched, not class-matched: it depends on what the link does rather than on
+    // what the markup calls it, which is the only kind of selector here that will not rot.
+    #expect(!joined.contains("class"))
+}
