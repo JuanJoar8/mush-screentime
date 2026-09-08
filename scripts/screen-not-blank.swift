@@ -19,10 +19,25 @@ import ImageIO
 
 /// Luminance standard deviation, 0...255. A single-colour screen sits at 0; any real
 /// interface is far above it.
+///
+/// **The status bar is cropped off first, and that is not a detail.** A completely blank
+/// gallery screen scored 6.70 against a threshold of 6 and passed: the clock, the wifi
+/// glyph and the battery are white on black, and on their own they clear the bar. The
+/// check was reading iOS, not the app. It now measures the middle of the screen only.
 func luminanceSigma(of url: URL) -> Double? {
     guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
-          let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
+          let full = CGImageSourceCreateImageAtIndex(source, 0, nil)
     else { return nil }
+
+    // Top 9% is the status bar and the Dynamic Island; bottom 6% is the home indicator.
+    // Neither belongs to us, and both are drawn whether our app rendered or not.
+    let inset = CGRect(
+        x: 0,
+        y: Double(full.height) * 0.09,
+        width: Double(full.width),
+        height: Double(full.height) * 0.85
+    )
+    guard let image = full.cropping(to: inset) else { return nil }
 
     // Downsample hard. A blank screen is blank at any resolution, and decoding three
     // megapixels per shot to compute one number is waste.

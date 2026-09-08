@@ -155,11 +155,25 @@ jobs:
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" "$APP"
           mkdir -p screenshots
+          # Capture, measure, retry — rather than sleeping a fixed time and hoping.
+          #
+          # A flat `sleep 8` was cut to 5 to save runner minutes and made this flaky: the
+          # gallery draws five creatures at sixteen folds each and sometimes had not
+          # presented a frame, so a blank screenshot shipped and the guard let it through.
+          # Waiting for the pixels is both more reliable than a fixed sleep and faster on
+          # the screens that are ready immediately.
           for SCREEN in home blocks stats brain gallery setup cleanfeed; do
             xcrun simctl terminate "$UDID" com.mush.app || true
             xcrun simctl launch "$UDID" com.mush.app -MushScreen "$SCREEN"
-            sleep 5
-            xcrun simctl io "$UDID" screenshot "screenshots/$SCREEN.png"
+            for ATTEMPT in 1 2 3 4 5; do
+              sleep 3
+              xcrun simctl io "$UDID" screenshot "screenshots/$SCREEN.png"
+              if swift scripts/screen-not-blank.swift 10 "screenshots/$SCREEN.png" > /dev/null 2>&1; then
+                echo "$SCREEN rendered after $((ATTEMPT * 3))s"
+                break
+              fi
+              echo "$SCREEN still blank after $((ATTEMPT * 3))s"
+            done
           done
 
       # A screen that renders nothing still screenshots fine, and the build stays green
@@ -172,7 +186,9 @@ jobs:
       # nothing is worse than none, because it also removes the suspicion. CoreGraphics is
       # here by definition: this job builds an iOS app with Xcode.
       - name: Screens actually rendered
-        run: swift scripts/screen-not-blank.swift 6 screenshots/*.png
+        # Threshold 10, not 6. At 6 a screen showing nothing but the iOS status bar
+        # scored 6.70 and passed.
+        run: swift scripts/screen-not-blank.swift 10 screenshots/*.png
 
       # A blank screen is almost always a crash on launch, and the difference between
       # "blank" and a stack trace is the difference between guessing and knowing. Only
