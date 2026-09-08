@@ -37,13 +37,13 @@ apps do that MUSH does not?** Every row ends in a status, and no row is allowed 
 | O11 | **Recurring sessions / calendar of focus hours** | `HAVE` | `ScheduleWindow` with weekdays and midnight wrap |
 | O12 | **Sleep routine** | `HAVE` | A `ScheduleWindow` that crosses midnight. Same primitive, different name |
 | O13 | **Streaks** | `HAVE` | `LedgerState.streak`, advanced on green days only |
-| O14 | **Focus Gems** — collectible milestones | `ADDED` | `Gem` catalogue, 12 entries, each with a deterministic predicate over the ledger. No random drops |
+| O14 | **Focus Gems** — collectible milestones | `ADDED` | `Gem` catalogue, 12 entries, each with a deterministic predicate over the ledger. No random drops. Delivered, not merely computed: `GemShelf` on the brain screen and a `GemUnlockOverlay` at the moment one fires. The first evaluation backfills an existing history **silently** — eight gems at once on first launch is noise, and it devalues the ninth |
 | O15 | **Widgets, Home and Lock Screen** | `ADDED` | `MushWidget`, three families, reading `WidgetSnapshot` from the App Group |
 | O16 | **Live Activities on the Lock Screen** | `ADDED` | `FocusActivityAttributes`. Self-driving countdown — see §3.3 for why it cannot be updated from the monitor |
 | O17 | **Mindful block screens with quotes** | `SPEC` | `ShieldConfiguration`. Ours carries the live health delta instead of a quote — the cost is the message |
 | O18 | **Mini-games in waiting rooms** | `ADDED` (as intervention) | `Intervention` — the thing `Strictness.standard` demands before it issues a grant. Ours is a 20-second hold, not a game: a game rewards the interruption |
 | O19 | **Weekly report** | `ADDED` | `WeeklyDigest` — 7 days vs the prior 7, with the biggest single mover named |
-| O20 | **Soundscapes** | `LATER` | Phase 8. `AVAudioPlayer` + the `audio` background mode. No API risk, just not on the loop diagram yet |
+| O20 | **Soundscapes** | `ADDED` | Four, and none of them is a file. `NoiseGenerator` synthesises brown, pink and a six-second tidal swell a sample at a time on the audio thread; the maths lives in `MushKit` so it is unit-tested rather than listened to and hoped about. A loop long enough not to be noticeable is tens of megabytes, and a short one is worse than silence because the ear finds the seam. Generated noise has no seam |
 | O21 | **Leaderboards / challenge friends** | `NO` | Needs an account and a server. `02-PRODUCT.md` §4 says never, and that is a structural promise, not a preference |
 | O22 | **Desktop app** | `NO` | Out of scope. The brief says iPhone 16 Pro |
 | O23 | **Focus Mode / Shortcuts integration** | `ADDED` | `StartFocusIntent` / `EndFocusIntent` / `LogAppOpenIntent`, all `openAppWhenRun = false`. This is also Path B's measurement spine (`09-PATH-B-NO-ENTITLEMENT.md`) |
@@ -66,7 +66,7 @@ apps do that MUSH does not?** Every row ends in a status, and no row is allowed 
 | B12 | **Mindful breaks** | `HAVE` | `FocusSession.Kind.breakInterval` |
 | B13 | **Block screen with the character on it** | `SPEC` | `ShieldConfiguration` renders the stage |
 | B14 | **Home screen widget with today's score** | `ADDED` | `MushWidget` (same row as O15) |
-| B15 | **Nudges at 75 / 50 / 25 / 10 % of score** | `ADDED` | `MilestoneWatcher`, with hysteresis so a number hovering on a boundary cannot spam |
+| B15 | **Nudges at 75 / 50 / 25 / 10 % of score** | `ADDED` | `MilestoneWatcher`, with hysteresis so a number hovering on a boundary cannot spam. They now actually leave the app: `MushNotifier` posts them under provisional authorisation, silently, and every notification is deferred past the first refresh so a launch cannot fire a backlog |
 | B16 | **Usage breakdown on the main view** | `HAVE` | Home's hour ribbon + Stats. Ours separates our ledger from Apple's report by provenance; Brainrot presents one merged surface it cannot actually justify |
 | B17 | **Multi-device sync over the same Apple ID** | `NO` | Usage data never leaves the device. `NSUbiquitousKeyValueStore` could carry *settings* only; not worth the second source of truth for one phone |
 | B18 | **Refresh, to fix blocking that got stuck** | `ADDED` | `MaintenanceAction.reapplyShields`. Real need — FB14237883 leaves stale shield UI after a store migration |

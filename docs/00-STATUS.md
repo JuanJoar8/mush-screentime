@@ -56,10 +56,10 @@ too (shield can open our app, shield submenus, token refresh).
 | 4 · Monitoring + ladder | **blocked** — needs paid membership |
 | 5 · Limits, schedules, focus | partial — focus sessions work against the mock |
 | 6 · Statistics | **done** for our ledger; Apple plane needs a device |
-| 7 · Brain system + UI | **done** — design system, creature, 4 screens |
+| 7 · Brain system + UI | **done** — design system, creature (flat vector, redrawn 2026-09-07), 6 screens, widget, Live Activity |
 | 7.5 · Competitive parity | **done** — every Opal/Brainrot feature classified in `10-FEATURE-PARITY.md`; the missing ones built |
-| 8 · Interventions | next — Path B Shortcuts onboarding, soundscapes |
-| 9 · Feed Quarantine | not started |
+| 8 · Interventions | **done** — Path B Shortcuts onboarding (`PathBSetupView`), the hold-to-continue pause, four synthesised soundscapes |
+| 9 · Feed Quarantine | next — the only phase left that is not blocked on the $99 membership |
 | 10 · Device hardening | **blocked** — needs device |
 
 ---
