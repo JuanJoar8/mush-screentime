@@ -160,3 +160,12 @@ Genuinely unknown to me. Must not be assumed:
   have accepted shielding without surveillance.
 
 Every one of these needs the $99 membership before it can be answered.
+
+**Q10 is the exception — it needs only a device.** Does WebKit compile our
+`WKContentRuleList`? `FeedRuleTests` proves the patterns mean what we intend and that
+they avoid the constructs WebKit does not implement, but `NSRegularExpression` is a
+superset of WebKit's `url-filter` grammar, so a test passing is not proof the browser
+accepts it. Clean Feed refuses to load anything if compilation fails, so the failure
+would be loud rather than silent — but it would still be a failure, and it is unverified
+until the app runs on hardware or a Simulator with a network. Simulator CI captures the
+screen; it does not sign in to Instagram.

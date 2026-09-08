@@ -154,7 +154,7 @@ jobs:
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" "$APP"
           mkdir -p screenshots
-          for SCREEN in home blocks stats brain gallery setup; do
+          for SCREEN in home blocks stats brain gallery setup cleanfeed; do
             xcrun simctl terminate "$UDID" com.mush.app || true
             xcrun simctl launch "$UDID" com.mush.app -MushScreen "$SCREEN"
             sleep 8

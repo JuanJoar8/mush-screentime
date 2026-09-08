@@ -17,7 +17,7 @@ struct RootView: View {
     }
 
     enum Screen: String, Hashable {
-        case home, blocks, stats, brain, gallery, setup
+        case home, blocks, stats, brain, gallery, setup, cleanfeed
     }
 
     var body: some View {
@@ -26,6 +26,8 @@ struct RootView: View {
                 StageGalleryView()
             } else if selection == .setup {
                 PathBSetupView()
+            } else if selection == .cleanfeed {
+                CleanFeedView()
             } else {
                 TabView(selection: $selection) {
                     Tab("Home", systemImage: "drop.fill", value: Screen.home) {

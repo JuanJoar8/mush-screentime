@@ -8,11 +8,13 @@ import MushKit
 struct BlocksView: View {
     @Environment(AppModel.self) private var model
     @State private var showSetup = false
+    @State private var showCleanFeed = false
 
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
                 capability
+                cleanFeed
                 rules
                 strictness
                 limits
@@ -24,6 +26,37 @@ struct BlocksView: View {
         .sheet(isPresented: $showSetup) {
             PathBSetupView()
                 .presentationDragIndicator(.visible)
+        }
+        .fullScreenCover(isPresented: $showCleanFeed) {
+            CleanFeedView()
+        }
+    }
+
+    /// Feed Quarantine, layer 2 (docs/05-SHORTS-REELS.md).
+    ///
+    /// It sits directly under Enforcement because it is the honest answer to the question
+    /// that panel raises. Selective in-app blocking — Reels but not Instagram — is not
+    /// possible with any public iOS API, on either path. What *is* possible is a route to
+    /// Instagram that has never had Reels in it, and that is what this opens.
+    private var cleanFeed: some View {
+        Panel {
+            VStack(alignment: .leading, spacing: 12) {
+                InstrumentLabel(title: "Clean Feed", value: "No entitlement needed")
+
+                Text("""
+                Instagram and YouTube inside Mush, with Reels and Shorts removed by                 content rules rather than hidden by a shield. Messages, subscriptions,                 search and posting all work.
+                """)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Token.Color.inkDim)
+
+                Text("It does not change the apps themselves. iOS gives no way to do that.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Token.Color.inkDim.opacity(0.8))
+
+                PrimaryAction(title: "Open Clean Feed", tint: Token.Color.accent) {
+                    showCleanFeed = true
+                }
+            }
         }
     }
 

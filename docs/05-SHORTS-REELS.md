@@ -83,7 +83,23 @@ Four layers, all public API, all App Store compatible.
 "blocked"; it says **"Reels-free route available"** and points at layer 2.
 *Mechanism A, used deliberately as a fork in the road rather than as a wall.*
 
-### Layer 2 — Clean Feed, our in-app browser
+### Layer 2 — Clean Feed, our in-app browser  ·  **BUILT 2026-09-07**
+
+`App/Screens/CleanFeedView.swift` and `MushKit/Feed/FeedRules.swift`. Ten rules, eight
+tests. Two decisions worth recording:
+
+- **Explore is blocked at the bare path, not as a subtree.** Instagram's search lives
+  under `/explore/search/`, and the promise of Clean Feed is real Instagram minus the
+  short-form surface — not Instagram minus half its navigation.
+- **If the rules do not compile, nothing loads.** A Clean Feed that fails open is the
+  ordinary app with an extra step, and it fails open *invisibly*: the page renders
+  perfectly and the user believes the product is working.
+
+A `WKUserScript` wraps `pushState`/`replaceState` because these are single-page apps —
+tapping Reels swaps the view without a document navigation, so a `block` rule never sees
+it. It deliberately does not run on first load: a guard firing on the entry URL can
+bounce against an empty history, and a redirect loop in a web view is worse than one reel
+getting through, which the content rule catches anyway.
 A `WKWebView` loading `m.instagram.com` / `m.youtube.com` with a compiled
 `WKContentRuleList`:
 
