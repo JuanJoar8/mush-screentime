@@ -287,7 +287,12 @@ struct BlobView: View {
         // Level of detail. Not a blur budget any more — there are no blurs left — but at
         // Dynamic Island size the fold lines and sheen strokes collapse into a smudge and
         // are better dropped than drawn.
-        let detail = min(size.width, size.height) >= 96
+        //
+        // 64, not 96. Fold density is the difference between rot and healing, so a
+        // thumbnail that drops the folds drops the one thing it is there to show — and
+        // the stage ladder on the brain screen is exactly that thumbnail. The Dynamic
+        // Island sits near 40pt and stays below the line, which is what the line is for.
+        let detail = min(size.width, size.height) >= 64
 
         // Same arithmetic the legs use, so the shadow cannot drift away from the feet.
         let groundY = center.y + bodyH * 0.80 + radius * (0.58 - p.sag * 0.7) + radius * 0.10

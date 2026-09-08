@@ -89,23 +89,52 @@ struct BrainView: View {
         }
     }
 
+    /// The ladder, drawn.
+    ///
+    /// It used to be a coloured dot and a word per row, and the creature — the entire
+    /// product — appeared nowhere on the screen named after it. The drawn gallery existed
+    /// but was reachable only through the launch argument CI uses, so no user could ever
+    /// have seen it.
+    ///
+    /// Each row now draws its own stage at 96x72, which is above the level-of-detail line
+    /// so the folds are there: fold density is what separates rot from healing, and a
+    /// thumbnail without them shows five identical lumps in five colours.
     private var stages: some View {
         Panel {
-            VStack(spacing: 14) {
+            VStack(spacing: 10) {
                 InstrumentLabel(title: "Stages", value: model.stage.title)
+
                 ForEach(BrainStage.allCases.reversed(), id: \.self) { stage in
-                    HStack(spacing: 12) {
-                        Circle()
-                            .fill(stage.tint)
-                            .frame(width: 12, height: 12)
-                        Text(stage.title)
-                            .font(.system(size: 15, weight: stage == model.stage ? .semibold : .regular))
-                            .foregroundStyle(stage == model.stage ? Token.Color.ink : Token.Color.inkDim)
-                        Spacer()
-                        Text("\(Int(stage.lowerBound))+")
-                            .font(.mushData(13))
-                            .foregroundStyle(Token.Color.inkDim)
+                    HStack(spacing: 10) {
+                        BlobView(stage: stage, isStatic: true)
+                            .frame(width: 96, height: 72)
+
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(stage.title)
+                                .font(.system(size: 15, weight: stage == model.stage ? .bold : .regular))
+                                .foregroundStyle(stage == model.stage ? Token.Color.ink : Token.Color.inkDim)
+                            Text(stage.mood)
+                                .font(.system(size: 11))
+                                .foregroundStyle(Token.Color.inkDim.opacity(0.85))
+                        }
+
+                        Spacer(minLength: 8)
+
+                        if stage == model.stage {
+                            Pill(text: "Now", tint: stage.tint, filled: true)
+                        } else {
+                            Text("\(Int(stage.lowerBound))+")
+                                .font(.mushData(13))
+                                .foregroundStyle(Token.Color.inkDim)
+                        }
                     }
+                    // The current stage is the one row that gets a surface of its own.
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 6)
+                    .background(
+                        stage == model.stage ? Token.Color.panelRaised : Color.clear,
+                        in: RoundedRectangle(cornerRadius: Token.Radius.panel, style: .continuous)
+                    )
                 }
             }
         }
