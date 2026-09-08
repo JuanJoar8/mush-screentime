@@ -23,10 +23,14 @@ struct BrainView: View {
                             .padding(.top, 10)
                     }
                 }
+                // Ladder before shelf. The gem grid is twelve tiles and a list of what is
+                // still to earn — the longest section on the screen — and it was burying
+                // the one thing this screen is named for. The order is now: why the
+                // number moved, where that leaves you, and only then what you collected.
+                stages
                 Panel {
                     GemShelf(unlocked: model.gems.unlocked, tint: model.stage.tint)
                 }
-                stages
                 howItWorks
             }
             .padding(.horizontal, 20)
