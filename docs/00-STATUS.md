@@ -72,16 +72,31 @@ rather than a mood:
 | | crisp | foggy | buzzed | melting | mush |
 |---|---|---|---|---|---|
 | folds / side | 16 | 12 | 9 | 4 | 2 |
-| `turgor` | 1.00 | 0.72 | 0.86 | 0.44 | 0.22 |
+| `turgor` | 1.00 | 0.72 | **0.86** | 0.44 | 0.22 |
 | `gloss` | 1.00 | 0.46 | **0.78** | 0.20 | 0.06 |
 | `necrosis` | 0.00 | 0.14 | 0.30 | 0.68 | 1.00 |
 | `translucency` | 1.00 | 0.62 | 0.40 | 0.14 | 0.00 |
 | `film` | 0.00 | 0.22 | 0.66 | **0.84** | 0.58 |
 
-`gloss` is deliberately **not** monotonic. Buzzed sits a rung below foggy and out-shines
-it, because overstimulated is not dull — it is the most awake the creature ever looks and
-the worst it is doing. `materialAxesAreDeliberate` asserts exactly that, so a future
-tidy-up into a clean descent fails the build and says why.
+**Three of the six axes break the ladder on purpose, each for its own reason.** `gloss`
+and `turgor` both peak at buzzed: overstimulated is neither dull nor soft — it is the most
+awake the creature ever looks and the worst it is doing, and a wired brain holds its folds
+harder than a hazy one that has already started to give. `film` breaks at the other end
+instead (see below). `materialAxesAreDeliberate` pins the exact shape rather than a
+direction, so a tidy-up into a clean descent fails the build and says why.
+
+**The turgor peak cost a day of red CI, and how it did is worth keeping.** The commit that
+rebuilt the creature (`f84a006`, 2026-09-08) shipped a test asserting turgor was monotonic
+*and* a table putting buzzed above foggy — in the same commit, contradicting each other,
+and nobody watched the run. Worse, the repo argued both sides: this file bolded only
+`gloss` as the exception, while `gloss`'s own doc comment said foggy "has already gone
+soft", which is a claim about turgor. Resolved 2026-09-09 in favour of the data: buzzed is
+tense. The two axes now say the same thing about that stage instead of opposite things.
+
+That is the failure mode this project already had a rule for, arriving from a new
+direction: **a green check does not say the thing works — and a check nobody reads does not
+say anything at all.** Both this repo's other guard failures were checks measuring the
+wrong thing. This one measured the right thing, said so, and was not read for a day.
 
 **Three more axes landed on 2026-09-08, and they are what make the ladder a pathology
 rather than a dimmer.** The five stages had been separable — sixteen folds versus two is

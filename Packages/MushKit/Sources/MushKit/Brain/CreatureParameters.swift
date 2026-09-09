@@ -118,6 +118,13 @@ public struct CreatureParameters: Equatable, Sendable {
     /// fewer of them; losing turgor is what makes the remaining ones read as smeared. It
     /// scales the offset of every groove and crest in the drawing, so at `mush` the folds
     /// are still there and have simply stopped standing up.
+    ///
+    /// **It peaks at `buzzed`, above `foggy`, and the peak is deliberate.** Overstimulated
+    /// is not soft: a wired brain holds its folds harder than a hazy one, which has
+    /// already started to give. It is the same fact `gloss` records — the two used to say
+    /// opposite things about that stage, and this is the side that won on 2026-09-09.
+    /// `materialAxesAreDeliberate` pins the shape, so flattening it into a clean descent
+    /// fails the build and says why.
     public var turgor: CGFloat
     /// How tight the specular highlight is: wet tissue against a matte dome.
     ///

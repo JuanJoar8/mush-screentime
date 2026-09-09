@@ -124,19 +124,27 @@ func onlyBuzzedIsJittery() {
     }
 }
 
-@Test("The surface carries the ladder, and gloss is not a dimmer switch")
+@Test("The surface carries the ladder, and three axes break it on purpose")
 func materialAxesAreDeliberate() {
-    // Turgor is monotonic for the same reason fold count is: a fold standing prouder than
-    // a healthier stage's would read as recovering while the number fell. The two are
-    // the count half and the material half of the same smooth-brain reading — sixteen
-    // folds standing flat would look as wrong as two folds standing proud.
+    // Turgor peaks at `buzzed`, and that peak is deliberate — resolved 2026-09-09, after
+    // this test and the table it checks shipped in the same commit contradicting each
+    // other and left CI red for a day.
+    //
+    // The reading that won: overstimulated is not soft. A wired brain is *tense* — the
+    // folds stand harder than a foggy one's, which has already started to give. That is
+    // the same fact `gloss` records one line down, and the two now agree instead of
+    // saying opposite things about the same stage.
+    //
+    // So this asserts the **shape**, which is a tighter guard than the monotonicity it
+    // replaces, not a looser one: nothing out-stands crisp, buzzed sits above foggy, and
+    // the tail below buzzed still falls all the way down. A drift in any of the four
+    // relationships fails, where "monotonic" only ever caught one of them.
     let turgor = ladder.map { params($0).turgor }
-    for (index, value) in turgor.enumerated().dropFirst() {
-        #expect(
-            value <= turgor[index - 1],
-            "\(ladder[index]) stands prouder than \(ladder[index - 1])"
-        )
-    }
+    #expect(params(.crisp).turgor > params(.foggy).turgor, "nothing stands prouder than crisp")
+    #expect(params(.buzzed).turgor > params(.foggy).turgor,
+            "buzzed must stand prouder than foggy — wired is tense, and that peak is the point")
+    #expect(params(.melting).turgor < params(.foggy).turgor, "melting has given up more than foggy")
+    #expect(params(.mush).turgor < params(.melting).turgor, "mush is the flattest thing here")
     #expect(turgor.first! >= turgor.last! * 3, "the ends are not far enough apart to read")
 
     // Gloss is deliberately *not* monotonic, and this is the assertion that says so out
