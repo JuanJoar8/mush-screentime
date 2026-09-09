@@ -747,8 +747,8 @@ struct BlobView: View {
                 layer.blendMode = .plusLighter
                 // The offset is what puts it opposite the key. Without it the glow rings
                 // the body evenly, and an even ring is a halo.
-                layer.translateBy(x: Light.ax * bodyW * 0.055 * CGFloat(k),
-                                  y: Light.ay * bodyH * 0.055 * CGFloat(k))
+                layer.translateBy(x: Light.awayX * bodyW * 0.055 * CGFloat(k),
+                                  y: Light.awayY * bodyH * 0.055 * CGFloat(k))
                 layer.addFilter(.blur(radius: radius * CGFloat(band.0) * 0.42))
                 layer.stroke(
                     silhouette, with: .color(palette.sub.opacity(band.1 * k)),
@@ -761,8 +761,8 @@ struct BlobView: View {
         // the path through the flesh is shortest. The detail that reads as skin.
         context.drawLayer { layer in
             layer.blendMode = .plusLighter
-            layer.translateBy(x: Light.ax * bodyW * 0.30 * CGFloat(k),
-                              y: Light.ay * bodyH * 0.30 * CGFloat(k))
+            layer.translateBy(x: Light.awayX * bodyW * 0.30 * CGFloat(k),
+                              y: Light.awayY * bodyH * 0.30 * CGFloat(k))
             layer.addFilter(.blur(radius: radius * 0.055))
             layer.stroke(
                 bodyPath(center: center, bodyW: bodyW * 0.99, bodyH: bodyH * 0.99),
