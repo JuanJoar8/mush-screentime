@@ -226,6 +226,34 @@ not a commit; it is one of those two things.
 | `check-workflow.py` | the CI YAML parses and its steps are shaped right | whether the steps assert anything |
 | `screen-not-blank.swift` | pixel variance in a screenshot, cropping the status bar and home indicator | a crash: the springboard has high variance too, hence the separate crash-report gate |
 
+### The blank-screen guard has now failed open three times
+
+Each time it reported `ok` on a screen that rendered nothing, and each time for a
+different reason. This is the guard the project's first lesson was written about, and it
+keeps re-earning it.
+
+1. **ImageMagick was not on the runner.** Every image reported `sigma=-1`, every one was
+   skipped, the build went green.
+2. **The threshold read iOS, not the app.** A screen showing nothing but the status bar
+   scored 6.70 against a threshold of 6. Fixed by cropping the top 9% and raising the bar
+   to 10.
+3. **NaN, on 2026-09-09.** `sumSquares / n - mean * mean` is algebraically the variance
+   and numerically is not: on a uniform image the two terms are equal, and in floating
+   point the subtraction lands a few ulps *below* zero. A uniform field at luma 17.353 —
+   an ordinary near-black screen — computes `-1.4e-11`, and `.squareRoot()` of a negative
+   Double is NaN. Every comparison against NaN is false, so `sigma < threshold` was false
+   and the verdict printed `ok`. **Three blank screens shipped green reading
+   `sigma=nan  ok`: brain, gallery and setup.**
+
+Fixed twice over, because the cause and the shape are different bugs. The variance is now
+a two-pass sum of squared deviations, which cannot go negative. And the verdict is written
+`sigma >= threshold` rather than `sigma < threshold`, so a screen passes only by clearing
+the bar — never by failing to fall below it. Anything non-finite is reported and fails.
+
+**Brain, Gallery and Setup render nothing, and that is still true.** The guard was hiding
+it, not causing it; fixing the guard turns CI red honestly. That is the next thing to fix.
+
+
 `check-fit.js` is new on 2026-09-08 and it is the **third** guard against one bug. The
 creature has been drawn past the edge of its canvas twice — a glove that grew past a
 hardcoded fraction, then fit arithmetic redone for `crisp` and never rechecked against
