@@ -150,6 +150,50 @@ func materialAxesAreDeliberate() {
     #expect(params(.mush).gloss < 0.10, "mush must be matte")
 }
 
+@Test("Decay reads as decay, and health reads as more than the absence of it")
+func rotAndVitalityAreSeparateReadings() {
+    // Necrosis is monotonic, unlike gloss and film. Decay has one direction, and a stage
+    // that was less rotten than a healthier one would say the creature had healed while
+    // every other axis said it had not.
+    let necrosis = ladder.map { params($0).necrosis }
+    for (index, value) in necrosis.enumerated().dropFirst() {
+        #expect(
+            value >= necrosis[index - 1],
+            "\(ladder[index]) is less rotten than \(ladder[index - 1])"
+        )
+    }
+    #expect(params(.crisp).necrosis == 0, "healthy tissue is not partly dead")
+    #expect(params(.mush).necrosis >= 0.9, "the bottom of the ladder has to be far gone")
+
+    // Translucency is the superior half, and it has to be an axis of its own rather than
+    // one over. A specular says the surface is wet; only transmission says there is
+    // something alive behind the surface, which is why crisp cannot be reached by turning
+    // gloss up.
+    let translucency = ladder.map { params($0).translucency }
+    for (index, value) in translucency.enumerated().dropFirst() {
+        #expect(
+            value <= translucency[index - 1],
+            "\(ladder[index]) transmits more light than \(ladder[index - 1])"
+        )
+    }
+    #expect(params(.mush).translucency == 0, "dead tissue does not transmit")
+    #expect(params(.crisp).translucency >= params(.buzzed).translucency * 2,
+            "the ends are not far enough apart to read as a different material")
+
+    // Film dips at the bottom, and the dip is the point. Melting is actively liquefying
+    // and is the greasiest the creature ever gets; mush has dried out past wet into dull.
+    // Ramping film straight to the bottom would say decay only ever gets wetter, which is
+    // the opposite of what happens, so tidying this into a clean ramp fails here.
+    #expect(params(.melting).film > params(.mush).film,
+            "melting must out-grease mush - decay stops being wet, and that dip is the point")
+    #expect(params(.crisp).film == 0, "living tissue is glossy, never greasy")
+
+    // The two wetnesses have to come apart somewhere, or film is just gloss spelled
+    // differently. Melting is where: almost no specular, more film than any other stage.
+    #expect(params(.melting).film > params(.melting).gloss * 3,
+            "film and gloss must be separable readings, not one axis under two names")
+}
+
 private extension Motifs {
     func intersects(_ other: Motifs) -> Bool { !intersection(other).isEmpty }
 }

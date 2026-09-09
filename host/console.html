@@ -22,6 +22,8 @@
   --color-ink-on-viewport: #211D33;
   --color-shade-anchor: #2E2030;
   --color-specular: #FFFFFF;
+  --color-subsurface: #FF5A38;
+  --color-necrotic: #616B52;
   --color-accent: #2A63D6;
   --color-accent-ink: #173A82;
   --color-good: #22B23E;
@@ -462,23 +464,23 @@
   var STAGES = [
     { key:"mush", name:"Mush", low:0, mood:"puddled",
       browTilt:0.44, browLift:0.02, lid:0.60, open:0.72, sag:0.22, spread:0.16,
-      sheen:0.14, pupil:0.10, mouth:-0.62, armLeft:0.94, armRight:0.86, turgor:0.22, gloss:0.06, jitter:0.000, blinkInterval:8.8,
+      sheen:0.14, pupil:0.10, mouth:-0.62, armLeft:0.94, armRight:0.86, necrosis:1.00, translucency:0.00, film:0.58, turgor:0.22, gloss:0.06, jitter:0.000, blinkInterval:8.8,
       foldRings:1, foldsPerRing:2, motifs:["drip","crack"] },
     { key:"melting", name:"Melting", low:25, mood:"drooping, losing shape",
       browTilt:0.32, browLift:0.04, lid:0.40, open:0.82, sag:0.13, spread:0.10,
-      sheen:0.32, pupil:0.14, mouth:-0.46, armLeft:0.62, armRight:0.76, turgor:0.44, gloss:0.20, jitter:0.000, blinkInterval:6.4,
+      sheen:0.32, pupil:0.14, mouth:-0.46, armLeft:0.62, armRight:0.76, necrosis:0.68, translucency:0.14, film:0.84, turgor:0.44, gloss:0.20, jitter:0.000, blinkInterval:6.4,
       foldRings:2, foldsPerRing:2, motifs:["drip","sweat"] },
     { key:"buzzed", name:"Buzzed", low:45, mood:"overstimulated, twitchy",
       browTilt:-0.36, browLift:0.14, lid:0.00, open:1.18, sag:0.02, spread:0.03,
-      sheen:0.82, pupil:0.42, mouth:-0.18, armLeft:-0.38, armRight:-0.26, turgor:0.86, gloss:0.78, jitter:0.050, blinkInterval:1.9,
+      sheen:0.82, pupil:0.42, mouth:-0.18, armLeft:-0.38, armRight:-0.26, necrosis:0.30, translucency:0.40, film:0.66, turgor:0.86, gloss:0.78, jitter:0.050, blinkInterval:1.9,
       foldRings:3, foldsPerRing:3, motifs:["spiral","sweat"] },
     { key:"foggy", name:"Foggy", low:65, mood:"a bit hazy, still fine",
       browTilt:0.12, browLift:0.06, lid:0.18, open:0.92, sag:0.05, spread:0.04,
-      sheen:0.66, pupil:0.16, mouth:0.22, armLeft:0.38, armRight:0.46, turgor:0.72, gloss:0.46, jitter:0.000, blinkInterval:4.6,
+      sheen:0.66, pupil:0.16, mouth:0.22, armLeft:0.38, armRight:0.46, necrosis:0.14, translucency:0.62, film:0.22, turgor:0.72, gloss:0.46, jitter:0.000, blinkInterval:4.6,
       foldRings:3, foldsPerRing:4, motifs:[] },
     { key:"crisp", name:"Crisp", low:85, mood:"alert, holding shape",
       browTilt:-0.16, browLift:0.10, lid:0.00, open:1.00, sag:0.00, spread:0.00,
-      sheen:1.00, pupil:0.10, mouth:0.85, armLeft:0.34, armRight:-1.90, turgor:1.00, gloss:1.00, jitter:0.000, blinkInterval:3.2,
+      sheen:1.00, pupil:0.10, mouth:0.85, armLeft:0.34, armRight:-1.90, necrosis:0.00, translucency:1.00, film:0.00, turgor:1.00, gloss:1.00, jitter:0.000, blinkInterval:3.2,
       foldRings:4, foldsPerRing:4, motifs:["sparkle"] }
   ];
   var TINTS = {};
@@ -602,7 +604,15 @@
       // and it is what puts the creature in the room instead of on a picture of one.
       bounce: hexRGB(tk("--color-ground")),
       glass: mixRGB(iris, white, 0.62),
-      tongue: mixRGB(bad, anchor, 0.10)
+      tongue: mixRGB(bad, anchor, 0.10),
+      // Light that went *through* the flesh and came back out. Red because blood is
+      // what it passed through. This is the one cue that separates living tissue from
+      // a well-lit plastic model, and no amount of specular substitutes for it.
+      sub: hexRGB(tk("--color-subsurface")),
+      // Tissue that has stopped being tissue. The blotches are mixed toward the tint so
+      // they read as the same body going, not as paint dropped on it.
+      rot: mixRGB(hexRGB(tk("--color-necrotic")), t, 0.22),
+      rotDeep: mixRGB(hexRGB(tk("--color-necrotic")), anchor, 0.46)
     };
   }
 
@@ -614,22 +624,46 @@
   // harmonic 8 at 0.048 swings 10% across 45° — the same lumpiness, curved. Factored out
   // of bodyPath because the rim light needs the same curve: a rim on a plain ellipse
   // separates from a lumpy edge and reads as a halo.
-  function lumpFactor(a) {
+  function lumpFactor(a, nec) {
     var lumps = 1 + 0.048 * Math.sin(a * 8 + 0.9) + 0.018 * Math.sin(a * 13 - 0.4);
     var fromTop = Math.abs(Math.atan2(Math.sin(a + Math.PI / 2), Math.cos(a + Math.PI / 2)));
     var dip = 1 - 0.105 * Math.exp(-Math.pow(fromTop / 0.30, 2));
-    return lumps * dip;
+    return lumps * dip * (1 - erosion(a, nec || 0));
   }
 
-  function bodyX(a, cx, w) { return cx + w * lumpFactor(a) * Math.cos(a); }
-  function bodyY(a, cy, h) { return cy + h * lumpFactor(a) * Math.sin(a); }
+  // Rot removes material. The eroded outline is what separates a body that is decaying
+  // from one that is merely sad — a sagging, unbroken egg reads as a mood, and a bitten
+  // one reads as a condition.
+  //
+  // Every term is *subtractive*, and that is a deliberate constraint rather than a
+  // stylistic one: the fit budget in REACH is derived from the un-eroded curve, so a
+  // silhouette that can only shrink cannot push the drawing past the canvas. An
+  // outward bulge would need REACH rederived, and the two times the creature was
+  // clipped off the edge of its frame both started with someone growing a shape and
+  // reasoning about the budget by hand.
+  //
+  // Two frequencies: a slow lopsided collapse, and bites. The bites are weighted to the
+  // lower half by `low`, because gravity decides where a softening body loses its edge.
+  function erosion(a, nec) {
+    if (!nec) return 0;
+    var low = 0.35 + 0.65 * Math.max(0, Math.sin(a));
+    var collapse = 0.024 * (0.5 + 0.5 * Math.sin(a * 2 + 1.7));
+    var bites = 0.030 * Math.pow(Math.max(0, Math.sin(a * 7 - 2.3)), 2.2)
+              + 0.022 * Math.pow(Math.max(0, Math.sin(a * 11 + 0.8)), 2.6);
+    return nec * (collapse + bites * low);
+  }
 
-  function bodyPath(ctx, cx, cy, w, h) {
+  function bodyX(a, cx, w, nec) { return cx + w * lumpFactor(a, nec) * Math.cos(a); }
+  function bodyY(a, cy, h, nec) { return cy + h * lumpFactor(a, nec) * Math.sin(a); }
+
+  function bodyPath(ctx, cx, cy, w, h, nec) {
     ctx.beginPath();
-    var steps = 120;
+    // 120 steps drew the erosion's 11th harmonic with eleven flat spots on it. The bites
+    // are the highest frequency on the curve, so they set the sampling rate.
+    var steps = nec ? 220 : 120;
     for (var i = 0; i <= steps; i++) {
       var a = (i / steps) * TAU - Math.PI / 2;
-      var x = bodyX(a, cx, w), y = bodyY(a, cy, h);
+      var x = bodyX(a, cx, w, nec), y = bodyY(a, cy, h, nec);
       if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
     ctx.closePath();
@@ -670,6 +704,12 @@
     var w = Math.max(bw * 0.052, 1.4);
     var lift = w * p.turgor;
     ctx.lineCap = "round";
+    // A sulcus is the low point of the surface. It is where decay collects and the one
+    // place transmitted light never reaches, so the grooves go rotten before the ridges
+    // do — which is what makes the surface read as going bad from the inside rather
+    // than as having been painted a duller colour.
+    var groove = mixRGB(pal.deep, pal.rotDeep, p.necrosis * 0.72);
+    var body = mixRGB(pal.gyrus, pal.rot, p.necrosis * 0.34);
 
     for (var si = 0; si < 2; si++) {
       var s = si === 0 ? -1 : 1;
@@ -703,11 +743,11 @@
           var fall = Math.max(0, Math.min(1, 1 - Math.sqrt(dx * dx + dy * dy) / (span * 1.15)));
 
           ridge(LIGHT.ax * lift * 0.62, LIGHT.ay * lift * 0.62);
-          ctx.strokeStyle = rgbCSS(pal.deep, 0.52 + 0.34 * p.turgor);
+          ctx.strokeStyle = rgbCSS(groove, 0.52 + 0.34 * p.turgor);
           ctx.lineWidth = w * 1.55; ctx.stroke();
 
           ridge(0, 0);
-          ctx.strokeStyle = rgbCSS(pal.gyrus); ctx.lineWidth = w * 1.10; ctx.stroke();
+          ctx.strokeStyle = rgbCSS(body); ctx.lineWidth = w * 1.10; ctx.stroke();
 
           ridge(LIGHT.dx * lift * 0.34, LIGHT.dy * lift * 0.34);
           ctx.strokeStyle = rgbCSS(pal.lit, 0.30 + 0.55 * fall * p.sheen);
@@ -733,15 +773,111 @@
                         cx + ox, cy - bh * 0.34 + oy);
     };
     fissure(0, 0);
-    ctx.strokeStyle = rgbCSS(pal.deep); ctx.lineWidth = w * 1.30; ctx.stroke();
+    ctx.strokeStyle = rgbCSS(groove); ctx.lineWidth = w * 1.30; ctx.stroke();
     fissure(LIGHT.dx * lift * 0.85, LIGHT.dy * lift * 0.85);
     ctx.strokeStyle = rgbCSS(pal.lit, 0.34 + 0.30 * p.sheen);
     ctx.lineWidth = w * 0.44; ctx.stroke();
   }
 
+  // Light that entered the lit side, scattered through the flesh, and left on the other.
+  // It is the whole "superior" half of the ladder and there is no substitute for it: a
+  // specular says the surface is wet, and only transmission says there is something
+  // alive behind the surface.
+  //
+  // Three facts decide where it goes, and all three are why this is not a rim light:
+  //   - it is brightest where the body is *thin*, so it hugs the contour;
+  //   - it appears on the side away from the key, because that is the side the light
+  //     had to travel through the body to reach;
+  //   - it is red regardless of the body's own colour, because it passed through blood.
+  //
+  // Drawn inside the clip with `lighter`, which is what transmitted light does: it adds
+  // to whatever is already there. Painted normally it would be a red band, and a red
+  // band on the shadow side is exactly the halo the earlier rim-light attempt died of.
+  function drawSubsurface(ctx, cx, cy, bw, bh, R, pal, p) {
+    if (p.translucency <= 0.02) return;
+    var k = p.translucency;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.lineJoin = "round";
+
+    // Three passes, widest and faintest first: transmission has no edge, and a single
+    // stroke of it reads as a drawn outline no matter how soft the colour.
+    [[0.150, 0.13], [0.082, 0.20], [0.038, 0.26]].forEach(function (band) {
+      ctx.save();
+      // The offset is what puts it opposite the key. Without it the glow rings the whole
+      // body evenly, and an even ring is a halo.
+      ctx.translate(LIGHT.ax * bw * 0.055 * k, LIGHT.ay * bh * 0.055 * k);
+      bodyPath(ctx, cx, cy, bw, bh, p.necrosis);
+      if (SUPPORTS_FILTER) ctx.filter = "blur(" + (R * band[0] * 0.42).toFixed(2) + "px)";
+      ctx.strokeStyle = rgbCSS(pal.sub, band[1] * k);
+      ctx.lineWidth = R * band[0] * 2;
+      ctx.stroke();
+      ctx.restore();
+    });
+
+    // The terminator: a thin warm line where the surface turns away from the light and
+    // the path through the flesh is shortest. It is the detail that reads as skin.
+    ctx.save();
+    ctx.translate(LIGHT.ax * bw * 0.30 * k, LIGHT.ay * bh * 0.30 * k);
+    bodyPath(ctx, cx, cy, bw * 0.99, bh * 0.99, p.necrosis);
+    if (SUPPORTS_FILTER) ctx.filter = "blur(" + (R * 0.055).toFixed(2) + "px)";
+    ctx.strokeStyle = rgbCSS(pal.sub, 0.17 * k);
+    ctx.lineWidth = R * 0.10;
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.restore();
+  }
+
+  // Rot is patchy. That is the entire difference between decay and a darker fill, and it
+  // is the thing the five stages never had: a uniformly duller creature is the same
+  // creature with the brightness down, which is the dimmer switch the parameter table
+  // exists to avoid.
+  //
+  // Blotches are stable per index, never animated, and their alphas are deliberately
+  // uneven — a field of equal-weight spots is a texture, and a texture reads as
+  // material rather than as disease. Drawn inside the body clip, under the folds, so
+  // the ridges still describe the form through them.
+  function drawNecrosis(ctx, cx, cy, bw, bh, R, pal, p) {
+    if (p.necrosis <= 0.02) return;
+    var n = Math.round(4 + p.necrosis * 9);
+    for (var i = 0; i < n; i++) {
+      var a = rnd(i * 3 + 1) * TAU;
+      // sqrt keeps them from crowding the centre, which is where a uniform random
+      // radius puts most of them.
+      var rad = Math.sqrt(rnd(i * 3 + 2)) * 0.92;
+      var x = cx + Math.cos(a) * bw * rad;
+      var y = cy + Math.sin(a) * bh * rad;
+      var size = R * (0.13 + rnd(i * 3 + 3) * 0.26) * (0.55 + 0.45 * p.necrosis);
+      // Uneven on purpose: some patches are barely there and one or two are far gone.
+      var weight = 0.18 + Math.pow(rnd(i * 5 + 11), 1.7) * 0.62;
+      var g = ctx.createRadialGradient(x, y, 0, x, y, size);
+      g.addColorStop(0, rgbCSS(pal.rotDeep, weight * p.necrosis * 0.62));
+      g.addColorStop(0.45, rgbCSS(pal.rot, weight * p.necrosis * 0.40));
+      g.addColorStop(1, rgbCSS(pal.rot, 0));
+      ctx.beginPath();
+      // Squashed and rotated, because a circular stain is a dot.
+      ctx.ellipse(x, y, size, size * (0.52 + rnd(i * 7 + 5) * 0.55), a * 1.7, 0, TAU);
+      ctx.fillStyle = g; ctx.fill();
+    }
+  }
+
   // One soft highlight where the light hits, and one small sharp one inside it. The soft
   // one says the surface is curved; the sharp one says it is wet.
-  function drawSpecular(ctx, lx, ly, bw, bh, R, pal, p) {
+  //
+  // `film` is the third kind of wet and it is not on the same scale as the other two. A
+  // specular is light bouncing off a taut surface; a film is light smeared across a
+  // slack one, and the two look nothing alike — which is why `melting` carries the most
+  // film of any stage while carrying almost no gloss. It is greenish, wide, sits below
+  // the key rather than on it, and has no core at all.
+  function drawSpecular(ctx, lx, ly, cx, cy, bw, bh, R, pal, p) {
+    if (p.film > 0.04) {
+      var fx = lx + bw * 0.10, fy = ly + bh * 0.34;
+      softEllipse(ctx, fx, fy, bw * 0.46, bh * 0.26, R * 0.30,
+                  mixRGB(pal.shine, pal.rot, 0.34), 0.05 + 0.16 * p.film);
+      softEllipse(ctx, cx - bw * 0.16, cy + bh * 0.30, bw * 0.30, bh * 0.15, R * 0.22,
+                  mixRGB(pal.shine, pal.rot, 0.46), 0.04 + 0.11 * p.film);
+    }
     if (p.sheen <= 0.10) return;
     softEllipse(ctx, lx, ly, bw * (0.46 - 0.16 * p.gloss) / 2, bh * (0.30 - 0.11 * p.gloss) / 2,
                 R * (0.16 - 0.07 * p.gloss), pal.shine, 0.16 + 0.30 * p.sheen);
@@ -1197,20 +1333,20 @@
 
     // Body. Flat fill, then the two gradients that make it a sphere before a single fold
     // is drawn, then the folds that make it a brain.
-    bodyPath(ctx, cx, cy, bw, bh);
+    bodyPath(ctx, cx, cy, bw, bh, p.necrosis);
     ctx.fillStyle = rgbCSS(pal.base); ctx.fill();
 
     ctx.save();
-    bodyPath(ctx, cx, cy, bw, bh); ctx.clip();
+    bodyPath(ctx, cx, cy, bw, bh, p.necrosis); ctx.clip();
 
     if (wantLight) {
-    bodyPath(ctx, cx, cy, bw, bh);
+    bodyPath(ctx, cx, cy, bw, bh, p.necrosis);
     var key = ctx.createRadialGradient(lx, ly, 0, lx, ly, span * 1.02);
     key.addColorStop(0, rgbCSS(pal.lit, 0.26 + 0.54 * p.sheen));
     key.addColorStop(1, rgbCSS(pal.lit, 0));
     ctx.fillStyle = key; ctx.fill();
 
-    bodyPath(ctx, cx, cy, bw, bh);
+    bodyPath(ctx, cx, cy, bw, bh, p.necrosis);
     var occ = ctx.createRadialGradient(lx, ly, 0, lx, ly, span * 1.62);
     occ.addColorStop(0.34, rgbCSS(pal.deep, 0));
     occ.addColorStop(0.76, rgbCSS(pal.deep, 0.30));
@@ -1219,7 +1355,7 @@
 
     // Bounce off the floor, in the floor's own colour. A warm body picking up the cool
     // lavender it stands on is what puts it in the room rather than on top of a picture.
-    bodyPath(ctx, cx, cy, bw, bh);
+    bodyPath(ctx, cx, cy, bw, bh, p.necrosis);
     var bx = cx + bw * 0.12, by = cy + bh * 0.92;
     var bnc = ctx.createRadialGradient(bx, by, 0, bx, by, bw * 0.95);
     bnc.addColorStop(0, rgbCSS(pal.bounce, 0.14 + 0.16 * p.sheen));
@@ -1227,18 +1363,57 @@
     ctx.fillStyle = bnc; ctx.fill();
     }
 
+    // Order matters and it is the physical one: the stains are in the tissue, the
+    // transmitted light comes from behind it, the folds are the surface, and the film
+    // and the specular are on top of the surface. Putting the blotches over the folds
+    // was the first thing tried and it read as mould growing on a brain rather than as
+    // a brain going bad.
+    if (wantLight) {
+      drawNecrosis(ctx, cx, cy, bw, bh, R, pal, p);
+      drawSubsurface(ctx, cx, cy, bw, bh, R, pal, p);
+    }
     if (wantGyri) {
       drawGyri(ctx, cx, cy, bw, bh, R, pal, p, lx, ly, span);
       if (has(p, "crack")) drawCracks(ctx, cx, cy, bw, bh, pal);
     }
-    if (wantFinish) drawSpecular(ctx, lx, ly, bw, bh, R, pal, p);
+    if (wantFinish) drawSpecular(ctx, lx, ly, cx, cy, bw, bh, R, pal, p);
     ctx.restore();
 
     // Thin, now that the form does the describing. A heavy contour on a modelled body
     // reads as a sticker cut out of a render.
-    bodyPath(ctx, cx, cy, bw, bh);
-    ctx.strokeStyle = rgbCSS(pal.ink); ctx.lineWidth = Math.max(R * 0.048, 1.2);
-    ctx.lineJoin = "round"; ctx.stroke();
+    // A continuous even outline is the last thing holding a rotting body together, and
+    // for the same reason it is the last thing that makes one read as drawn rather than
+    // as decaying. At necrosis the edge is stroked in arcs whose weight and darkness
+    // vary along the curve, so it thins to nothing in places and thickens where the
+    // tissue is still firm. Below any necrosis it is one clean stroke, unchanged.
+    ctx.lineJoin = "round"; ctx.lineCap = "round";
+    var edgeW = Math.max(R * 0.048, 1.2);
+    if (p.necrosis <= 0.02) {
+      bodyPath(ctx, cx, cy, bw, bh, 0);
+      ctx.strokeStyle = rgbCSS(pal.ink); ctx.lineWidth = edgeW;
+      ctx.stroke();
+    } else {
+      var segs = 46;
+      for (var e = 0; e < segs; e++) {
+        var a0 = (e / segs) * TAU - Math.PI / 2;
+        var a1 = ((e + 1.06) / segs) * TAU - Math.PI / 2;
+        // Stable per segment, and low-frequency enough that neighbours agree — a
+        // per-segment random gives a dashed line, which is a different artefact.
+        var bite = 0.5 + 0.5 * Math.sin(a0 * 6.0 + 1.1) * Math.sin(a0 * 2.0 - 0.4);
+        var fade = 1 - p.necrosis * (0.30 + 0.62 * bite);
+        ctx.beginPath();
+        var steps = 6;
+        for (var q = 0; q <= steps; q++) {
+          var a = a0 + (a1 - a0) * (q / steps);
+          var x = bodyX(a, cx, bw, p.necrosis), y = bodyY(a, cy, bh, p.necrosis);
+          if (q === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = rgbCSS(mixRGB(pal.ink, pal.rotDeep, p.necrosis * 0.55),
+                                 Math.max(0.06, fade));
+        ctx.lineWidth = edgeW * (0.42 + 0.58 * fade);
+        ctx.stroke();
+      }
+    }
 
     // Face. Glasses over the eyes, brows over the glasses — the order a real pair sits in.
     // Low in the body and close together: the proportion that reads as small-and-young

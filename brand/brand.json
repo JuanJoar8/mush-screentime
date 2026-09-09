@@ -52,6 +52,8 @@
     "ink-on-viewport": "#211D33",
     "shade-anchor": "#2E2030",
     "specular": "#FFFFFF",
+    "subsurface": "#FF5A38",
+    "necrotic": "#616B52",
     "accent": "#2A63D6",
     "accent-ink": "#173A82",
     "good": "#22B23E",

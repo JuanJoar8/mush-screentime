@@ -75,6 +75,42 @@ public struct CreatureParameters: Equatable, Sendable {
     /// gets the same number twice.
     public var armLeft: CGFloat
     public var armRight: CGFloat
+    /// How far the tissue has stopped being tissue, 0...1.
+    ///
+    /// This is the axis that makes the bottom of the ladder read as *rotting* rather than
+    /// as sad. It does three things at once, and it has to do all three: it stains the
+    /// body in uneven patches, it collects in the sulci before it reaches the ridges, and
+    /// it eats the outline. A creature that is only darker and droopier is the same
+    /// creature with the brightness down — which is the failure `gloss` was introduced to
+    /// avoid on the wetness axis and this one avoids on the material axis.
+    ///
+    /// Monotonic with the ladder, unlike `gloss` and `film`. Decay has one direction.
+    public var necrosis: CGFloat
+    /// How much light passes *through* the flesh and comes back out, 0...1.
+    ///
+    /// The whole "superior" half of the ladder, and the one cue with no substitute. A
+    /// specular says the surface is wet; only transmission says there is something alive
+    /// behind the surface, and it is the single reason a rendered head reads as skin
+    /// rather than as painted plastic.
+    ///
+    /// It is drawn red whatever the body's colour, because what it passed through is
+    /// blood. It appears on the side *away* from the key — that is the side the light had
+    /// to cross the body to reach — and it is brightest where the body is thinnest, which
+    /// is why it hugs the contour instead of pooling in the middle.
+    public var translucency: CGFloat
+    /// A slack, greasy sheen, as opposed to a taut one, 0...1.
+    ///
+    /// The third kind of wet, and it is not on the same scale as the other two. `gloss` is
+    /// light bouncing off a surface under tension; `film` is light smeared across one that
+    /// has gone slack, and they look nothing alike.
+    ///
+    /// Deliberately **not** monotonic, and for a different reason than `gloss`. `melting`
+    /// carries the most film of any stage — it is actively liquefying — while `mush` sits
+    /// well below it, because by then the thing has dried out. Past a certain point decay
+    /// stops being wet, and a ladder that ramped film straight to the bottom would say the
+    /// opposite. `materialAxesAreDeliberate` asserts the dip, so tidying it into a clean
+    /// ramp fails the build and says why.
+    public var film: CGFloat
     /// How far a fold stands proud of the surface around it, 1 being firm tissue.
     ///
     /// This is the *material* half of the smooth-brain reading, where `foldsPerSide` is
@@ -114,30 +150,35 @@ public struct CreatureParameters: Equatable, Sendable {
         case .crisp:
             .init(browTilt: -0.16, browLift: 0.10, lid: 0.00, open: 1.00, sag: 0.00,
                   spread: 0.00, sheen: 1.00, pupil: 0.10, mouth: 0.85, armLeft: 0.34, armRight: -1.90,
+                  necrosis: 0.00, translucency: 1.00, film: 0.00,
                   turgor: 1.00, gloss: 1.00,
                   jitter: 0.000, blinkInterval: 3.2,
                   foldRings: 4, foldsPerRing: 4, motifs: [.sparkle])
         case .foggy:
             .init(browTilt: 0.12, browLift: 0.06, lid: 0.18, open: 0.92, sag: 0.05,
                   spread: 0.04, sheen: 0.66, pupil: 0.16, mouth: 0.22, armLeft: 0.38, armRight: 0.46,
+                  necrosis: 0.14, translucency: 0.62, film: 0.22,
                   turgor: 0.72, gloss: 0.46,
                   jitter: 0.000, blinkInterval: 4.6,
                   foldRings: 3, foldsPerRing: 4, motifs: [])
         case .buzzed:
             .init(browTilt: -0.36, browLift: 0.14, lid: 0.00, open: 1.18, sag: 0.02,
                   spread: 0.03, sheen: 0.82, pupil: 0.42, mouth: -0.18, armLeft: -0.38, armRight: -0.26,
+                  necrosis: 0.30, translucency: 0.40, film: 0.66,
                   turgor: 0.86, gloss: 0.78,
                   jitter: 0.050, blinkInterval: 1.9,
                   foldRings: 3, foldsPerRing: 3, motifs: [.spiral, .sweat])
         case .melting:
             .init(browTilt: 0.32, browLift: 0.04, lid: 0.40, open: 0.82, sag: 0.13,
                   spread: 0.10, sheen: 0.32, pupil: 0.14, mouth: -0.46, armLeft: 0.62, armRight: 0.76,
+                  necrosis: 0.68, translucency: 0.14, film: 0.84,
                   turgor: 0.44, gloss: 0.20,
                   jitter: 0.000, blinkInterval: 6.4,
                   foldRings: 2, foldsPerRing: 2, motifs: [.drip, .sweat])
         case .mush:
             .init(browTilt: 0.44, browLift: 0.02, lid: 0.60, open: 0.72, sag: 0.22,
                   spread: 0.16, sheen: 0.14, pupil: 0.10, mouth: -0.62, armLeft: 0.94, armRight: 0.86,
+                  necrosis: 1.00, translucency: 0.00, film: 0.58,
                   turgor: 0.22, gloss: 0.06,
                   jitter: 0.000, blinkInterval: 8.8,
                   foldRings: 1, foldsPerRing: 2, motifs: [.drip, .crack])

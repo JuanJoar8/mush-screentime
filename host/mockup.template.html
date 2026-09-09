@@ -20,6 +20,8 @@
   --color-ink-on-viewport: #211D33;
   --color-shade-anchor: #2E2030;
   --color-specular: #FFFFFF;
+  --color-subsurface: #FF5A38;
+  --color-necrotic: #616B52;
   --color-accent: #2A63D6;
   --color-accent-ink: #173A82;
   --color-good: #22B23E;
@@ -498,9 +500,24 @@
     <p class="note">
       La señal principal es la <strong>densidad de surcos</strong>: bajan de dieciséis por lado a
       dos, porque un cerebro que pierde sus circunvoluciones es la metáfora que internet ya usa.
-      La segunda es el <strong>material</strong>: <code>turgor</code> dice cuánto sobresale un
-      pliegue y <code>gloss</code> cuán apretado es el brillo. En <em>mush</em> los pliegues siguen
-      ahí — simplemente dejaron de levantarse.
+      La segunda es el <strong>material</strong>, y desde el 8 de septiembre son cinco ejes, no
+      dos. <code>turgor</code> dice cuánto sobresale un pliegue y <code>gloss</code> cuán apretado
+      es el brillo; los tres nuevos son los que hacen que la escalera no sea un dimmer.
+    </p>
+    <p class="note">
+      <strong>Abajo la escalera se pudre.</strong> <code>necrosis</code> hace tres cosas a la vez y
+      tiene que hacer las tres: mancha el cuerpo en <em>parches desiguales</em>, se acumula en los
+      surcos antes de llegar a las crestas, y <em>se come el contorno</em> — la silueta deja de ser
+      un huevo entero y pasa a estar mordida. Un bicho que solo está más oscuro y más caído es el
+      mismo bicho con el brillo bajado.
+    </p>
+    <p class="note">
+      <strong>Arriba no brilla: transmite.</strong> <code>translucency</code> es luz que
+      <em>atravesó</em> la carne y salió por el otro lado, y sale roja porque lo que cruzó fue
+      sangre. Aparece en el lado contrario a la luz principal — que es el lado que la luz tuvo que
+      cruzar el cuerpo para alcanzar — y es más intensa donde el cuerpo es más delgado, por eso
+      abraza el contorno en vez de acumularse en el centro. Es la única señal que separa tejido
+      vivo de plástico bien iluminado, y no hay brillo especular que la sustituya.
     </p>
     <div class="ladder" id="ladder"></div>
   </section>
@@ -546,18 +563,27 @@
         <thead>
           <tr>
             <th>Etapa</th><th>Surcos / lado</th><th>Turgor</th><th>Gloss</th>
-            <th>Brillo</th><th>Boca</th><th>Brazos</th><th>Props</th>
+            <th>Necrosis</th><th>Translúcido</th><th>Film</th>
+            <th>Boca</th><th>Brazos</th><th>Props</th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
       </table>
     </div>
     <p class="note" style="margin-top:18px">
-      <code>gloss</code> es la única columna que <strong>no</strong> baja en orden, y es a
-      propósito: <em>buzzed</em> está un peldaño por debajo de <em>foggy</em> y brilla más, porque
-      sobreestimulado no es apagado — es lo más despierto que se ve la criatura y lo peor que le
-      va. Si alguien la ordena, las cinco etapas vuelven a ser cinco posiciones de un dimmer, y
-      hay un test que falla y lo dice con esas palabras.
+      Las dos columnas marcadas son las que <strong>no</strong> bajan en orden, y las dos están
+      así a propósito. <code>gloss</code>: <em>buzzed</em> está un peldaño por debajo de
+      <em>foggy</em> y brilla más, porque sobreestimulado no es apagado — es lo más despierto que
+      se ve la criatura y lo peor que le va. <code>film</code> hace el quiebre en el otro extremo:
+      <em>melting</em> es lo más grasiento que llega a estar, y <em>mush</em> baja, porque para
+      entonces la cosa ya se secó. Pasado cierto punto pudrirse deja de ser mojado.
+    </p>
+    <p class="note" style="margin-top:14px">
+      Son dos humedades distintas y por eso son dos ejes. <code>gloss</code> es luz rebotando en
+      una superficie tensa; <code>film</code> es luz untada sobre una que se aflojó — ancha,
+      verdosa, por debajo de la luz principal y sin núcleo. Si alguien ordena cualquiera de las
+      dos columnas, las cinco etapas vuelven a ser cinco posiciones de un dimmer, y hay un test
+      que falla y lo dice con esas palabras.
     </p>
   </section>
 
@@ -672,6 +698,8 @@
         '<span>surcos<b>' + folds(s) + '</b></span>' +
         '<span>turgor<b>' + s.turgor.toFixed(2) + '</b></span>' +
         '<span>gloss<b>' + s.gloss.toFixed(2) + '</b></span>' +
+        '<span>necrosis<b>' + s.necrosis.toFixed(2) + '</b></span>' +
+        '<span>translúcido<b>' + s.translucency.toFixed(2) + '</b></span>' +
       '</div>' +
       '<div class="tags">' + (s.motifs.length
         ? s.motifs.map(function (m) {
@@ -908,7 +936,9 @@
       '<td>' + folds(s) + '</td>' +
       '<td>' + s.turgor.toFixed(2) + '</td>' +
       '<td class="hi">' + s.gloss.toFixed(2) + '</td>' +
-      '<td>' + s.sheen.toFixed(2) + '</td>' +
+      '<td>' + s.necrosis.toFixed(2) + '</td>' +
+      '<td>' + s.translucency.toFixed(2) + '</td>' +
+      '<td class="hi">' + s.film.toFixed(2) + '</td>' +
       '<td>' + s.mouth.toFixed(2) + '</td>' +
       '<td>' + arms + '</td>' +
       '<td>' + props + '</td>';

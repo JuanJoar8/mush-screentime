@@ -33,6 +33,10 @@ public enum Token {
         public static let shadeAnchor = SwiftUI.Color(red: 0.1804, green: 0.1255, blue: 0.1882)
         /// #FFFFFF
         public static let specular = SwiftUI.Color(red: 1.0000, green: 1.0000, blue: 1.0000)
+        /// #FF5A38
+        public static let subsurface = SwiftUI.Color(red: 1.0000, green: 0.3529, blue: 0.2196)
+        /// #616B52
+        public static let necrotic = SwiftUI.Color(red: 0.3804, green: 0.4196, blue: 0.3216)
         /// #2A63D6
         public static let accent = SwiftUI.Color(red: 0.1647, green: 0.3882, blue: 0.8392)
         /// #173A82

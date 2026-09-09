@@ -66,6 +66,16 @@ private struct Palette {
     /// Lens glass.
     let glass: Color
     let tongue: Color
+    /// Light that went *through* the flesh and came back out. Red because blood is what
+    /// it passed through, and that single fact is the difference between a lit object and
+    /// a living one. Not mixed with the tint: transmitted light takes the colour of what
+    /// it crossed, not of the surface it left.
+    let sub: Color
+    /// Tissue that has stopped being tissue. Mixed toward the tint so a stain reads as
+    /// the same body going bad, not as paint dropped on it.
+    let rot: Color
+    /// The floor of a rotting sulcus, and the colour the eaten contour fades toward.
+    let rotDeep: Color
 
     init(stage: BrainStage) {
         let tint = stage.tint
@@ -93,6 +103,9 @@ private struct Palette {
         bounce = Token.Color.ground
         glass = Token.Color.eyeIris.mix(with: Token.Color.specular, by: 0.62)
         tongue = Token.Color.bad.mix(with: Token.Color.shadeAnchor, by: 0.10)
+        sub = Token.Color.subsurface
+        rot = Token.Color.necrotic.mix(with: tint, by: 0.22)
+        rotDeep = Token.Color.necrotic.mix(with: Token.Color.shadeAnchor, by: 0.46)
     }
 }
 
@@ -450,7 +463,31 @@ struct BlobView: View {
         // reads as a cleft rather than a flat top.
         let fromTop = abs(atan2(sin(angle + .pi / 2), cos(angle + .pi / 2)))
         let dip = 1 - 0.105 * exp(-pow(fromTop / 0.30, 2))
-        return CGFloat(lumps * dip)
+        return CGFloat(lumps * dip) * (1 - erosion(angle))
+    }
+
+    /// How much material decay has taken out of the outline at one angle.
+    ///
+    /// Rot removes tissue, and the eroded outline is what separates a body that is
+    /// decaying from one that is merely sad: a sagging unbroken egg reads as a mood, a
+    /// bitten one reads as a condition.
+    ///
+    /// Every term is **subtractive**, and that is a hard constraint rather than a
+    /// stylistic choice. `Reach` is derived from the un-eroded curve, so a silhouette that
+    /// can only shrink cannot push the drawing past its canvas. An outward bulge would
+    /// need `Reach` rederived by hand — and the two times this creature has been clipped
+    /// off the edge of its frame, both started with someone growing a shape and then
+    /// reasoning about the budget on paper.
+    ///
+    /// Two frequencies: a slow lopsided collapse, and bites. The bites are weighted to the
+    /// lower half by `low`, because gravity decides where a softening body loses its edge.
+    private func erosion(_ angle: Double) -> CGFloat {
+        guard p.necrosis > 0 else { return 0 }
+        let low = 0.35 + 0.65 * max(0, sin(angle))
+        let collapse = 0.024 * (0.5 + 0.5 * sin(angle * 2 + 1.7))
+        let bites = 0.030 * pow(max(0, sin(angle * 7 - 2.3)), 2.2)
+                  + 0.022 * pow(max(0, sin(angle * 11 + 0.8)), 2.6)
+        return p.necrosis * CGFloat(collapse + bites * low)
     }
 
     private func bodyPoint(
@@ -464,7 +501,9 @@ struct BlobView: View {
     /// outline is *lumpy* — the folds reach the edge and push it out.
     private func bodyPath(center c: CGPoint, bodyW w: CGFloat, bodyH h: CGFloat) -> Path {
         var path = Path()
-        let steps = 120
+        // 120 steps drew the erosion's 11th harmonic with eleven flat spots on it. The
+        // bites are the highest frequency on the curve, so they set the sampling rate.
+        let steps = p.necrosis > 0 ? 220 : 120
         for step in 0...steps {
             let angle = Double(step) / Double(steps) * 2 * .pi - .pi / 2
             let point = bodyPoint(angle, center: c, bodyW: w, bodyH: h)
@@ -531,23 +570,164 @@ struct BlobView: View {
                 startRadius: 0, endRadius: bodyW * 0.95
             ))
 
+            // Order is the physical one: the stains are *in* the tissue, the transmitted
+            // light comes from behind it, the folds are the surface, and the film and the
+            // specular sit on top of the surface. Blotches over the folds was the first
+            // thing tried and it read as mould growing on a brain rather than as a brain
+            // going bad.
+            drawNecrosis(&layer, center: center, bodyW: bodyW, bodyH: bodyH,
+                         radius: radius, palette: palette)
+            drawSubsurface(&layer, center: center, bodyW: bodyW, bodyH: bodyH,
+                           radius: radius, palette: palette)
+
             if detail {
                 drawGyri(&layer, center: center, bodyW: bodyW, bodyH: bodyH,
                          radius: radius, palette: palette, lightPoint: lightPoint, span: span)
                 if p.motifs.contains(.crack) {
                     drawCracks(&layer, center: center, bodyW: bodyW, bodyH: bodyH, palette: palette)
                 }
-                drawSpecular(&layer, lightPoint: lightPoint, bodyW: bodyW, bodyH: bodyH,
-                             radius: radius, palette: palette)
+                drawSpecular(&layer, lightPoint: lightPoint, center: center,
+                             bodyW: bodyW, bodyH: bodyH, radius: radius, palette: palette)
             }
         }
 
         // Thin, now that the form does the describing. A heavy contour on a modelled body
         // reads as a sticker cut out of a render.
-        context.stroke(
-            silhouette, with: .color(palette.ink),
-            style: StrokeStyle(lineWidth: max(radius * 0.048, 1.2), lineJoin: .round)
-        )
+        //
+        // And where there is decay, broken. A continuous even outline is the last thing
+        // holding a rotting body together, and for exactly that reason it is the last
+        // thing that makes one read as *drawn* rather than as decaying. Below any
+        // necrosis this is one clean stroke, unchanged.
+        let edgeWidth = max(radius * 0.048, 1.2)
+        guard p.necrosis > 0.02 else {
+            context.stroke(silhouette, with: .color(palette.ink),
+                           style: StrokeStyle(lineWidth: edgeWidth, lineJoin: .round))
+            return
+        }
+
+        let edgeColor = palette.ink.mix(with: palette.rotDeep, by: Double(p.necrosis) * 0.55)
+        let segments = 46
+        for segment in 0..<segments {
+            let a0 = Double(segment) / Double(segments) * 2 * .pi - .pi / 2
+            // 1.06 rather than 1: consecutive arcs overlap slightly, because butted ends
+            // leave hairline gaps that read as a dashed line - a different artefact.
+            let a1 = (Double(segment) + 1.06) / Double(segments) * 2 * .pi - .pi / 2
+            // Stable per segment and low-frequency enough that neighbours agree. A
+            // per-segment random gives dashes, not erosion.
+            let bite = 0.5 + 0.5 * sin(a0 * 6.0 + 1.1) * sin(a0 * 2.0 - 0.4)
+            let fade = 1 - Double(p.necrosis) * (0.30 + 0.62 * bite)
+
+            var arc = Path()
+            for step in 0...6 {
+                let angle = a0 + (a1 - a0) * (Double(step) / 6)
+                let point = bodyPoint(angle, center: center, bodyW: bodyW, bodyH: bodyH)
+                if step == 0 { arc.move(to: point) } else { arc.addLine(to: point) }
+            }
+            context.stroke(
+                arc, with: .color(edgeColor.opacity(max(0.06, fade))),
+                style: StrokeStyle(lineWidth: edgeWidth * CGFloat(0.42 + 0.58 * fade),
+                                   lineCap: .round, lineJoin: .round)
+            )
+        }
+    }
+
+    /// Light that entered the lit side, scattered through the flesh, and left on the other.
+    ///
+    /// The whole "superior" half of the ladder, and there is no substitute for it: a
+    /// specular says the surface is wet, and only transmission says there is something
+    /// alive behind the surface.
+    ///
+    /// Three facts place it, and all three are why this is not a rim light. It is
+    /// brightest where the body is *thin*, so it hugs the contour. It appears on the side
+    /// away from the key, because that is the side the light had to cross the body to
+    /// reach. And it is red whatever the body's colour, because it passed through blood.
+    ///
+    /// Drawn with `plusLighter`, which is what transmitted light does - it adds to what is
+    /// already there. Composited normally it is a red band on the shadow side, which is
+    /// precisely the halo the earlier rim-light attempt died of.
+    private func drawSubsurface(
+        _ context: inout GraphicsContext, center: CGPoint,
+        bodyW: CGFloat, bodyH: CGFloat, radius: CGFloat, palette: Palette
+    ) {
+        guard p.translucency > 0.02 else { return }
+        let k = Double(p.translucency)
+        let silhouette = bodyPath(center: center, bodyW: bodyW, bodyH: bodyH)
+
+        // Widest and faintest first: transmission has no edge, and a single stroke of it
+        // reads as a drawn outline however soft the colour.
+        for band in [(0.150, 0.13), (0.082, 0.20), (0.038, 0.26)] {
+            context.drawLayer { layer in
+                layer.blendMode = .plusLighter
+                // The offset is what puts it opposite the key. Without it the glow rings
+                // the body evenly, and an even ring is a halo.
+                layer.translateBy(x: Light.ax * bodyW * 0.055 * CGFloat(k),
+                                  y: Light.ay * bodyH * 0.055 * CGFloat(k))
+                layer.addFilter(.blur(radius: radius * CGFloat(band.0) * 0.42))
+                layer.stroke(
+                    silhouette, with: .color(palette.sub.opacity(band.1 * k)),
+                    style: StrokeStyle(lineWidth: radius * CGFloat(band.0) * 2, lineJoin: .round)
+                )
+            }
+        }
+
+        // The terminator: a thin warm line where the surface turns away from the light and
+        // the path through the flesh is shortest. The detail that reads as skin.
+        context.drawLayer { layer in
+            layer.blendMode = .plusLighter
+            layer.translateBy(x: Light.ax * bodyW * 0.30 * CGFloat(k),
+                              y: Light.ay * bodyH * 0.30 * CGFloat(k))
+            layer.addFilter(.blur(radius: radius * 0.055))
+            layer.stroke(
+                bodyPath(center: center, bodyW: bodyW * 0.99, bodyH: bodyH * 0.99),
+                with: .color(palette.sub.opacity(0.17 * k)),
+                style: StrokeStyle(lineWidth: radius * 0.10, lineJoin: .round)
+            )
+        }
+    }
+
+    /// Rot is patchy.
+    ///
+    /// That is the entire difference between decay and a darker fill, and it is what the
+    /// five stages never had: a uniformly duller creature is the same creature with the
+    /// brightness turned down - the dimmer switch this parameter table exists to avoid.
+    ///
+    /// Blotches are stable per index and never animated, and their weights are
+    /// deliberately uneven. A field of equal-weight spots is a *texture*, and a texture
+    /// reads as material rather than as disease.
+    private func drawNecrosis(
+        _ context: inout GraphicsContext, center: CGPoint,
+        bodyW: CGFloat, bodyH: CGFloat, radius: CGFloat, palette: Palette
+    ) {
+        guard p.necrosis > 0.02 else { return }
+        let count = Int((4 + p.necrosis * 9).rounded())
+        for i in 0..<count {
+            let angle = Double(rnd(i * 3 + 1)) * 2 * .pi
+            // sqrt keeps them off the centre, which is where a uniform random radius puts
+            // most of them.
+            let radial = sqrt(rnd(i * 3 + 2)) * 0.92
+            let x = center.x + CGFloat(cos(angle)) * bodyW * radial
+            let y = center.y + CGFloat(sin(angle)) * bodyH * radial
+            let size = radius * (0.13 + rnd(i * 3 + 3) * 0.26) * (0.55 + 0.45 * p.necrosis)
+            // Uneven on purpose: some patches are barely there, one or two are far gone.
+            let weight = Double(0.18 + pow(rnd(i * 5 + 11), 1.7) * 0.62)
+            let n = Double(p.necrosis)
+            // Squashed and rotated, because a circular stain is a dot.
+            let height = size * (0.52 + rnd(i * 7 + 5) * 0.55)
+            let oval = Path(ellipseIn: CGRect(x: -size, y: -height,
+                                              width: size * 2, height: height * 2))
+            context.drawLayer { layer in
+                layer.translateBy(x: x, y: y)
+                layer.rotate(by: .radians(angle * 1.7))
+                layer.fill(oval, with: .radialGradient(
+                    Gradient(stops: [
+                        .init(color: palette.rotDeep.opacity(weight * n * 0.62), location: 0),
+                        .init(color: palette.rot.opacity(weight * n * 0.40), location: 0.45),
+                        .init(color: palette.rot.opacity(0), location: 1)
+                    ]),
+                    center: .zero, startRadius: 0, endRadius: size
+                ))
+            }
+        }
     }
 
     /// One soft highlight where the light hits, and one small sharp one inside it.
@@ -555,10 +735,45 @@ struct BlobView: View {
     /// The soft one says the surface is curved; the sharp one says it is wet. `gloss`
     /// tightens the sharp one and `sheen` carries them both — which is the difference
     /// between firm tissue and a matte slumped dome, and it costs one blurred ellipse.
+    /// One blurred, coreless oval. The unit the film is built out of.
+    private func smear(
+        _ context: inout GraphicsContext, at point: CGPoint,
+        halfW: CGFloat, halfH: CGFloat, blur: CGFloat, color: Color, alpha: Double
+    ) {
+        let box = CGRect(x: point.x - halfW, y: point.y - halfH,
+                         width: halfW * 2, height: halfH * 2)
+        context.drawLayer { layer in
+            layer.addFilter(.blur(radius: blur))
+            layer.fill(Path(ellipseIn: box), with: .color(color.opacity(alpha)))
+        }
+    }
+
     private func drawSpecular(
-        _ context: inout GraphicsContext, lightPoint: CGPoint,
+        _ context: inout GraphicsContext, lightPoint: CGPoint, center: CGPoint,
         bodyW: CGFloat, bodyH: CGFloat, radius: CGFloat, palette: Palette
     ) {
+        // The third kind of wet, and not on the same scale as the other two. A specular is
+        // light bouncing off a surface under tension; a film is light smeared across one
+        // that has gone slack, and the two look nothing alike - which is why `melting`
+        // carries the most film of any stage while carrying almost no gloss. Greenish,
+        // wide, sitting below the key rather than on it, and with no core at all.
+        if p.film > 0.04 {
+            let f = Double(p.film)
+            // Written out rather than looped over a tuple array: a heterogeneous tuple of
+            // point, sizes, colour and alpha is the kind of literal Swift's inference
+            // either takes a very long time over or gives up on, and there are two of them.
+            smear(&context,
+                  at: CGPoint(x: lightPoint.x + bodyW * 0.10, y: lightPoint.y + bodyH * 0.34),
+                  halfW: bodyW * 0.46, halfH: bodyH * 0.26, blur: radius * 0.30,
+                  color: palette.shine.mix(with: palette.rot, by: 0.34),
+                  alpha: 0.05 + 0.16 * f)
+            smear(&context,
+                  at: CGPoint(x: center.x - bodyW * 0.16, y: center.y + bodyH * 0.30),
+                  halfW: bodyW * 0.30, halfH: bodyH * 0.15, blur: radius * 0.22,
+                  color: palette.shine.mix(with: palette.rot, by: 0.46),
+                  alpha: 0.04 + 0.11 * f)
+        }
+
         guard p.sheen > 0.10 else { return }
 
         let w = bodyW * (0.46 - 0.16 * p.gloss)
@@ -636,6 +851,12 @@ struct BlobView: View {
 
         let w = max(bodyW * 0.052, 1.4)
         let lift = w * p.turgor
+        // A sulcus is the low point of the surface. It is where decay collects and the
+        // one place transmitted light never reaches, so the grooves go rotten before the
+        // ridges do - which is what makes the surface read as going bad from the inside
+        // rather than as having been painted a duller colour.
+        let groove = palette.deep.mix(with: palette.rotDeep, by: Double(p.necrosis) * 0.72)
+        let ridgeBody = palette.gyrus.mix(with: palette.rot, by: Double(p.necrosis) * 0.34)
 
         for side in [-1.0, 1.0] as [CGFloat] {
             for ring in 0..<p.foldRings {
@@ -688,10 +909,10 @@ struct BlobView: View {
 
                     context.stroke(
                         ridge(Light.awayX * lift * 0.62, Light.awayY * lift * 0.62),
-                        with: .color(palette.deep.opacity(0.52 + 0.34 * Double(p.turgor))),
+                        with: .color(groove.opacity(0.52 + 0.34 * Double(p.turgor))),
                         style: cap(w * 1.55)
                     )
-                    context.stroke(ridge(0, 0), with: .color(palette.gyrus), style: cap(w * 1.10))
+                    context.stroke(ridge(0, 0), with: .color(ridgeBody), style: cap(w * 1.10))
                     context.stroke(
                         ridge(Light.dx * lift * 0.34, Light.dy * lift * 0.34),
                         with: .color(palette.lit.opacity(0.30 + 0.55 * Double(fall) * Double(p.sheen))),
@@ -722,7 +943,7 @@ struct BlobView: View {
             control2: CGPoint(x: center.x - bodyW * 0.05, y: center.y - bodyH * 0.52)
         )
         context.stroke(
-            fissure, with: .color(palette.deep),
+            fissure, with: .color(groove),
             style: StrokeStyle(lineWidth: w * 1.30, lineCap: .round)
         )
         context.drawLayer { layer in

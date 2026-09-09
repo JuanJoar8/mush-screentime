@@ -74,15 +74,54 @@ rather than a mood:
 | folds / side | 16 | 12 | 9 | 4 | 2 |
 | `turgor` | 1.00 | 0.72 | 0.86 | 0.44 | 0.22 |
 | `gloss` | 1.00 | 0.46 | **0.78** | 0.20 | 0.06 |
+| `necrosis` | 0.00 | 0.14 | 0.30 | 0.68 | 1.00 |
+| `translucency` | 1.00 | 0.62 | 0.40 | 0.14 | 0.00 |
+| `film` | 0.00 | 0.22 | 0.66 | **0.84** | 0.58 |
 
 `gloss` is deliberately **not** monotonic. Buzzed sits a rung below foggy and out-shines
 it, because overstimulated is not dull — it is the most awake the creature ever looks and
 the worst it is doing. `materialAxesAreDeliberate` asserts exactly that, so a future
 tidy-up into a clean descent fails the build and says why.
 
+**Three more axes landed on 2026-09-08, and they are what make the ladder a pathology
+rather than a dimmer.** The five stages had been separable — sixteen folds versus two is
+not a subtle difference — but everything below `foggy` still read as *sad*, and everything
+above it read as *the same creature, brighter*. Neither is what the product is about.
+
+- **`necrosis`** is rot, and it has to do three things at once or it is just a darker
+  fill. It stains the body in **uneven patches** — a field of equal-weight spots is a
+  texture, and a texture reads as material rather than as disease. It collects in the
+  **sulci before the ridges**, because a groove is the low point of the surface and that
+  is where decay pools. And it **eats the contour**: past 0.02 the outline stops being one
+  even stroke and becomes 46 arcs whose weight and darkness vary along the curve, so it
+  thins to nothing in places. A continuous even outline is the last thing holding a
+  rotting body together, and for exactly that reason the last thing that makes one read as
+  drawn rather than as decaying.
+- **`translucency`** is subsurface scattering, and it is the entire "superior" half. It is
+  drawn **red whatever the body's colour**, because what the light passed through is blood;
+  it sits on the side **away** from the key, because that is the side the light had to
+  cross the body to reach; and it is brightest where the body is **thinnest**, so it hugs
+  the contour instead of pooling in the middle. Composited with `plusLighter`, which is
+  what transmitted light does. There is no substitute for it: a specular says the surface
+  is wet, and only transmission says there is something alive behind the surface. `crisp`
+  cannot be reached by turning `gloss` up.
+- **`film`** is the third kind of wet and **dips at the bottom**, which is the point.
+  `melting` is actively liquefying and is the greasiest the creature ever gets; `mush` sits
+  well below it because by then the thing has dried out. Past a certain point decay stops
+  being wet. A ramp straight to the bottom would say the opposite, so
+  `rotAndVitalityAreSeparateReadings` asserts the dip.
+
+**The silhouette erosion is subtractive by construction, and that is a hard constraint
+rather than a style choice.** `Reach` is derived from the un-eroded curve, so a body that
+can only shrink cannot push the drawing past its canvas — no rederivation, no fit risk.
+`check-fit.js` confirms it: the tightest margin anywhere is unchanged at 4.5px. The two
+times this creature has been clipped off the edge of its frame, both started with someone
+growing a shape and then reasoning about the budget on paper.
+
 **The review sheet is published as an artifact:**
-<https://claude.ai/code/artifact/38d6a358-1419-454f-93eb-5dcb17194b67> — five stages live,
-the drawing pipeline stopped at each of its four layers, and three app screens. Rebuild it
+<https://claude.ai/code/artifact/1443e5ab-9c31-409b-9e48-92374b1c4380> — five stages live,
+the drawing pipeline stopped at each of its four layers, and three app screens. The URL changed on 2026-09-08: the sheet is a **build output**, not a source, so a new
+one costs nothing and the old dark-theme sheet is superseded rather than lost. Rebuild it
 with `python scripts/build-mockup.py`, which splices the renderer out of `host/console.html`
 so the sheet cannot drift from what ships, then republish to that same URL.
 
