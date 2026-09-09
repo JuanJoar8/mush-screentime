@@ -257,6 +257,15 @@ jobs:
       - name: The console still draws its creature
         run: node scripts/check-console.js
 
+      # The app mockup is a second surface spliced from the same renderer, and it is what
+      # anyone judging the product in a browser is actually looking at. Building it here
+      # also proves the splice still works: if console.html loses a marker, this fails
+      # rather than shipping a page assembled from a stale template.
+      - name: The app mockup builds and draws
+        run: |
+          python3 scripts/build-mockup.py
+          node scripts/check-console.js host/app.html
+
       # The third guard against one bug. Twice the creature has been drawn past the edge
       # of its canvas and shipped that way, both times because `Reach` was derived by
       # hand. This runs the drawing and measures the bounding box instead.

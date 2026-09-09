@@ -23,7 +23,9 @@ OUT = ROOT / "App" / "Design" / "DesignTokens.swift"
 # by hand, which meant three copies of the palette and no way to notice when one
 # drifted -- the flip to a light theme would have left two of them on the old dark
 # values, and nothing would have said so.
-CSS_TARGETS = [ROOT / "host" / "console.html", ROOT / "host" / "mockup.template.html"]
+CSS_TARGETS = [ROOT / "host" / "console.html",
+               ROOT / "host" / "mockup.template.html",
+               ROOT / "host" / "app.template.html"]
 CSS_BEGIN = "  /* @tokens"
 CSS_END = "  /* @end-tokens */"
 

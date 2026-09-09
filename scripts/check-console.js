@@ -1,4 +1,6 @@
-// Smoke test for host/console.html — the live progress page.
+// Smoke test for a host page that draws the creature.
+//
+//   node scripts/check-console.js [host/console.html | host/app.html]
 //
 // It exists because the console shipped twice with an invisible creature. The port of the
 // character declared `function css(c, a)` into a scope that already had
@@ -21,7 +23,10 @@
 const fs = require('fs');
 const path = require('path');
 
-const file = path.join(__dirname, '..', 'host', 'console.html');
+// Takes a path so the same smoke test covers every host surface that draws the
+// creature. host/app.html is a second one now, spliced from this same renderer, and a
+// guard that only ever looks at the page it was written for leaves the new ones unwatched.
+const file = process.argv[2] || path.join(__dirname, '..', 'host', 'console.html');
 const html = fs.readFileSync(file, 'utf8');
 
 // The CSS custom properties the script reads, straight from the file's own :root block.
@@ -63,6 +68,29 @@ const stageCards = ['mush', 'melting', 'buzzed', 'foggy', 'crisp'].map((key) => 
   addEventListener() {},
 }));
 
+// The app mockup reaches its five thumbnails a different way: it writes the rail into
+// innerHTML and then asks for `#rail canvas`. A stub that only knows `.stagecard`
+// returns nothing for that, the rail never draws, and the guard reports four stages
+// missing — which is a fact about the stub, not about the page. Both shapes are answered
+// here, and the selectors are matched loosely on purpose: the next surface will invent a
+// third way of naming its canvases.
+// Built on demand: `el` is declared below and a `const` is not hoisted into its own
+// initialiser, so eager construction here throws before the guard reads a single line.
+let railCanvases = null;
+
+function matches(sel) {
+  if (typeof sel !== 'string') return [];
+  if (sel.includes('.stagecard')) return stageCards;
+  if (sel.includes('canvas')) {
+    if (!railCanvases) {
+      railCanvases = ['mush', 'melting', 'buzzed', 'foggy', 'crisp']
+        .map((key) => el('rail-' + key));
+    }
+    return railCanvases;
+  }
+  return [];
+}
+
 const el = (id) => ({
   id,
   getContext: () => recordingContext(id),
@@ -70,7 +98,7 @@ const el = (id) => ({
   classList: { toggle() {}, add() {}, remove() {}, contains: () => false },
   style: new Proxy({}, { get: () => () => {}, set: () => true }),
   dataset: {}, querySelector: () => el('inner'),
-  querySelectorAll: (sel) => (sel === '.stagecard' ? stageCards : []),
+  querySelectorAll: matches,
   setAttribute() {}, getAttribute: () => null,
   scrollTo() {}, scrollTop: 0, offsetWidth: 100, value: 0,
   set innerHTML(v) {}, get innerHTML() { return ''; },
@@ -80,7 +108,7 @@ const el = (id) => ({
 global.document = {
   documentElement: { style: { setProperty() {} } },
   getElementById: el,
-  querySelectorAll: (sel) => (sel === '.stagecard' ? stageCards : []),
+  querySelectorAll: matches,
   createElement: el,
 };
 global.window = { matchMedia: () => ({ matches: false }), addEventListener() {} };
@@ -114,7 +142,12 @@ console.log('  hero used: ' + (used.join(', ') || '(nothing)'));
 // Every stage, not just whichever one happens to be current. Each of the five has its own
 // motifs — drips, cracks, a spiral pupil, sparkles — and each is a separate code path.
 for (const key of ['mush', 'melting', 'buzzed', 'foggy', 'crisp']) {
-  const drew = calls.filter((c) => c.startsWith('stage-' + key + '.')).length;
+  // `stage-` on the console's strip, `rail-` on the app mockup's ladder. Counting both
+  // rather than one: a guard keyed to a single page's element ids reports a missing
+  // stage on every other page, and a guard that cries wolf gets switched off.
+  const drew = calls.filter(
+    (c) => c.startsWith('stage-' + key + '.') || c.startsWith('rail-' + key + '.')
+  ).length;
   console.log('  ' + key.padEnd(8) + drew + ' calls');
   if (drew < 50) {
     fail(key + ' drew only ' + drew + ' times; its motifs are not being exercised');

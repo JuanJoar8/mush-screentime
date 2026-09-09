@@ -221,7 +221,7 @@ not a commit; it is one of those two things.
 | script | what it measures | what it cannot see |
 |---|---|---|
 | `check-plists.py` | every extension `Info.plist` has the six keys the embed step needs | whether the extension does anything |
-| `check-console.js` | the host page's script runs, all five stages draw, gradients and curves are present | whether the result looks like a brain |
+| `check-console.js` | a host page's script runs, all five stages draw, gradients and curves are present. Takes a path, so it covers `console.html` **and** `app.html` | whether the result looks like a brain |
 | `check-fit.js` | **the bounding box of everything drawn, against the canvas**, for all five stages | anything inside a `clip()`, by design — the clip path is what bounds those, and it is measured |
 | `check-folds.js` | **how many folds each stage actually draws**, against the number its table declares | whether a drawn fold is in a sensible place — only that it exists |
 | `check-workflow.py` | the CI YAML parses and its steps are shaped right | whether the steps assert anything |
@@ -333,6 +333,31 @@ past the budget. Latent, because height binds the fit at every size the app uses
 fit is written as a guarantee for any frame. `Reach.limbCap` closes it.
 
 ---
+
+## The three host pages
+
+The owner's machine is Windows, so a browser is the only place the interface can be
+touched before CI screenshots it. Three pages, one renderer:
+
+| page | what it is | built by |
+|---|---|---|
+| `host/console.html` | the source of the creature and the Home screen, with the model on sliders | hand-written; everything else splices from it |
+| `host/mockup.html` | the character review sheet: five stages, the pipeline stopped at each layer, the parameter table | `build-mockup.py` |
+| `host/app.html` | **the app itself** — four tabs, the pause, a focus session, the stage ladder | `build-mockup.py` |
+
+`app.html` exists so the product can be used rather than looked at. It is the four tabs
+with their real copy, the real components, the Path B pause with its hold-to-continue, and
+the creature drawn by the renderer spliced out of `console.html` — not a second copy of
+it. A hand-typed renderer drifts within a week, and a mockup somebody is judging the app
+by is the worst place for a drawing nobody ships.
+
+What it is not: there is no Screen Time and nothing is blocked. Those exist only on iOS.
+
+Serve it from the repo root and open `/host/app.html`:
+
+```sh
+python -m http.server 8817 --bind 127.0.0.1
+```
 
 ## Document map
 
