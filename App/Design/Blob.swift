@@ -390,6 +390,21 @@ struct BlobView: View {
     /// anything and the limbs vanish from the widget.
     private func limbWidth(_ radius: CGFloat) -> CGFloat { max(radius * 0.075, 1.6) }
 
+    /// How hard to lean on the material axes at this size.
+    ///
+    /// Necrosis, transmission and film are all *area* effects: soft gradients spread over
+    /// a fraction of the radius. Halve the radius and each covers a quarter of the pixels,
+    /// so a strength tuned on the 320pt hero reads as nothing on the 140pt gallery row and
+    /// as literally nothing on the 52pt rail — which is where the stage ladder lives, and
+    /// therefore where the reading matters most.
+    ///
+    /// The same argument as optical sizing in a typeface: the small cut is not the big one
+    /// scaled down, it is drawn heavier so it survives. Capped at 1.55, because past that
+    /// the blotches stop being a condition and start being a paint job.
+    private func materialBoost(_ radius: CGFloat) -> Double {
+        1 + 0.55 * Double(max(0, min(1, (170 - radius) / 110)))
+    }
+
     /// Resample a polyline into `count` equal-length pieces, so a taper is spread by
     /// distance rather than by vertex. A limb whose elbow sits two thirds of the way along
     /// would otherwise take two thirds of its thinning in the forearm and none in the
@@ -747,18 +762,21 @@ struct BlobView: View {
         bodyW: CGFloat, bodyH: CGFloat, radius: CGFloat, palette: Palette
     ) {
         guard p.translucency > 0.02 else { return }
-        let k = Double(p.translucency)
+        let k = Double(p.translucency) * materialBoost(radius)
+        // The offset reads the axis alone, never the boost: `k` swinging past 1 would
+        // walk the glow off the body at exactly the small sizes this exists to serve.
+        let shift = p.translucency
         let silhouette = bodyPath(center: center, bodyW: bodyW, bodyH: bodyH)
 
         // Widest and faintest first: transmission has no edge, and a single stroke of it
         // reads as a drawn outline however soft the colour.
-        for band in [(0.150, 0.13), (0.082, 0.20), (0.038, 0.26)] {
+        for band in [(0.150, 0.20), (0.082, 0.31), (0.038, 0.42)] {
             context.drawLayer { layer in
                 layer.blendMode = .plusLighter
                 // The offset is what puts it opposite the key. Without it the glow rings
                 // the body evenly, and an even ring is a halo.
-                layer.translateBy(x: Light.awayX * bodyW * 0.055 * CGFloat(k),
-                                  y: Light.awayY * bodyH * 0.055 * CGFloat(k))
+                layer.translateBy(x: Light.awayX * bodyW * 0.055 * shift,
+                                  y: Light.awayY * bodyH * 0.055 * shift)
                 layer.addFilter(.blur(radius: radius * CGFloat(band.0) * 0.42))
                 layer.stroke(
                     silhouette, with: .color(palette.sub.opacity(band.1 * k)),
@@ -771,13 +789,13 @@ struct BlobView: View {
         // the path through the flesh is shortest. The detail that reads as skin.
         context.drawLayer { layer in
             layer.blendMode = .plusLighter
-            layer.translateBy(x: Light.awayX * bodyW * 0.30 * CGFloat(k),
-                              y: Light.awayY * bodyH * 0.30 * CGFloat(k))
+            layer.translateBy(x: Light.awayX * bodyW * 0.30 * shift,
+                              y: Light.awayY * bodyH * 0.30 * shift)
             layer.addFilter(.blur(radius: radius * 0.055))
             layer.stroke(
                 bodyPath(center: center, bodyW: bodyW * 0.99, bodyH: bodyH * 0.99),
-                with: .color(palette.sub.opacity(0.17 * k)),
-                style: StrokeStyle(lineWidth: radius * 0.10, lineJoin: .round)
+                with: .color(palette.sub.opacity(0.28 * k)),
+                style: StrokeStyle(lineWidth: radius * 0.11, lineJoin: .round)
             )
         }
     }
@@ -796,7 +814,8 @@ struct BlobView: View {
         bodyW: CGFloat, bodyH: CGFloat, radius: CGFloat, palette: Palette
     ) {
         guard p.necrosis > 0.02 else { return }
-        let count = Int((4 + p.necrosis * 9).rounded())
+        let boost = materialBoost(radius)
+        let count = Int((5 + p.necrosis * 11).rounded())
         for i in 0..<count {
             let angle = Double(rnd(i * 3 + 1)) * 2 * .pi
             // sqrt keeps them off the centre, which is where a uniform random radius puts
@@ -817,8 +836,10 @@ struct BlobView: View {
                 layer.rotate(by: .radians(angle * 1.7))
                 layer.fill(oval, with: .radialGradient(
                     Gradient(stops: [
-                        .init(color: palette.rotDeep.opacity(weight * n * 0.62), location: 0),
-                        .init(color: palette.rot.opacity(weight * n * 0.40), location: 0.45),
+                        .init(color: palette.rotDeep.opacity(
+                            min(0.92, weight * n * 0.88 * boost)), location: 0),
+                        .init(color: palette.rot.opacity(
+                            min(0.80, weight * n * 0.58 * boost)), location: 0.45),
                         .init(color: palette.rot.opacity(0), location: 1)
                     ]),
                     center: .zero, startRadius: 0, endRadius: size
@@ -856,6 +877,7 @@ struct BlobView: View {
         // wide, sitting below the key rather than on it, and with no core at all.
         if p.film > 0.04 {
             let f = Double(p.film)
+            let fb = materialBoost(radius)
             // Written out rather than looped over a tuple array: a heterogeneous tuple of
             // point, sizes, colour and alpha is the kind of literal Swift's inference
             // either takes a very long time over or gives up on, and there are two of them.
@@ -863,12 +885,12 @@ struct BlobView: View {
                   at: CGPoint(x: lightPoint.x + bodyW * 0.10, y: lightPoint.y + bodyH * 0.34),
                   halfW: bodyW * 0.46, halfH: bodyH * 0.26, blur: radius * 0.30,
                   color: palette.shine.mix(with: palette.rot, by: 0.34),
-                  alpha: 0.05 + 0.16 * f)
+                  alpha: (0.07 + 0.26 * f) * fb)
             smear(&context,
                   at: CGPoint(x: center.x - bodyW * 0.16, y: center.y + bodyH * 0.30),
                   halfW: bodyW * 0.30, halfH: bodyH * 0.15, blur: radius * 0.22,
                   color: palette.shine.mix(with: palette.rot, by: 0.46),
-                  alpha: 0.04 + 0.11 * f)
+                  alpha: (0.05 + 0.18 * f) * fb)
         }
 
         guard p.sheen > 0.10 else { return }

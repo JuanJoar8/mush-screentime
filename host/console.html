@@ -683,6 +683,21 @@
   // clear of the sclera by a comfortable margin.
   function lensRadius(R) { return R * 0.35; }
 
+  // How much to lean on the material axes at this size.
+  //
+  // Necrosis, transmission and film are all *area* effects: soft gradients spread over a
+  // fraction of the radius. Halve the radius and each one covers a quarter of the pixels,
+  // so a strength tuned on the 320pt hero reads as nothing on the 140pt gallery row and
+  // as literally nothing on the 52pt rail — which is where the stage ladder lives, and
+  // therefore where the reading matters most.
+  //
+  // This is the same argument as optical sizing in a typeface: the small cut is not the
+  // big one scaled down, it is drawn heavier so it survives. Capped at 1.55 because past
+  // that the blotches stop being a condition and start being a paint job.
+  function materialBoost(R) {
+    return 1 + 0.55 * Math.max(0, Math.min(1, (170 - R) / 110));
+  }
+
   // Resample a polyline into `n` equal-length pieces, so a taper is spread by distance
   // rather than by vertex. A limb whose elbow sits two thirds along would otherwise get
   // two thirds of its thinning in the forearm and none in the upper arm.
@@ -921,18 +936,19 @@
   // band on the shadow side is exactly the halo the earlier rim-light attempt died of.
   function drawSubsurface(ctx, cx, cy, bw, bh, R, pal, p) {
     if (p.translucency <= 0.02) return;
-    var k = p.translucency;
+    var k = p.translucency * materialBoost(R);
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
     ctx.lineJoin = "round";
 
     // Three passes, widest and faintest first: transmission has no edge, and a single
     // stroke of it reads as a drawn outline no matter how soft the colour.
-    [[0.150, 0.13], [0.082, 0.20], [0.038, 0.26]].forEach(function (band) {
+    [[0.150, 0.20], [0.082, 0.31], [0.038, 0.42]].forEach(function (band) {
       ctx.save();
       // The offset is what puts it opposite the key. Without it the glow rings the whole
       // body evenly, and an even ring is a halo.
-      ctx.translate(LIGHT.ax * bw * 0.055 * k, LIGHT.ay * bh * 0.055 * k);
+      ctx.translate(LIGHT.ax * bw * 0.055 * p.translucency,
+                    LIGHT.ay * bh * 0.055 * p.translucency);
       bodyPath(ctx, cx, cy, bw, bh, p.necrosis);
       if (SUPPORTS_FILTER) ctx.filter = "blur(" + (R * band[0] * 0.42).toFixed(2) + "px)";
       ctx.strokeStyle = rgbCSS(pal.sub, band[1] * k);
@@ -944,11 +960,12 @@
     // The terminator: a thin warm line where the surface turns away from the light and
     // the path through the flesh is shortest. It is the detail that reads as skin.
     ctx.save();
-    ctx.translate(LIGHT.ax * bw * 0.30 * k, LIGHT.ay * bh * 0.30 * k);
+    ctx.translate(LIGHT.ax * bw * 0.30 * p.translucency,
+                  LIGHT.ay * bh * 0.30 * p.translucency);
     bodyPath(ctx, cx, cy, bw * 0.99, bh * 0.99, p.necrosis);
     if (SUPPORTS_FILTER) ctx.filter = "blur(" + (R * 0.055).toFixed(2) + "px)";
-    ctx.strokeStyle = rgbCSS(pal.sub, 0.17 * k);
-    ctx.lineWidth = R * 0.10;
+    ctx.strokeStyle = rgbCSS(pal.sub, 0.28 * k);
+    ctx.lineWidth = R * 0.11;
     ctx.stroke();
     ctx.restore();
 
@@ -966,7 +983,8 @@
   // the ridges still describe the form through them.
   function drawNecrosis(ctx, cx, cy, bw, bh, R, pal, p) {
     if (p.necrosis <= 0.02) return;
-    var n = Math.round(4 + p.necrosis * 9);
+    var boost = materialBoost(R);
+    var n = Math.round(5 + p.necrosis * 11);
     for (var i = 0; i < n; i++) {
       var a = rnd(i * 3 + 1) * TAU;
       // sqrt keeps them from crowding the centre, which is where a uniform random
@@ -978,8 +996,8 @@
       // Uneven on purpose: some patches are barely there and one or two are far gone.
       var weight = 0.18 + Math.pow(rnd(i * 5 + 11), 1.7) * 0.62;
       var g = ctx.createRadialGradient(x, y, 0, x, y, size);
-      g.addColorStop(0, rgbCSS(pal.rotDeep, weight * p.necrosis * 0.62));
-      g.addColorStop(0.45, rgbCSS(pal.rot, weight * p.necrosis * 0.40));
+      g.addColorStop(0, rgbCSS(pal.rotDeep, Math.min(0.92, weight * p.necrosis * 0.88 * boost)));
+      g.addColorStop(0.45, rgbCSS(pal.rot, Math.min(0.80, weight * p.necrosis * 0.58 * boost)));
       g.addColorStop(1, rgbCSS(pal.rot, 0));
       ctx.beginPath();
       // Squashed and rotated, because a circular stain is a dot.
@@ -998,11 +1016,12 @@
   // the key rather than on it, and has no core at all.
   function drawSpecular(ctx, lx, ly, cx, cy, bw, bh, R, pal, p) {
     if (p.film > 0.04) {
+      var fb = materialBoost(R);
       var fx = lx + bw * 0.10, fy = ly + bh * 0.34;
       softEllipse(ctx, fx, fy, bw * 0.46, bh * 0.26, R * 0.30,
-                  mixRGB(pal.shine, pal.rot, 0.34), 0.05 + 0.16 * p.film);
+                  mixRGB(pal.shine, pal.rot, 0.34), (0.07 + 0.26 * p.film) * fb);
       softEllipse(ctx, cx - bw * 0.16, cy + bh * 0.30, bw * 0.30, bh * 0.15, R * 0.22,
-                  mixRGB(pal.shine, pal.rot, 0.46), 0.04 + 0.11 * p.film);
+                  mixRGB(pal.shine, pal.rot, 0.46), (0.05 + 0.18 * p.film) * fb);
     }
     if (p.sheen <= 0.10) return;
     softEllipse(ctx, lx, ly, bw * (0.46 - 0.16 * p.gloss) / 2, bh * (0.30 - 0.11 * p.gloss) / 2,
