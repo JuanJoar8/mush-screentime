@@ -263,6 +263,14 @@ jobs:
       - name: Nothing the creature draws is clipped
         run: node scripts/check-fit.js
 
+      # Fold density is the product: "sixteen a side at crisp, two at mush" is the
+      # smooth-brain reading the whole character rests on. It was stated in the parameter
+      # table, in 00-STATUS.md and on the review sheet, nothing checked it, and it was
+      # false — every stage was losing more than half its folds to the face keep-out, and
+      # crisp drew seven of sixteen. No screenshot shows that; only counting does.
+      - name: Every stage draws the folds it declares
+        run: node scripts/check-folds.js
+
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4

@@ -555,7 +555,7 @@
     // `limbCap` is half the round-capped limb stroke, which puts ink past the point the
     // arithmetic places the wrist. Measured by scripts/check-fit.js rather than argued.
     var armSpan = 1.18, limbCap = 0.0375;
-    var eyeOffset = 0.285, lens = 0.42, templeSpan = 2.06;
+    var eyeOffset = 0.285, lens = 0.35, templeSpan = 2.06;
     var hip = 0.84, legLength = 0.36, shadow = 0.30;
     // Motifs sit outside the silhouette and had no budget at all until check-fit.js
     // caught the sparkle 0.1px from the top edge and the fallen drip 0.8px from the
@@ -671,6 +671,18 @@
 
   function has(p, motif) { return p.motifs && p.motifs.indexOf(motif) >= 0; }
 
+  // The lens, and therefore the whole face, in one place.
+  //
+  // It was written as `R * 0.42` twice — once where the glasses are drawn and once where
+  // the folds are told to keep away from them — and the two had to agree by hand. They
+  // are the same fact, so they are now the same expression.
+  //
+  // 0.42 -> 0.35. At 0.42 the glasses covered most of the frontal surface, which is where
+  // a brain's folds are, and the creature read as a smooth roll wearing goggles. The eye
+  // inside is R*0.195 and reaches 0.239 at buzzed's widest, so 0.35 still leaves the rim
+  // clear of the sclera by a comfortable margin.
+  function lensRadius(R) { return R * 0.35; }
+
   // Resample a polyline into `n` equal-length pieces, so a taper is spread by distance
   // rather than by vertex. A limb whose elbow sits two thirds along would otherwise get
   // two thirds of its thinning in the forearm and none in the upper arm.
@@ -764,12 +776,25 @@
   // have simply stopped standing up. That is the smooth-brain reading in the material,
   // where `foldRings × foldsPerRing` is the same reading in the count.
   function drawGyri(ctx, cx, cy, bw, bh, R, pal, p, lx, ly, span) {
-    // Keep out of the face — but only out of the face. An ellipse 0.95 radius wide and a
-    // full radius tall covered 94% of the body and left three fold lines on the whole
-    // creature: a bald field with glasses on it.
+    // Keep out of the face — but only out of the face.
+    //
+    // This was a rectangle: everything within `faceHalfW` of the centre line and *below*
+    // faceTop, which means it ran all the way to the bottom of the body. Measured, it was
+    // culling more than half of every stage's folds — crisp declares sixteen a side and
+    // drew seven, which is the number the docs and the review sheet were both calling
+    // sixteen.
+    //
+    // It is an ellipse now, sized to the features it actually has to miss: the two
+    // lenses across, the brows at the top, the mouth at the bottom. That gives back the
+    // four corners the rectangle took and the whole belly below the mouth, which is the
+    // widest part of the body and had never carried a single fold.
     var eyeY = cy + bh * 0.16;
-    var faceHalfW = bw * 0.285 + R * 0.42;
-    var faceTop = eyeY - R * (0.42 + 0.26);
+    var lensR = lensRadius(R);
+    var faceHalfW = bw * 0.285 + lensR;
+    var faceTop = eyeY - lensR - R * 0.12;
+    var faceBottom = eyeY + R * 0.68;
+    var faceMidY = (faceTop + faceBottom) / 2;
+    var faceHalfH = (faceBottom - faceTop) / 2;
 
     var w = Math.max(bw * 0.052, 1.4);
     var lift = w * p.turgor;
@@ -792,7 +817,38 @@
 
           var px = cx + s * bw * radial * Math.cos(arc - 0.35);
           var py = cy - bh * 0.74 + bh * 1.86 * arc / 1.9 + bh * j2 * 0.06;
-          if (Math.abs(px - cx) <= faceHalfW && py >= faceTop) continue;
+          // A fold that lands on the face is moved, not dropped.
+          //
+          // Dropping is what the first version did, and the count is the product: fold
+          // density is the one axis the whole metaphor rests on, so silently drawing
+          // seven of the sixteen a stage declares is not a rendering detail, it is the
+          // stage lying about itself. Pushed radially out of the face ellipse, a fold
+          // keeps its ring, its length and its bow — it just sits somewhere the glasses
+          // are not.
+          var fdx = (px - cx) / faceHalfW, fdy = (py - faceMidY) / faceHalfH;
+          var fr = Math.sqrt(fdx * fdx + fdy * fdy);
+          if (fr < 1) {
+            var out = fr > 0.001 ? 1.05 / fr : 1.05;
+            px = cx + (px - cx) * out;
+            py = faceMidY + (py - faceMidY) * out;
+          }
+
+          // And then held inside the silhouette. Everything here is drawn inside
+          // `clip(bodyPath)`, so a fold pushed past the edge is clipped away — the same
+          // loss by another route, and an invisible one.
+          var ex2 = (px - cx) / bw, ey2 = (py - cy) / bh;
+          var rr = Math.sqrt(ex2 * ex2 + ey2 * ey2);
+          var lim = lumpFactor(Math.atan2(ey2, ex2), p.necrosis) * 0.86;
+          if (rr > lim) {
+            var back = lim / rr;
+            px = cx + (px - cx) * back;
+            py = cy + (py - cy) * back;
+          }
+
+          // Only now, and only if both moves left it on the face anyway. Rare, and a
+          // fold drawn across a lens is worse than a fold missing.
+          var gdx = (px - cx) / faceHalfW, gdy = (py - faceMidY) / faceHalfH;
+          if (gdx * gdx + gdy * gdy < 1) continue;
 
           var th = Math.atan2(py - cy, px - cx) + Math.PI / 2;
           var len = bw * (0.26 + rnd(seed + 7) * 0.12);
@@ -1497,7 +1553,7 @@
     // Low in the body and close together: the proportion that reads as small-and-young
     // rather than as a face on a ball. The eye grew 0.160 -> 0.195 and the lens grew with
     // it, because at 0.345 the wide-eyed buzzed sclera pushes past the rim.
-    var eyeY = cy + bh * 0.16, eyeX = bw * 0.285, lensR = R * 0.42;
+    var eyeY = cy + bh * 0.16, eyeX = bw * 0.285, lensR = lensRadius(R);
     var rx = R * 0.195, ry = rx * 1.04 * p.open;
     var blink = (t > 0 && (t % p.blinkInterval) < 0.09) ? 0 : 1;
 

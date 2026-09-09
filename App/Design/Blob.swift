@@ -132,7 +132,17 @@ private enum Reach {
     /// last two times. `scripts/check-fit.js` measures what this claims.
     static let limbCap: CGFloat = 0.0375    // in radius
     static let eyeOffset: CGFloat = 0.285   // in bodyW
-    static let lens: CGFloat = 0.42         // in radius
+    /// The lens, and therefore the whole face.
+    ///
+    /// 0.42 -> 0.35 on 2026-09-09. At 0.42 the glasses covered most of the frontal
+    /// surface, which is exactly where a brain's folds are, and the creature read as a
+    /// smooth roll wearing goggles. The eye inside is `radius * 0.195` and reaches 0.239
+    /// at buzzed's widest, so 0.35 still clears the sclera comfortably.
+    ///
+    /// It was written as a bare `radius * 0.42` in two places — where the glasses are
+    /// drawn and where the folds are told to keep away from them — and the two had to
+    /// agree by hand. They are the same fact, so they are one expression now.
+    static let lens: CGFloat = 0.35         // in radius
     static let templeSpan: CGFloat = 2.06   // hook end, in lensR
     static let hip: CGFloat = 0.84          // in bodyH
     static let legLength: CGFloat = 0.36    // in radius, before sag shortens it
@@ -923,17 +933,63 @@ struct BlobView: View {
         bodyW: CGFloat, bodyH: CGFloat, radius: CGFloat, palette: Palette,
         lightPoint: CGPoint, span: CGFloat
     ) {
-        // Keep out of the face — but only out of the face. The first attempt used an
-        // ellipse 0.95 radius wide and a full radius tall, which covered 94% of the body
-        // and left three fold lines on the entire creature: a bald yellow field with
-        // glasses on it. This is the box the glasses and mouth actually occupy, so the
-        // folds keep the crown above the brows and the flanks outside the frames — which
-        // is also where a real brain shows them.
+        // Keep out of the face — but only out of the face, and *move* what lands there
+        // rather than dropping it.
+        //
+        // The first attempt used an ellipse 0.95 radius wide and a full radius tall,
+        // which covered 94% of the body and left three fold lines on the entire creature.
+        // The fix for that was a box, and the box was worse than it looked: it ran from
+        // the brows to the bottom of the body, and measuring it showed **every stage
+        // losing more than half its folds** — crisp declares sixteen a side and drew
+        // seven. The docs, the review sheet and the parameter table all said sixteen.
+        //
+        // Two changes. The keep-out is an ellipse sized to the features it has to miss —
+        // two lenses across, brows at the top, mouth at the bottom — which gives back the
+        // four corners a box takes and the whole belly below the mouth, the widest part of
+        // the body and the part that had never carried a fold. And a fold that still lands
+        // on the face is pushed clear instead of discarded, because fold density is the
+        // one axis the whole metaphor rests on: silently drawing seven of sixteen is not a
+        // rendering detail, it is the stage lying about itself.
+        //
+        // `scripts/check-folds.js` measures the survival rate now, so the number in the
+        // documentation is a number something checks.
         let eyeY = center.y + bodyH * 0.16
-        let faceHalfW = bodyW * 0.285 + radius * 0.42
-        let faceTop = eyeY - radius * (0.42 + 0.26)
-        func clearsFace(_ point: CGPoint) -> Bool {
-            abs(point.x - center.x) > faceHalfW || point.y < faceTop
+        let lensR = radius * Reach.lens
+        let faceHalfW = bodyW * 0.285 + lensR
+        let faceTop = eyeY - lensR - radius * 0.12
+        let faceBottom = eyeY + radius * 0.68
+        let faceMidY = (faceTop + faceBottom) / 2
+        let faceHalfH = (faceBottom - faceTop) / 2
+
+        /// How far inside the face ellipse a point sits. Below 1 is on the face.
+        func faceDistance(_ point: CGPoint) -> CGFloat {
+            let dx = (point.x - center.x) / faceHalfW
+            let dy = (point.y - faceMidY) / faceHalfH
+            return (dx * dx + dy * dy).squareRoot()
+        }
+
+        /// Push a fold clear of the face, then hold it inside the silhouette.
+        ///
+        /// Everything in this function draws inside `clip(silhouette)`, so a fold shoved
+        /// past the edge is clipped away — the same loss by another route, and an
+        /// invisible one. Clamping happens second for exactly that reason.
+        func placed(_ point: CGPoint) -> CGPoint {
+            var p = point
+            let distance = faceDistance(p)
+            if distance < 1 {
+                let out = distance > 0.001 ? 1.05 / distance : 1.05
+                p = CGPoint(x: center.x + (p.x - center.x) * out,
+                            y: faceMidY + (p.y - faceMidY) * out)
+            }
+            let ex = (p.x - center.x) / bodyW, ey = (p.y - center.y) / bodyH
+            let r = (ex * ex + ey * ey).squareRoot()
+            let limit = lumpFactor(atan2(Double(ey), Double(ex))) * 0.86
+            if r > limit {
+                let back = limit / r
+                p = CGPoint(x: center.x + (p.x - center.x) * back,
+                            y: center.y + (p.y - center.y) * back)
+            }
+            return p
         }
 
         let w = max(bodyW * 0.052, 1.4)
@@ -958,10 +1014,16 @@ struct BlobView: View {
                     let radial = 0.30 + CGFloat(ring) * (0.62 / CGFloat(max(p.foldRings, 1))) + j1 * 0.07
                     let arc = (CGFloat(index) + 0.5) / CGFloat(max(count, 1)) * 1.9 - 0.42 + j2 * 0.12
 
-                    let px = center.x + side * bodyW * radial * CGFloat(cos(Double(arc) - 0.35))
-                    let py = center.y - bodyH * 0.74 + bodyH * 1.86 * arc / 1.9 + bodyH * j2 * 0.06
+                    let raw = CGPoint(
+                        x: center.x + side * bodyW * radial * CGFloat(cos(Double(arc) - 0.35)),
+                        y: center.y - bodyH * 0.74 + bodyH * 1.86 * arc / 1.9 + bodyH * j2 * 0.06
+                    )
+                    let seat = placed(raw)
+                    let px = seat.x, py = seat.y
 
-                    guard clearsFace(CGPoint(x: px, y: py)) else { continue }
+                    // Only if both moves left it on the face anyway. Rare, and a fold
+                    // drawn across a lens is worse than a fold missing.
+                    guard faceDistance(seat) >= 1 else { continue }
 
                     // Tangential: perpendicular to the line out from the centre, so folds
                     // wrap the dome rather than cutting across it.
@@ -1267,7 +1329,7 @@ struct BlobView: View {
         // `buzzed` sclera pushes past the rim and the frames read as goggles.
         let eyeY = center.y + bodyH * 0.16
         let eyeX = bodyW * 0.285
-        let lensR = radius * 0.42
+        let lensR = radius * Reach.lens
         let rx = radius * 0.195
         let ry = rx * 1.04 * p.open
 

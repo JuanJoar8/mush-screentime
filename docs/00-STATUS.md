@@ -223,6 +223,7 @@ not a commit; it is one of those two things.
 | `check-plists.py` | every extension `Info.plist` has the six keys the embed step needs | whether the extension does anything |
 | `check-console.js` | the host page's script runs, all five stages draw, gradients and curves are present | whether the result looks like a brain |
 | `check-fit.js` | **the bounding box of everything drawn, against the canvas**, for all five stages | anything inside a `clip()`, by design — the clip path is what bounds those, and it is measured |
+| `check-folds.js` | **how many folds each stage actually draws**, against the number its table declares | whether a drawn fold is in a sensible place — only that it exists |
 | `check-workflow.py` | the CI YAML parses and its steps are shaped right | whether the steps assert anything |
 | `screen-not-blank.swift` | pixel variance in a screenshot, cropping the status bar and home indicator | a crash: the springboard has high variance too, hence the separate crash-report gate |
 
@@ -277,6 +278,45 @@ is the case the retry loop was written for and the case the guard's NaN had remo
 `cleanfeed` still needs a second attempt every run. That one is real: it compiles a
 `WKContentRuleList` before it can draw. It is not a bug, but it is the reason the retry
 loop must keep working.
+
+## Sixteen folds a side was not true
+
+Unblocking the gallery made the creature visible for the first time, and the first thing
+it showed was that the folds barely read: a few scratches on the crown and a smooth field
+everywhere else. Counting them, on 2026-09-09:
+
+| stage | declared | drawn | survival |
+|---|---|---|---|
+| crisp | 32 | 14 | 44% |
+| foggy | 24 | 10 | 42% |
+| buzzed | 18 | 8 | 44% |
+| melting | 8 | 4 | 50% |
+| mush | 4 | 2 | 50% |
+
+**Every stage was losing more than half.** `crisp` declares sixteen a side and drew seven
+— and "sixteen a side" is written in `CreatureParameters`, in this file, and on the review
+sheet. Three statements of a number that nothing measured.
+
+Two causes, neither of them visible in a screenshot:
+
+- **The keep-out was a box.** It spanned the glasses' width and ran from the brows to the
+  bottom of the body, so it took the four corners a face does not occupy and the entire
+  belly below the mouth — the widest part of the creature, which had never carried a
+  single fold. It is an ellipse now, sized to the features it has to miss.
+- **A fold that landed on the face was dropped.** That is the part that made the count a
+  lie rather than a layout quirk. Folds are pushed clear of the face now, then clamped
+  inside the silhouette — a fold shoved past the edge is clipped away, which is the same
+  loss by a quieter route.
+
+The lens shrank with it, `radius * 0.42` → `0.35`. At 0.42 the glasses covered most of the
+frontal surface, which is exactly where a brain's folds are, and the creature read as a
+smooth roll wearing goggles. It was also written as a bare literal in two places that had
+to agree by hand; it is `Reach.lens` now, in one.
+
+All five stages draw 100% of their declared folds, and **`check-folds.js` is what says
+so** — verified to fail, at exit 2, against a copy of the drawing with the old
+drop-instead-of-move behaviour. A guard that has never been seen to fail is the shape of
+the last three failures in this repo.
 
 
 `check-fit.js` is new on 2026-09-08 and it is the **third** guard against one bug. The
