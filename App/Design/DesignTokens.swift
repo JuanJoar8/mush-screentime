@@ -11,50 +11,60 @@ public enum Token {
     // MARK: Colour
 
     public enum Color {
-        /// #140B2E
-        public static let ground = SwiftUI.Color(red: 0.0784, green: 0.0431, blue: 0.1804)
-        /// #0C0620
-        public static let groundDeep = SwiftUI.Color(red: 0.0471, green: 0.0235, blue: 0.1255)
-        /// #1E1240
-        public static let panel = SwiftUI.Color(red: 0.1176, green: 0.0706, blue: 0.2510)
-        /// #2A1B55
-        public static let panelRaised = SwiftUI.Color(red: 0.1647, green: 0.1059, blue: 0.3333)
-        /// #3B2A70
-        public static let line = SwiftUI.Color(red: 0.2314, green: 0.1647, blue: 0.4392)
-        /// #241552
-        public static let viewport = SwiftUI.Color(red: 0.1412, green: 0.0824, blue: 0.3216)
-        /// #F1ECFF
-        public static let ink = SwiftUI.Color(red: 0.9451, green: 0.9255, blue: 1.0000)
-        /// #A093CC
-        public static let inkDim = SwiftUI.Color(red: 0.6275, green: 0.5765, blue: 0.8000)
-        /// #F1ECFF
-        public static let inkOnViewport = SwiftUI.Color(red: 0.9451, green: 0.9255, blue: 1.0000)
+        /// #B9B3C9
+        public static let ground = SwiftUI.Color(red: 0.7255, green: 0.7020, blue: 0.7882)
+        /// #8F88A6
+        public static let groundDeep = SwiftUI.Color(red: 0.5608, green: 0.5333, blue: 0.6510)
+        /// #CBC6D8
+        public static let panel = SwiftUI.Color(red: 0.7961, green: 0.7765, blue: 0.8471)
+        /// #DEDAE8
+        public static let panelRaised = SwiftUI.Color(red: 0.8706, green: 0.8549, blue: 0.9098)
+        /// #A29ABA
+        public static let line = SwiftUI.Color(red: 0.6353, green: 0.6039, blue: 0.7294)
+        /// #F1EFF4
+        public static let viewport = SwiftUI.Color(red: 0.9451, green: 0.9373, blue: 0.9569)
+        /// #211D33
+        public static let ink = SwiftUI.Color(red: 0.1294, green: 0.1137, blue: 0.2000)
+        /// #474160
+        public static let inkDim = SwiftUI.Color(red: 0.2784, green: 0.2549, blue: 0.3765)
+        /// #211D33
+        public static let inkOnViewport = SwiftUI.Color(red: 0.1294, green: 0.1137, blue: 0.2000)
+        /// #2E2030
+        public static let shadeAnchor = SwiftUI.Color(red: 0.1804, green: 0.1255, blue: 0.1882)
         /// #FFFFFF
         public static let specular = SwiftUI.Color(red: 1.0000, green: 1.0000, blue: 1.0000)
-        /// #22D3C6
-        public static let accent = SwiftUI.Color(red: 0.1333, green: 0.8275, blue: 0.7765)
-        /// #34D399
-        public static let good = SwiftUI.Color(red: 0.2039, green: 0.8275, blue: 0.6000)
-        /// #FBBF24
-        public static let warn = SwiftUI.Color(red: 0.9843, green: 0.7490, blue: 0.1412)
-        /// #F4436B
-        public static let bad = SwiftUI.Color(red: 0.9569, green: 0.2627, blue: 0.4196)
-        /// #FFB3C1
-        public static let stageCrisp = SwiftUI.Color(red: 1.0000, green: 0.7020, blue: 0.7569)
-        /// #E7A7BE
-        public static let stageFoggy = SwiftUI.Color(red: 0.9059, green: 0.6549, blue: 0.7451)
-        /// #FFC24D
-        public static let stageBuzzed = SwiftUI.Color(red: 1.0000, green: 0.7608, blue: 0.3020)
-        /// #B08A94
-        public static let stageMelting = SwiftUI.Color(red: 0.6902, green: 0.5412, blue: 0.5804)
-        /// #7A7391
-        public static let stageMush = SwiftUI.Color(red: 0.4784, green: 0.4510, blue: 0.5686)
-        /// #4FA8DF
-        public static let eyeIris = SwiftUI.Color(red: 0.3098, green: 0.6588, blue: 0.8745)
-        /// #1B5E93
-        public static let eyeIrisDeep = SwiftUI.Color(red: 0.1059, green: 0.3686, blue: 0.5765)
-        /// #0B1A2A
-        public static let eyePupil = SwiftUI.Color(red: 0.0431, green: 0.1020, blue: 0.1647)
+        /// #2A63D6
+        public static let accent = SwiftUI.Color(red: 0.1647, green: 0.3882, blue: 0.8392)
+        /// #173A82
+        public static let accentInk = SwiftUI.Color(red: 0.0902, green: 0.2275, blue: 0.5098)
+        /// #22B23E
+        public static let good = SwiftUI.Color(red: 0.1333, green: 0.6980, blue: 0.2431)
+        /// #0A4E1D
+        public static let goodInk = SwiftUI.Color(red: 0.0392, green: 0.3059, blue: 0.1137)
+        /// #E28C13
+        public static let warn = SwiftUI.Color(red: 0.8863, green: 0.5490, blue: 0.0745)
+        /// #5E3704
+        public static let warnInk = SwiftUI.Color(red: 0.3686, green: 0.2157, blue: 0.0157)
+        /// #E23A5E
+        public static let bad = SwiftUI.Color(red: 0.8863, green: 0.2275, blue: 0.3686)
+        /// #7E152C
+        public static let badInk = SwiftUI.Color(red: 0.4941, green: 0.0824, blue: 0.1725)
+        /// #F9BFA2
+        public static let stageCrisp = SwiftUI.Color(red: 0.9765, green: 0.7490, blue: 0.6353)
+        /// #EEAE99
+        public static let stageFoggy = SwiftUI.Color(red: 0.9333, green: 0.6824, blue: 0.6000)
+        /// #F0994F
+        public static let stageBuzzed = SwiftUI.Color(red: 0.9412, green: 0.6000, blue: 0.3098)
+        /// #C09189
+        public static let stageMelting = SwiftUI.Color(red: 0.7529, green: 0.5686, blue: 0.5373)
+        /// #9C8B92
+        public static let stageMush = SwiftUI.Color(red: 0.6118, green: 0.5451, blue: 0.5725)
+        /// #3E86C4
+        public static let eyeIris = SwiftUI.Color(red: 0.2431, green: 0.5255, blue: 0.7686)
+        /// #1B4D77
+        public static let eyeIrisDeep = SwiftUI.Color(red: 0.1059, green: 0.3020, blue: 0.4667)
+        /// #17131F
+        public static let eyePupil = SwiftUI.Color(red: 0.0902, green: 0.0745, blue: 0.1216)
     }
 
     // MARK: Radius - three values, and only three

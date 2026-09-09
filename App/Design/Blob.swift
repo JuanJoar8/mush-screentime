@@ -59,10 +59,10 @@ private struct Palette {
     let blush: Color
     /// Specular white.
     let shine: Color
-    /// Bounce off the ground, and the rim on the unlit side. Teal, from the app's accent —
-    /// a cool rim against a warm body is what separates the creature from the panel behind
-    /// it without adding an outline.
-    let rim: Color
+    /// Light bouncing off the floor onto the creature's underside. It is the *ground's*
+    /// own colour, which is what a bounce actually is — and it is what ties the creature to
+    /// the surface it stands on instead of floating above it.
+    let bounce: Color
     /// Lens glass.
     let glass: Color
     let tongue: Color
@@ -72,21 +72,27 @@ private struct Palette {
         base = tint
 
         // Warmed *before* it is darkened, at every level. Mixing a tint straight toward
-        // the deep ground desaturates it on the way: the amber stage came out olive and
+        // the shade anchor desaturates it on the way: the amber stage came out olive and
         // the grey stages came out dead. A touch of `bad` first keeps every shade a
         // deeper version of the body colour rather than a grey one.
+        //
+        // Toward `shadeAnchor`, **not** toward the ground. Darkening toward the background
+        // worked for exactly as long as the background was night: the flip to a light
+        // theme turned every one of these mixes into a *lightening* one, and the contour
+        // would have dissolved into the body with no test able to see it. An explicit
+        // shade anchor makes the derivation independent of the theme.
         let warm = tint.mix(with: Token.Color.bad, by: 0.20)
         lit = tint.mix(with: Token.Color.specular, by: 0.42)
         gyrus = tint.mix(with: Token.Color.specular, by: 0.13)
-        shade = warm.mix(with: Token.Color.groundDeep, by: 0.26)
-        deep = warm.mix(with: Token.Color.groundDeep, by: 0.50)
-        ink = warm.mix(with: Token.Color.groundDeep, by: 0.66)
+        shade = warm.mix(with: Token.Color.shadeAnchor, by: 0.22)
+        deep = warm.mix(with: Token.Color.shadeAnchor, by: 0.44)
+        ink = warm.mix(with: Token.Color.shadeAnchor, by: 0.62)
 
         blush = tint.mix(with: Token.Color.bad, by: 0.52)
         shine = Token.Color.specular
-        rim = Token.Color.accent
+        bounce = Token.Color.ground
         glass = Token.Color.eyeIris.mix(with: Token.Color.specular, by: 0.62)
-        tongue = Token.Color.bad.mix(with: Token.Color.groundDeep, by: 0.10)
+        tongue = Token.Color.bad.mix(with: Token.Color.shadeAnchor, by: 0.10)
     }
 }
 
@@ -101,46 +107,65 @@ private enum Reach {
     static let maxSag: CGFloat = 0.22
     /// Silhouette harmonics, at their peak: 1 + 0.048 + 0.018.
     static let lump: CGFloat = 1.066
-    /// Half the contour stroke, and half the rim-light stroke, whichever is wider.
+    /// Half the contour stroke.
     static let contour: CGFloat = 0.032
 
-    static let armSpan: CGFloat = 1.42      // wrist, in bodyW
-    static let finger: CGFloat = 0.11       // fingertip *centre*, in radius
-    /// Half the finger stroke: `limbWidth` is `radius * 0.052` and a digit is stroked at
-    /// 85% of it, round-capped. The cap puts ink that far past the tip.
+    static let armSpan: CGFloat = 1.18      // wrist, in bodyW
+    /// Half the limb stroke. `limbWidth` is `radius * 0.075` and the cap is round, so ink
+    /// reaches this far past the point the arithmetic places the wrist.
     ///
-    /// Latent rather than active — height binds the fit at every size the app actually
-    /// uses, so the extra 0.026 has never been the constraint. It is here because the
-    /// fit is written as a guarantee for any frame, and half a stroke width past a
-    /// hand-derived budget is precisely how the hands got clipped the last two times.
-    /// `scripts/check-fit.js` now measures what this claims.
-    static let limbCap: CGFloat = 0.026     // in radius
-    static let eyeOffset: CGFloat = 0.305   // in bodyW
-    static let lens: CGFloat = 0.345        // in radius
+    /// It exists because `Reach` is written as a guarantee for any frame, and half a
+    /// stroke width past a hand-derived budget is precisely how the hands got clipped the
+    /// last two times. `scripts/check-fit.js` measures what this claims.
+    static let limbCap: CGFloat = 0.0375    // in radius
+    static let eyeOffset: CGFloat = 0.285   // in bodyW
+    static let lens: CGFloat = 0.42         // in radius
     static let templeSpan: CGFloat = 2.06   // hook end, in lensR
-    static let hip: CGFloat = 0.80          // in bodyH
-    static let legLength: CGFloat = 0.58    // in radius, before sag shortens it
+    static let hip: CGFloat = 0.84          // in bodyH
+    static let legLength: CGFloat = 0.36    // in radius, before sag shortens it
     /// Centre offset, half height, *and* the blur that softens it. The shadow is the one
     /// blurred shape below the creature, and a blur radius is extra extent — the flat
     /// version had none to account for.
-    static let shadow: CGFloat = 0.28
+    static let shadow: CGFloat = 0.30
 
-    private static let widestBody: CGFloat = 1.30 + maxSpread
-    private static let tallestBody: CGFloat = 1.06
+    // Motifs sit *outside* the silhouette, so they have their own reach, and until now
+    // they had none — they were simply smaller than whatever slack the old proportions
+    // happened to leave. `scripts/check-fit.js` caught both the first time it ran against
+    // the new ones: the healing sparkle 0.1px from the top edge, the fallen drip 0.8px
+    // from the bottom. Neither was luck anybody had chosen.
+    //
+    // Both numbers come from the motif tables themselves. The bloom factor is 1.70, not
+    // the 1.15 the bloom ellipse is drawn at, because the bloom is *blurred*: a blur
+    // spreads a shape past its own edge, and a budget that only counts geometry is the
+    // same mistake as a shadow budget with no blur allowance.
+    static let sparkleSpan: CGFloat = 1.16        // widest star centre, in bodyW
+    static let sparkleTop: CGFloat = 1.06         // highest star centre, in bodyH
+    static let sparkleWide: CGFloat = 0.230       // 0.135 * 1.70, in radius
+    static let sparkleHigh: CGFloat = 0.128       // 0.075 * 1.70, in radius
+    static let dripTop: CGFloat = 0.70            // where a drip leaves the body, in bodyH
+    static let dripDrop: CGFloat = 0.680          // fallen droplet's lower edge, in radius
+
+    private static let widestBody: CGFloat = 1.38 + maxSpread
+    private static let tallestBody: CGFloat = 0.99
 
     static var halfWidth: CGFloat {
-        max(widestBody * armSpan + finger + limbCap,
+        max(max(widestBody * armSpan + limbCap,
+                widestBody * sparkleSpan + sparkleWide),
             max(widestBody * lump + contour,
                 widestBody * eyeOffset + lens * templeSpan))
     }
 
-    /// Crown. Measured with the *tallest* body, which is the unspread one.
-    static var above: CGFloat { tallestBody * lump + contour }
+    /// Crown, or the highest sparkle. Measured with the *tallest* body, the unspread one.
+    static var above: CGFloat {
+        max(tallestBody * lump + contour, tallestBody * sparkleTop + sparkleHigh)
+    }
 
-    /// Shadow's lower edge. Sag moves the whole creature down faster than it shortens
-    /// the legs, so the worst case is the most slumped stage.
+    /// Whichever reaches lowest — the cast shadow under the feet, or a drip that has
+    /// already fallen off the body. Sag moves the whole creature down faster than it
+    /// shortens the legs, so the worst case is the most slumped stage either way.
     static var below: CGFloat {
-        tallestBody * hip + (legLength - maxSag * 0.7) + shadow + maxSag
+        max(tallestBody * hip + (legLength - maxSag * 0.7) + shadow,
+            tallestBody * dripTop + dripDrop) + maxSag
     }
 }
 
@@ -233,8 +258,10 @@ struct BlobView: View {
         let tremor = p.jitter > 0 ? CGFloat(sin(time * 17)) * radius * p.jitter * 0.5 : 0
         let cy = size.height * 0.42 + radius * p.sag + breathe
 
-        let bodyW = radius * (1.30 + p.spread)
-        let bodyH = radius * (1.06 - p.spread * 0.30)
+        // Wider than tall, which is the single proportion that separates a brain from a
+        // ball. The face sits low in it, the way a small creature's does.
+        let bodyW = radius * (1.38 + p.spread)
+        let bodyH = radius * (0.99 - p.spread * 0.30)
         let center = CGPoint(x: cx + tremor, y: cy)
 
         // Level of detail. Below this the gyri collapse into a smudge, the two streaks on
@@ -249,7 +276,7 @@ struct BlobView: View {
         let detail = min(size.width, size.height) >= 64
 
         // Same arithmetic the legs use, so the shadow cannot drift away from the feet.
-        let groundY = center.y + bodyH * 0.80 + radius * (0.58 - p.sag * 0.7) + radius * 0.10
+        let groundY = center.y + bodyH * 0.84 + radius * (0.36 - p.sag * 0.7) + radius * 0.10
         drawShadow(&context, center: center, groundY: groundY, bodyW: bodyW,
                    radius: radius, detail: detail)
         drawLegs(&context, center: center, bodyH: bodyH, bodyW: bodyW, radius: radius, palette: palette)
@@ -278,46 +305,54 @@ struct BlobView: View {
     /// that says where the light is blocked, and a small dark core right under the feet
     /// that says the feet are actually touching.
     ///
+    /// **On a light ground this is the whole separation budget.** The dark theme had a cool
+    /// rim doing that job, and a rim needs something darker behind it to glow against; over
+    /// a near-white viewport there is nothing, so the rim was removed rather than left in
+    /// at an invisible weight. The rule was never "always a rim" — it was "the object
+    /// separates from its ground", and the means changes with the ground.
+    ///
     /// The pool is offset *away* from the light, like everything else in the drawing.
     private func drawShadow(
         _ context: inout GraphicsContext, center: CGPoint, groundY: CGFloat,
         bodyW: CGFloat, radius: CGFloat, detail: Bool
     ) {
-        let slump = 0.42 - Double(p.sag) * 0.5
+        let slump = 0.34 - Double(p.sag) * 0.4
         let offset = Light.awayX * radius * 0.10
 
         let pool = CGRect(
-            x: center.x - bodyW * 0.62 + offset, y: groundY - radius * 0.07,
-            width: bodyW * 1.24, height: radius * 0.15
+            x: center.x - bodyW * 0.66 + offset, y: groundY - radius * 0.09,
+            width: bodyW * 1.32, height: radius * 0.19
         )
         if detail {
             context.drawLayer { layer in
-                layer.addFilter(.blur(radius: radius * 0.075))
+                layer.addFilter(.blur(radius: radius * 0.095))
                 layer.fill(Path(ellipseIn: pool),
-                           with: .color(Token.Color.groundDeep.opacity(slump * 0.85)))
+                           with: .color(Token.Color.shadeAnchor.opacity(slump * 0.80)))
             }
         } else {
             context.fill(Path(ellipseIn: pool),
-                         with: .color(Token.Color.groundDeep.opacity(slump * 0.70)))
+                         with: .color(Token.Color.shadeAnchor.opacity(slump * 0.60)))
         }
 
         let contact = CGRect(
-            x: center.x - bodyW * 0.30 + offset * 0.5, y: groundY - radius * 0.035,
-            width: bodyW * 0.60, height: radius * 0.07
+            x: center.x - bodyW * 0.32 + offset * 0.5, y: groundY - radius * 0.040,
+            width: bodyW * 0.64, height: radius * 0.08
         )
         context.fill(Path(ellipseIn: contact),
-                     with: .color(Token.Color.groundDeep.opacity(slump)))
+                     with: .color(Token.Color.shadeAnchor.opacity(slump * 1.15)))
     }
 
     // MARK: Limbs
 
-    /// Spindly. The whole charm of the reference is a heavy body on wire limbs, and
-    /// thickening them to make them "readable" is exactly what kills it — so they stay
-    /// thin and gain their roundness from a lit edge instead of from weight.
+    /// Short and thick, and the round cap *is* the hand. Three fanned digits used to sit
+    /// on the end of each wrist so it would read as a hand rather than a pin, and at wire
+    /// thickness that was right. At this weight the cap already reads as a mitten, and
+    /// three lines coming off it read as a rake — so the digits are gone rather than kept
+    /// at a size that fights the limb they hang from.
     ///
-    /// Floored at 1.2pt because below about a point a stroke stops anti-aliasing into
+    /// Floored at 1.6pt because below about a point a stroke stops anti-aliasing into
     /// anything and the limbs vanish from the widget.
-    private func limbWidth(_ radius: CGFloat) -> CGFloat { max(radius * 0.052, 1.2) }
+    private func limbWidth(_ radius: CGFloat) -> CGFloat { max(radius * 0.075, 1.6) }
 
     private func stroke(
         _ context: inout GraphicsContext, _ path: Path, _ colour: Color, _ width: CGFloat
@@ -346,13 +381,13 @@ struct BlobView: View {
         _ context: inout GraphicsContext, center: CGPoint,
         bodyH: CGFloat, bodyW: CGFloat, radius: CGFloat, palette: Palette
     ) {
-        let hipY = center.y + bodyH * 0.80
-        let footY = hipY + radius * (0.58 - p.sag * 0.7)
+        let hipY = center.y + bodyH * 0.84
+        let footY = hipY + radius * (0.36 - p.sag * 0.7)
         let spread = bodyW * (0.30 + p.spread * 1.1)
         let width = limbWidth(radius)
 
         for side in [-1.0, 1.0] as [CGFloat] {
-            let x0 = center.x + side * bodyW * 0.18
+            let x0 = center.x + side * bodyW * 0.20
             let x1 = center.x + side * spread
 
             var leg = Path()
@@ -360,7 +395,7 @@ struct BlobView: View {
             leg.addLine(to: CGPoint(x: x1, y: footY))
             // The foot is a kink in the same line, not an object. Outward, so the stance
             // reads as planted rather than pigeon-toed.
-            leg.addLine(to: CGPoint(x: x1 + side * radius * 0.17, y: footY - radius * 0.015))
+            leg.addLine(to: CGPoint(x: x1 + side * radius * 0.13, y: footY - radius * 0.012))
             strokeLimb(&context, leg, palette, width)
         }
     }
@@ -379,12 +414,12 @@ struct BlobView: View {
             // or lowered, and it keeps the widest reach at drop zero, which is the number
             // `Reach.armSpan` is derived from.
             let elbow = CGPoint(
-                x: center.x + side * bodyW * (1.18 - abs(drop) * 0.08),
-                y: shoulder.y + radius * (0.02 + drop * 0.26)
+                x: center.x + side * bodyW * (1.02 - abs(drop) * 0.07),
+                y: shoulder.y + radius * (0.02 + drop * 0.18)
             )
             let wrist = CGPoint(
-                x: center.x + side * bodyW * (1.42 - abs(drop) * 0.16),
-                y: shoulder.y + radius * (0.22 + drop * 0.62 + sway)
+                x: center.x + side * bodyW * (1.18 - abs(drop) * 0.13),
+                y: shoulder.y + radius * (0.16 + drop * 0.44 + sway)
             )
 
             var arm = Path()
@@ -392,21 +427,6 @@ struct BlobView: View {
             arm.addLine(to: elbow)
             arm.addLine(to: wrist)
             strokeLimb(&context, arm, palette, width)
-
-            // Three fingers, fanned along the direction the forearm is already travelling.
-            // A dot on the end of a stick reads as a pin; three short strokes read as a
-            // hand, and cost four lines of maths.
-            let heading = atan2(Double(wrist.y - elbow.y), Double(wrist.x - elbow.x))
-            for finger in -1...1 {
-                let angle = heading + Double(finger) * 0.44
-                var digit = Path()
-                digit.move(to: wrist)
-                digit.addLine(to: CGPoint(
-                    x: wrist.x + CGFloat(cos(angle)) * radius * 0.11,
-                    y: wrist.y + CGFloat(sin(angle)) * radius * 0.11
-                ))
-                stroke(&context, digit, palette.ink, width * 0.85)
-            }
         }
     }
 
@@ -414,9 +434,9 @@ struct BlobView: View {
 
     /// How far the silhouette reaches at one angle, as a multiple of the body radii.
     ///
-    /// Factored out of `bodyPath` because the rim light needs the same curve: a rim drawn
-    /// on a plain ellipse while the body is lumpy separates from the edge and reads as a
-    /// halo, which is the classic tell of a glow bolted on afterwards.
+    /// Factored out of `bodyPath` so anything that has to follow the outline gets the
+    /// real one: a highlight or an edge drawn on a plain ellipse while the body is lumpy
+    /// separates from the contour and reads as a halo bolted on afterwards.
     private func lumpFactor(_ angle: Double) -> CGFloat {
         // Amplitude matters more than count, and it is amplitude *per degree of arc* that
         // decides whether a bump is a lobe or a cusp. Harmonic 6 at 0.072 swings the
@@ -499,13 +519,13 @@ struct BlobView: View {
                 center: lightPoint, startRadius: 0, endRadius: span * 1.62
             ))
 
-            // Bounce off the ground, in the app's accent. A warm body with a cool
-            // underside is how a real object separates from its background; an outline is
-            // how a sticker does it.
+            // Bounce off the floor, in the floor's own colour. A warm body picking up the
+            // cool lavender it stands on is what puts it *in* the room rather than on top
+            // of a picture of one.
             layer.fill(silhouette, with: .radialGradient(
                 Gradient(stops: [
-                    .init(color: palette.rim.opacity(0.10 + 0.14 * Double(p.sheen)), location: 0),
-                    .init(color: palette.rim.opacity(0), location: 1)
+                    .init(color: palette.bounce.opacity(0.14 + 0.16 * Double(p.sheen)), location: 0),
+                    .init(color: palette.bounce.opacity(0), location: 1)
                 ]),
                 center: CGPoint(x: center.x + bodyW * 0.12, y: center.y + bodyH * 0.92),
                 startRadius: 0, endRadius: bodyW * 0.95
@@ -528,42 +548,6 @@ struct BlobView: View {
             silhouette, with: .color(palette.ink),
             style: StrokeStyle(lineWidth: max(radius * 0.048, 1.2), lineJoin: .round)
         )
-        drawRimLight(&context, center: center, bodyW: bodyW, bodyH: bodyH,
-                     radius: radius, palette: palette)
-    }
-
-    /// A cool edge on the side away from the light, faded in and out along the arc.
-    ///
-    /// Drawn as twenty-eight short segments with their own alphas rather than one stroke,
-    /// because a rim of constant weight all the way round is a glow, and a glow is what
-    /// makes cheap 3D look cheap. It follows `lumpFactor`, so it sits *on* the contour
-    /// rather than beside it.
-    private func drawRimLight(
-        _ context: inout GraphicsContext, center: CGPoint,
-        bodyW: CGFloat, bodyH: CGFloat, radius: CGFloat, palette: Palette
-    ) {
-        let segments = 28
-        let from = -0.10, to = 1.30      // right, round through the bottom
-        let width = max(radius * 0.042, 1)
-        let peak = 0.30 + 0.34 * Double(p.sheen)
-
-        for segment in 0..<segments {
-            let t0 = Double(segment) / Double(segments)
-            let t1 = Double(segment + 1) / Double(segments)
-            let a0 = (from + (to - from) * t0) * .pi
-            let a1 = (from + (to - from) * t1) * .pi
-
-            var arc = Path()
-            arc.move(to: bodyPoint(a0, center: center, bodyW: bodyW, bodyH: bodyH))
-            arc.addLine(to: bodyPoint(a1, center: center, bodyW: bodyW, bodyH: bodyH))
-
-            // sin fade: zero at both ends of the arc, full in the middle.
-            let fade = sin((t0 + t1) / 2 * .pi)
-            context.stroke(
-                arc, with: .color(palette.rim.opacity(peak * fade)),
-                style: StrokeStyle(lineWidth: width, lineCap: .round)
-            )
-        }
     }
 
     /// One soft highlight where the light hits, and one small sharp one inside it.
@@ -643,9 +627,9 @@ struct BlobView: View {
         // glasses on it. This is the box the glasses and mouth actually occupy, so the
         // folds keep the crown above the brows and the flanks outside the frames — which
         // is also where a real brain shows them.
-        let eyeY = center.y + bodyH * 0.10
-        let faceHalfW = bodyW * 0.305 + radius * 0.345
-        let faceTop = eyeY - radius * (0.345 + 0.26)
+        let eyeY = center.y + bodyH * 0.16
+        let faceHalfW = bodyW * 0.285 + radius * 0.42
+        let faceTop = eyeY - radius * (0.42 + 0.26)
         func clearsFace(_ point: CGPoint) -> Bool {
             abs(point.x - center.x) > faceHalfW || point.y < faceTop
         }
@@ -894,12 +878,16 @@ struct BlobView: View {
 
             // A bloom under each star. Without it a hard white shape on a dark ground
             // reads as a cut-out; with it, it reads as something emitting.
+            // Green, not white. A white star on a near-white viewport is an invisible
+            // star, and the motif that says "the number went up" was the one thing that
+            // could not afford to disappear in the flip to a light theme. `good` is the
+            // same green the progress bar uses, so the reading is already learned.
             context.drawLayer { layer in
                 layer.addFilter(.blur(radius: r * 0.55))
                 layer.fill(
                     Path(ellipseIn: CGRect(x: sx - r * 1.15, y: sy - r * 1.15,
                                            width: r * 2.3, height: r * 2.3)),
-                    with: .color(Token.Color.specular.opacity(0.26))
+                    with: .color(Token.Color.good.opacity(0.30))
                 )
             }
 
@@ -918,7 +906,7 @@ struct BlobView: View {
                 )
             }
             star.closeSubpath()
-            context.fill(star, with: .color(Token.Color.specular.opacity(0.94)))
+            context.fill(star, with: .color(Token.Color.good))
         }
     }
 
@@ -965,13 +953,14 @@ struct BlobView: View {
         bodyW: CGFloat, bodyH: CGFloat, radius: CGFloat, palette: Palette,
         time: TimeInterval, detail: Bool
     ) {
-        // The face sits just below centre, the way the reference's does, and the lens is
-        // clearly larger than the eye it holds. At 0.375 against an eye of 0.205 the
-        // wide-eyed `buzzed` sclera pushed past the rim and the frames read as goggles.
-        let eyeY = center.y + bodyH * 0.10
-        let eyeX = bodyW * 0.305
-        let lensR = radius * 0.345
-        let rx = radius * 0.160
+        // Low in the body and close together, which is the proportion that makes a face
+        // read as small-and-young rather than as a face on a ball. The eye grew from
+        // 0.160 to 0.195 and the lens had to grow with it: at the old 0.345 the wide-eyed
+        // `buzzed` sclera pushes past the rim and the frames read as goggles.
+        let eyeY = center.y + bodyH * 0.16
+        let eyeX = bodyW * 0.285
+        let lensR = radius * 0.42
+        let rx = radius * 0.195
         let ry = rx * 1.04 * p.open
 
         // Blink. Cheap, and most of what makes something read as alive.
@@ -1358,8 +1347,8 @@ struct BlobView: View {
         // difference between those two is the difference this whole ladder is about.
         // `buzzed` stays on the plain frown at -0.18: it is tense, not sick.
         if p.mouth < -0.35 {
-            let mw = radius * 0.23
-            let amplitude = radius * 0.075
+            let mw = radius * 0.18
+            let amplitude = radius * 0.062
             let step = mw * 2 / 3
 
             var wave = Path()
@@ -1381,7 +1370,7 @@ struct BlobView: View {
         }
 
         guard p.mouth > 0.15 else {
-            let mw = radius * 0.21
+            let mw = radius * 0.16
             var line = Path()
             line.move(to: CGPoint(x: center.x - mw, y: my))
             line.addQuadCurve(
@@ -1395,8 +1384,11 @@ struct BlobView: View {
             return
         }
 
-        let mw = radius * (0.19 + 0.09 * p.mouth)
-        let depth = radius * (0.16 + 0.24 * p.mouth)
+        // Small. The face gained a lot of eye, and an open grin at the old width turned
+        // the whole head into a mouth. A small mouth under big eyes is the proportion that
+        // reads as a young creature rather than as a cartoon adult.
+        let mw = radius * (0.13 + 0.07 * p.mouth)
+        let depth = radius * (0.11 + 0.17 * p.mouth)
 
         var shape = Path()
         shape.move(to: CGPoint(x: center.x - mw, y: my))
@@ -1413,7 +1405,7 @@ struct BlobView: View {
         // A cavity, so it gets depth: near-black at the throat, lifting to the ink colour
         // at the lips. A flat fill here is a hole cut in the face.
         context.fill(shape, with: .radialGradient(
-            Gradient(colors: [palette.ink, palette.ink.mix(with: Token.Color.groundDeep, by: 0.55)]),
+            Gradient(colors: [palette.ink, palette.ink.mix(with: Token.Color.shadeAnchor, by: 0.55)]),
             center: CGPoint(x: center.x, y: my + depth * 0.55),
             startRadius: 0, endRadius: mw * 1.5
         ))

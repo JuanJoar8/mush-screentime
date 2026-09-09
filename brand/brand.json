@@ -1,7 +1,7 @@
 {
   "name": "Mush",
   "archetype": "jester",
-  "direction": "Objeto vivo suspendido en la noche. Fondo indigo profundo y una criatura que flota sobre su propia sombra dentro del unico rectangulo iluminado. El acabado de la criatura SI tiene volumen, pero el volumen sale de la ANATOMIA, no de un degradado: cada circunvolucion es una cresta con su surco debajo y su lomo iluminado, y los dos degradados globales solo dicen de donde viene la luz. Una sola direccion de luz para todo el dibujo -arriba a la izquierda- y un borde frio turquesa abajo a la derecha. Todo lo demas es panel mate sobre la noche.",
+  "direction": "Objeto vivo sobre una tarde clara. Lavanda desaturada de fondo, una banda casi blanca arriba donde la criatura flota sobre su propia sombra, y paneles translucidos abajo. La criatura tiene volumen, pero el volumen sale de la ANATOMIA, no de un degradado: cada circunvolucion es una cresta con su surco debajo y su lomo iluminado, y los dos degradados globales solo dicen de donde viene la luz. Una sola direccion de luz para todo el dibujo -arriba a la izquierda-. Sobre fondo claro la criatura NO se separa con una luz de borde sino con lo contrario: contorno propio, oclusion en el contacto y una sombra proyectada que de verdad la apoya.",
   "referencias": {
     "estilo": "Opal para el acabado (indigo nocturno, objeto heroico con glow y sombra propia). El modelado del personaje es de ilustracion editorial, no de render: la forma la describen el surco y el lomo de cada pliegue, no un material de motor 3D.",
     "caracter": "cerebro antropomorfico en gafas redondas de alambre, modelado: cuerpo con luz clave y oclusion, surcos como crestas de cuatro trazos, cristal con tinte y dos reflejos, ojos esfericos con anillo limbal, extremidades de alambre con canto iluminado y tres dedos, chapetas difusas y boca abierta con lengua. Dibujo propio, no calcado.",
@@ -21,8 +21,8 @@
     "visual_density": 3
   },
   "siete_ejes": {
-    "tema": "noche indigo con degradado; la luz la pone la criatura y su glow, no el fondo",
-    "fondo": "degradado indigo muy oscuro con un halo radial detras del personaje; paneles translucidos encima",
+    "tema": "tarde clara: lavanda desaturada (hue 254, sat 17%) como campo, banda casi blanca para el objeto heroico, y el unico color saturado en pantalla es el estado - el durazno de la criatura, el verde de la barra, el azul del boton central",
+    "fondo": "campo lavanda plano con la banda del viewport casi blanca arriba; sin degradado de hero-glow, porque un halo claro sobre fondo claro no es luz, es niebla - sobre claro el objeto se separa con sombra, no con brillo",
     "tipografia": "grotesca ancha y pesada para el numero y los titulares; sistema neutro para leer; mono solo para instrumentos y cifras",
     "hero": "objeto heroico al estilo Opal: la criatura flotando sobre su sombra, con la cifra de salud grande debajo",
     "seccion": "etiqueta de instrumento - versalita diminuta a la izquierda sobre filete de 1px, valor en mono a la derecha",
@@ -41,28 +41,33 @@
     "anterior": "dojo-ad fue Sage, vitrina blanca, Archivo Black, radio 0, rejilla densa (density 4). Mush es lo opuesto en cada eje: Jester, cajon oliva oscuro, radios blandos, density 2, y el acento no es fijo sino que lo dicta el modelo de datos."
   },
   "colors": {
-    "ground": "#140B2E",
-    "ground-deep": "#0C0620",
-    "panel": "#1E1240",
-    "panel-raised": "#2A1B55",
-    "line": "#3B2A70",
-    "viewport": "#241552",
-    "ink": "#F1ECFF",
-    "ink-dim": "#A093CC",
-    "ink-on-viewport": "#F1ECFF",
+    "ground": "#B9B3C9",
+    "ground-deep": "#8F88A6",
+    "panel": "#CBC6D8",
+    "panel-raised": "#DEDAE8",
+    "line": "#A29ABA",
+    "viewport": "#F1EFF4",
+    "ink": "#211D33",
+    "ink-dim": "#474160",
+    "ink-on-viewport": "#211D33",
+    "shade-anchor": "#2E2030",
     "specular": "#FFFFFF",
-    "accent": "#22D3C6",
-    "good": "#34D399",
-    "warn": "#FBBF24",
-    "bad": "#F4436B",
-    "stage-crisp": "#FFB3C1",
-    "stage-foggy": "#E7A7BE",
-    "stage-buzzed": "#FFC24D",
-    "stage-melting": "#B08A94",
-    "stage-mush": "#7A7391",
-    "eye-iris": "#4FA8DF",
-    "eye-iris-deep": "#1B5E93",
-    "eye-pupil": "#0B1A2A"
+    "accent": "#2A63D6",
+    "accent-ink": "#173A82",
+    "good": "#22B23E",
+    "good-ink": "#0A4E1D",
+    "warn": "#E28C13",
+    "warn-ink": "#5E3704",
+    "bad": "#E23A5E",
+    "bad-ink": "#7E152C",
+    "stage-crisp": "#F9BFA2",
+    "stage-foggy": "#EEAE99",
+    "stage-buzzed": "#F0994F",
+    "stage-melting": "#C09189",
+    "stage-mush": "#9C8B92",
+    "eye-iris": "#3E86C4",
+    "eye-iris-deep": "#1B4D77",
+    "eye-pupil": "#17131F"
   },
   "typography": {
     "display": "Bricolage Grotesque",
@@ -101,11 +106,11 @@
     "receipt-row": "Fila de recibo: razon a la izquierda en texto normal, valor con signo a la derecha en mono. Es la pantalla que hace creible el numero, no una vista de debug.",
     "blob": "Ilustracion propia dibujada en Canvas, sin assets. MODELADO, no plano y no 3D de stock: relleno solido del color de etapa, luego dos degradados radiales desde el punto de luz -clave y oclusion- que lo vuelven una esfera antes de dibujar un solo pliegue, y encima las crestas que lo vuelven un cerebro. Contorno fino (radius*0.048): con la forma ya descrita, un contorno pesado lo devuelve a pegatina recortada de un render. Once tintes, todos mezclados desde el token de etapa -se calienta hacia bad ANTES de oscurecer hacia ground-deep, porque mezclar directo al fondo desatura y la etapa ambar salia oliva-. Prohibido: volumen por degradado sobre un huevo liso, que es la version que ya se mato una vez.",
     "provenance-chip": "Todo dato que venga del report de Apple lleva un chip diminuto. Es obligatorio: son las unicas cifras cuya derivacion no podemos explicar.",
-    "focus": "Contorno de 2px en el color de estado con 2px de separacion. Visible siempre.",
+    "focus": "Contorno de 2px en `accent` con 2px de separacion. Visible siempre. Sobre tema claro el azul da 5,45:1 contra blanco y 2,7:1 contra el campo, suficiente como componente.",
     "specular": "Blanco puro. Dos brillos, no uno: uno ancho y difuminado que dice que la superficie es curva, y uno pequeno y apretado dentro que dice que esta humeda -`gloss` aprieta el segundo, `sheen` lleva los dos-. Sin alpha SOLO en tres sitios de la cara -esclerotica, punto de luz de la pupila y el diente-, donde un blanco translucido se ensuciaria con el color del cuerpo que tiene debajo.",
     "eyes": "El ojo es una esfera y el iris es un plato, no dos discos. Esclerotica con degradado radial hacia el lado de la luz; iris con degradado del claro al fondo mas el anillo limbal, que es la mitad de por que un ojo se lee como un ojo a tamano pequeno; pupila plana; rebote del iris al lado OPUESTO al punto de luz -la luz que atraveso y volvio a salir-; y sombra de la ceja dentro de la esclerotica, invisible hasta que falta. Es el unico azul del sistema y existe solo en la cara del personaje.",
     "glasses": "Gafas redondas de alambre, y ahora un objeto de verdad: sombra del marco proyectada sobre el cerebro que tiene detras -lo unico que las pone DELANTE de la cara en vez de en su mismo plano-, tinte de cristal, canto superior iluminado en el aro, y dos rayas paralelas de reflejo: una raya sola se lee como un aranazo, dos paralelas se leen como cristal en cualquier medio. Se dibujan ENCIMA de los ojos y DEBAJO de las cejas. Son el elemento firma: si hay que sacrificar detalle por tamano, se sacrifican los reflejos, nunca el aro.",
-    "hero-glow": "Halo radial detras de la criatura, dentro del viewport, en su propio color de etapa: 30% de alpha en el centro, 0 en el borde. Es la unica orilla blanda del sistema, y por eso se lee como luz ambiente y no como un objeto desenfocado.",
+    "hero-glow": "RETIRADO en tema claro. Un halo radial del color de etapa detras de la criatura leia como luz ambiente sobre noche indigo; sobre una banda casi blanca lee como una mancha. Lo que separa a la criatura de un fondo claro es la sombra proyectada y su propio contorno, no un resplandor.",
     "fold-density": "LA senal principal, no textura, y tiene dos mitades. La del CONTEO: los surcos por lado bajan 16/12/9/4/2 de crisp a mush, porque un cerebro que pierde sus circunvoluciones es la metafora que internet ya usa ('smooth brain'). La del MATERIAL: `turgor` baja de 1.00 a 0.22, asi que los que quedan tampoco sobresalen. Dieciseis pliegues aplastados se verian tan mal como dos pliegues erguidos. Por eso el umbral de nivel de detalle es 64 y no 96 - una miniatura sin surcos son cinco bultos identicos en cinco colores. Los surcos se excluyen de la CAJA de la cara (no de una elipse: una elipse de 0.95 radios cubria el 94% del cuerpo y dejaba tres lineas en toda la criatura).",
     "motifs": "Props dibujados que estan o no estan, y son lo que hace una etapa IDENTIFICABLE en vez de solo mas oscura. Parten la escalera en dos: sparkle (destellos de cuatro puntas) solo en healing; drip y crack solo en rot; buzzed lleva el par que dice sobreestimulado y no danado, espiral hipnotica y gota de sudor. Reglas de dibujo: los goteos van ANTES del cuerpo para que los pinte encima y no quede costura, llevan perla en la punta y una gota ya caida suelta - una forma colgando de un cuerpo es ambigua, una debajo no. Las grietas se desvian y cortan donde un pliegue curva y cierra, y corren hacia el borde, nunca hacia la cara.",
     "pose": "Ningun estado da el mismo numero a los dos brazos. La simetria es lo unico que hace que una figura dibujada parezca apagada. Los terminos horizontales usan |altura|: un brazo se escorza igual al subir que al bajar, y asi el alcance maximo queda en altura cero, que es el numero del que se deriva el encuadre.",
@@ -113,7 +118,10 @@
     "light": "UNA sola direccion de luz para todo el dibujo: (-0.62, -0.78), arriba a la izquierda. La usan la luz clave del cuerpo, el surco que cada cresta proyecta, el canto brillante de la montura, la sombra que tira el marco sobre la cara y la sombra del suelo. Un brillo arriba a la izquierda con una sombra que cae tambien arriba a la izquierda es la senal de que nada se modelo de verdad: es la regla que hace que el resto valga.",
     "gyrus": "Un surco NO es una linea, es una cresta. Cuatro trazos sobre la misma curva, todos desplazados a lo largo del vector de luz: surco ancho y oscuro empujado en contra de la luz -la sombra que la cresta tira en el pliegue de al lado-, cuerpo de la cresta apenas mas claro que la superficie, lomo fino iluminado empujado hacia la luz, y un punto especular que SOLO dispara en las crestas cercanas a la luz. Esa ultima condicion es lo que agrupa los brillos arriba a la izquierda; repartidos por igual son purpurina.",
     "material": "Dos parametros hacen que una etapa sea una CONDICION y no un humor. `turgor` es cuanto sobresale un pliegue (1.00 crisp -> 0.22 mush) y escala todos los desplazamientos: en mush los pliegues siguen ahi y simplemente dejaron de levantarse. `gloss` es lo apretado del brillo, y NO es monotono a proposito: buzzed (0.78) brilla mas que foggy (0.46), que esta un peldano por encima, porque sobreestimulado no es apagado. Si alguien 'arregla' esa no-monotonia, las cinco etapas vuelven a ser cinco posiciones de un mismo dimmer.",
-    "rim-light": "Borde frio en el lado contrario a la luz, en el acento turquesa de la app: veintiocho segmentos cortos con su propio alpha, no un trazo, y siguiendo la misma funcion de bultos que el contorno. Un borde de peso constante alrededor de todo el perimetro es un glow, y un glow es lo que hace que el 3D barato parezca barato. Cuerpo calido con bajo frio es como un objeto real se separa del panel; un outline es como lo hace una pegatina."
+    "rim-light": "Solo en superficies oscuras. Sobre el viewport claro el borde frio desaparece -no hay nada mas oscuro detras contra lo que brillar- asi que su peso baja a cero y el trabajo de separar lo hace `contact-shadow`. La regla no es 'siempre borde': es 'el objeto se separa del fondo', y el medio cambia con el fondo.",
+    "contact-shadow": "Dos formas, no una. Una poza ancha y difusa desplazada en contra de la luz, que dice donde se bloquea; y un nucleo pequeno y oscuro justo bajo los pies, que dice que los pies tocan. Sobre fondo claro esta es la pieza que hace que la criatura este apoyada y no pegada, y por eso sube de peso cuando el rim baja.",
+    "shade-anchor": "Todo lo que oscurece apunta a `shade-anchor`, nunca al fondo. Mezclar hacia el fondo funciona solo mientras el fondo sea oscuro: al girar a tema claro esa misma mezcla ACLARA, y el contorno del personaje se habria borrado sin que ningun test lo notara. Un ancla de sombra explicita hace la derivacion independiente del tema.",
+    "semantic-ink": "Cada semantica tiene dos roles: el relleno saturado (`good`, `warn`, `bad`, `accent`) y la version legible como TEXTO (`*-ink`). Los -ink se dimensionan contra `ground`, que es la superficie mas OSCURA de las cuatro y por tanto el peor caso para texto oscuro - medirlos contra `panel` da un falso aprobado, y asi entraron los cuatro con 3,1-3,8:1. Todos pasan ahora >=4,8:1 sobre ground."
   },
   "anti_slop": {
     "forbidden_patterns": [
@@ -132,7 +140,10 @@
       "Sacar el volumen de un degradado radial sobre una silueta lisa. Eso es un huevo pintado; el volumen sale de las crestas, y los degradados solo dicen donde esta la luz.",
       "Repartir los brillos por igual sobre el cuerpo. Se agrupan donde pega la luz o son purpurina.",
       "Un borde luminoso de peso constante alrededor de todo el contorno. Eso es un glow, no una luz de borde, y es el tell del 3D barato.",
-      "Dejar que gloss baje de forma limpia de crisp a mush. Buzzed brilla mas que foggy a proposito: si la escalera se ordena, vuelve a ser un dimmer."
+      "Dejar que gloss baje de forma limpia de crisp a mush. Buzzed brilla mas que foggy a proposito: si la escalera se ordena, vuelve a ser un dimmer.",
+      "Oscurecer mezclando hacia el color de fondo. Vale solo mientras el fondo sea oscuro; en claro aclara. Se oscurece hacia `shade-anchor`.",
+      "Usar el mismo verde/ambar/rojo para un relleno y para texto sobre fondo claro. El relleno saturado da 1,7:1 como texto: hay un rol -ink por cada semantica.",
+      "Poner un halo claro detras del objeto sobre un fondo claro. Eso no es luz ambiente, es niebla; sobre claro se separa con sombra."
     ]
   },
   "validation": {
