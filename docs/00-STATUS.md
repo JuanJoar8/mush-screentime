@@ -250,8 +250,33 @@ a two-pass sum of squared deviations, which cannot go negative. And the verdict 
 `sigma >= threshold` rather than `sigma < threshold`, so a screen passes only by clearing
 the bar — never by failing to fall below it. Anything non-finite is reported and fails.
 
-**Brain, Gallery and Setup render nothing, and that is still true.** The guard was hiding
-it, not causing it; fixing the guard turns CI red honestly. That is the next thing to fix.
+**And the same bug was breaking the retry loop, which is what actually blanked the
+screenshots.** The capture step takes a shot, asks the guard whether it rendered, and
+retries up to five times if not — the whole point being that a screen drawing five
+creatures may not have presented a frame in three seconds. `notblank` exits 0 for NaN, so
+the loop *broke on the first attempt* for exactly the screens that needed the retry, kept
+the blank shot, and printed `rendered after 3s`.
+
+So one arithmetic error did two things: it disabled the retries that exist for slow first
+frames, and then waved through the blank frames that resulted.
+
+**All seven screens render now**, and it is reproducible rather than lucky — two
+consecutive runs of `c7e4b33` produced identical measurements to the decimal:
+
+| screen | sigma | | screen | sigma |
+|---|---|---|---|---|
+| home | 31.39 | | brain | **16.22** |
+| blocks | 26.02 | | gallery | **33.26** |
+| stats | 18.18 | | setup | **17.50** |
+| cleanfeed | 52.94 (after 6s, on the second attempt) | | | |
+
+The three in bold had been shipping black since at least 2026-09-08. Nothing was wrong
+with `BrainView`, `StageGalleryView` or `PathBSetupView`: they were slow to present, which
+is the case the retry loop was written for and the case the guard's NaN had removed.
+
+`cleanfeed` still needs a second attempt every run. That one is real: it compiles a
+`WKContentRuleList` before it can draw. It is not a bug, but it is the reason the retry
+loop must keep working.
 
 
 `check-fit.js` is new on 2026-09-08 and it is the **third** guard against one bug. The
