@@ -224,6 +224,7 @@ not a commit; it is one of those two things.
 | `check-console.js` | a host page's script runs, all five stages draw, gradients and curves are present. Takes a path, so it covers `console.html` **and** `app.html` | whether the result looks like a brain |
 | `check-fit.js` | **the bounding box of everything drawn, against the canvas**, for all five stages | anything inside a `clip()`, by design — the clip path is what bounds those, and it is measured |
 | `check-folds.js` | **how many folds each stage actually draws**, against the number its table declares | whether a drawn fold is in a sensible place — only that it exists |
+| `check-palette.py` | **that the palette measures what brand.json claims** — every `-ink` role at AA against the darkest surface, every saturated fill unreadable as text and readable as a graphical object, no two stage tints within dE 15, and the two things the ladder has to say about chroma and hue | whether the result is *nice*. It says the colours are distinguishable and legible, not that they are good |
 | `check-workflow.py` | the CI YAML parses and its steps are shaped right | whether the steps assert anything |
 | `screen-not-blank.swift` | pixel variance in a screenshot, cropping the status bar and home indicator | a crash: the springboard has high variance too, hence the separate crash-report gate |
 
@@ -383,3 +384,81 @@ python -m http.server 8817 --bind 127.0.0.1
    research it, then add it to that table with a source.
 4. No hardcoded colours, radii, fonts or durations in views — tokens only, per
    `brand/brand.json`.
+
+## The room was a grey with a rumour of violet
+
+Asked on 2026-09-09 to make the purple look more like Opal's, and to make the creature's
+colours belong to the interface around it. Both halves turned out to be the same problem
+measured two ways.
+
+**The purple was never a purple.** `ground` was `#B9B3C9` — hue 254, but saturation 17%,
+which in Lab is a chroma of 12. Opal's identity is chroma: a violet you can name from
+across the room. The whole surface ramp now carries hue 253–258 at 27–44% saturation, and
+the accent moved off the blue `#2A63D6` onto the brand violet `#5931ED` (hue 253, sat
+84%, chroma 108). That last move settled an old inconsistency for free: `brand.json` had
+been claiming for weeks that the iris is "the only blue in the system" while a blue button
+sat in the middle of the home screen. It is true now.
+
+That accent is a deliberate, recorded violation of the standing rule against hue 235–285.
+The user asked for it by name, twice. `anti-slop-gate.sh` still reports it — two findings,
+`accent` and `accent-ink` — and this is **not** declared a clean pass. It is declared *two
+findings, accepted*, which is the only honest way to carry an exception.
+
+**The creature's colours now say something.** The old ladder drifted from peach to a
+neutral brown-grey, which against a violet field read as dirt. It travels somewhere now:
+
+| stage | tint | chroma | hue | gap to the room's hue |
+|---|---|---|---|---|
+| crisp | `#F9A676` | 45.2 | 55° | 114° |
+| foggy | `#D6A295` | 22.5 | 39° | 98° |
+| buzzed | `#FB8823` | 77.3 | 61° | 119° |
+| melting | `#AC7277` | 24.5 | 16° | 74° |
+| mush | `#7D738C` | 15.2 | 306° | **5°** |
+
+`crisp` owns the most chroma of the walk and sits 114° off the background: it has a colour
+of its own, and that is what *superior* looks like optically — not brightness, ownership.
+`mush` owns the least chroma of anything on the ladder and its hue has rotated to within
+5° of `ground`. It is not merely darker; it has stopped being a colour and become a shade
+of the room it is dissolving into. `buzzed` stands outside the walk and out-chromas even
+`crisp`, exactly as `gloss` and `turgor` already break their ladders on purpose.
+
+Everything downstream of the tint followed for free, which is the entire point of the
+token chain: `bounce` is `ground`, so the light coming off the floor onto the creature's
+underside is now visibly violet, and `shade-anchor` went from a muddy `#2E2030` to
+`#1B0F29`, so every shadow on the body tints violet instead of brown.
+
+### The measurement is the deliverable, not the swatches
+
+Three of the values above are the third or fourth attempt, and **every correction came
+from the guard, not from looking at it**:
+
+- `warn` shipped its first run at 2.73:1 against the card. A progress bar whose fill you
+  cannot see against the card behind it is not conveying the number it encodes. Darkened
+  until it cleared 3:1.
+- `good-ink` and `warn-ink` were both under AA against `ground`. They were being checked
+  against `panel`, which is lighter, and that is the same false pass that let four `-ink`
+  roles ship at 3.1–3.8:1 once before.
+- Six places set `--color-good` or `--color-bad` as a **text** colour — 2.0:1 and 2.4:1
+  on the field. `brand.json` has forbidden precisely that since the light-theme flip, in
+  writing, and nothing was enforcing it. They use the `-ink` roles now.
+- `viewport` was being borrowed as ink on saturated fills. At `#F1EFF4` that was merely
+  sloppy; at a violet-tinted `#EBE8F8` on a coloured pill it reads washed out, and
+  `impeccable` flags it as `gray-on-color`. There is an `on-fill` token now, because
+  `viewport` is the name of a *surface* and using it as ink asked a colour to play a role
+  its name does not describe.
+
+The first version of `check-palette.py` also had to be corrected — by its own output. It
+demanded the ladder order monotonically by luminance, which failed on `buzzed`, which is
+the one thing `brand.json` says must never be flattened. **The criterion was wrong, not
+the data**, and it was rewritten to measure chroma and hue rotation instead. That is the
+second time on this project that a check and a table disagreed and the table was right.
+
+Verified to fail at exit 2 on four separate regressions: the old tinted grey restored,
+`mush` given back a chroma that stops it dissolving, `buzzed` flattened into the ladder,
+and the old raw green put back.
+
+`impeccable` is clean on `host/app.html` and `host/mockup.html`. `host/console.html`
+still reports one `nested-cards` — it was there on `HEAD` before this change, it is the
+review console's structure rather than its palette, and it is left alone deliberately
+rather than swept into a colour commit.
+

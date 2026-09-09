@@ -1,9 +1,9 @@
 {
   "name": "Mush",
   "archetype": "jester",
-  "direction": "Objeto vivo sobre una tarde clara. Lavanda desaturada de fondo, una banda casi blanca arriba donde la criatura flota sobre su propia sombra, y paneles translucidos abajo. La criatura tiene volumen, pero el volumen sale de la ANATOMIA, no de un degradado: cada circunvolucion es una cresta con su surco debajo y su lomo iluminado, y los dos degradados globales solo dicen de donde viene la luz. Una sola direccion de luz para todo el dibujo -arriba a la izquierda-. Sobre fondo claro la criatura NO se separa con una luz de borde sino con lo contrario: contorno propio, oclusion en el contacto y una sombra proyectada que de verdad la apoya.",
+  "direction": "Objeto vivo sobre una tarde violeta. El campo es lavanda con croma de verdad -no gris tenido-, una banda mas clara arriba donde la criatura flota sobre su propia sombra, y paneles translucidos abajo. La criatura tiene volumen, pero el volumen sale de la ANATOMIA, no de un degradado: cada circunvolucion es una cresta con su surco debajo y su lomo iluminado, y los dos degradados globales solo dicen de donde viene la luz. Una sola direccion de luz para todo el dibujo -arriba a la izquierda-. Sobre fondo claro la criatura NO se separa con una luz de borde sino con lo contrario: contorno propio, oclusion en el contacto y una sombra proyectada que de verdad la apoya. Y se separa tambien por el COLOR: la criatura viva es lo unico calido en una habitacion violeta.",
   "referencias": {
-    "estilo": "Opal para el acabado (indigo nocturno, objeto heroico con glow y sombra propia). El modelado del personaje es de ilustracion editorial, no de render: la forma la describen el surco y el lomo de cada pliegue, no un material de motor 3D.",
+    "estilo": "Opal para el acabado y para el color: violeta de marca saturado (hue 253, sat 84%) como acento y toda la escala de superficies teñida de ese mismo violeta, no gris neutro. El modelado del personaje es de ilustracion editorial, no de render: la forma la describen el surco y el lomo de cada pliegue, no un material de motor 3D.",
     "caracter": "cerebro antropomorfico en gafas redondas de alambre, modelado: cuerpo con luz clave y oclusion, surcos como crestas de cuatro trazos, cristal con tinte y dos reflejos, ojos esfericos con anillo limbal, extremidades de alambre con canto iluminado y tres dedos, chapetas difusas y boca abierta con lengua. Dibujo propio, no calcado.",
     "no_es": "no es un panel de bienestar plano; no es una mascota de productividad con lanyard; y ya no es un render 3D con gradientes, guantes y zapatos - eso se probo y se leia como stock."
   },
@@ -21,7 +21,7 @@
     "visual_density": 3
   },
   "siete_ejes": {
-    "tema": "tarde clara: lavanda desaturada (hue 254, sat 17%) como campo, banda casi blanca para el objeto heroico, y el unico color saturado en pantalla es el estado - el durazno de la criatura, el verde de la barra, el azul del boton central",
+    "tema": "tarde violeta: lavanda con croma real (hue 255, sat 32%) como campo, banda mas clara para el objeto heroico, y el violeta de Opal (hue 253, sat 84%) como acento de marca. El unico azul que queda en todo el sistema es el iris del personaje - antes el boton central se lo disputaba. Lo demas saturado es estado: el coral de la criatura, el verde de la barra",
     "fondo": "campo lavanda plano con la banda del viewport casi blanca arriba; sin degradado de hero-glow, porque un halo claro sobre fondo claro no es luz, es niebla - sobre claro el objeto se separa con sombra, no con brillo",
     "tipografia": "grotesca ancha y pesada para el numero y los titulares; sistema neutro para leer; mono solo para instrumentos y cifras",
     "hero": "objeto heroico al estilo Opal: la criatura flotando sobre su sombra, con la cifra de salud grande debajo",
@@ -41,35 +41,36 @@
     "anterior": "dojo-ad fue Sage, vitrina blanca, Archivo Black, radio 0, rejilla densa (density 4). Mush es lo opuesto en cada eje: Jester, cajon oliva oscuro, radios blandos, density 2, y el acento no es fijo sino que lo dicta el modelo de datos."
   },
   "colors": {
-    "ground": "#B9B3C9",
-    "ground-deep": "#8F88A6",
-    "panel": "#CBC6D8",
-    "panel-raised": "#DEDAE8",
-    "line": "#A29ABA",
-    "viewport": "#F1EFF4",
-    "ink": "#211D33",
-    "ink-dim": "#474160",
-    "ink-on-viewport": "#211D33",
-    "shade-anchor": "#2E2030",
+    "ground": "#B8AED5",
+    "ground-deep": "#7D6AAF",
+    "panel": "#CBC4E3",
+    "panel-raised": "#DCD7EF",
+    "line": "#9D91C0",
+    "viewport": "#EBE8F8",
+    "ink": "#19122B",
+    "ink-dim": "#463B63",
+    "ink-on-viewport": "#19122B",
+    "shade-anchor": "#1B0F29",
     "specular": "#FFFFFF",
+    "on-fill": "#FFFFFF",
     "subsurface": "#FF5A38",
-    "necrotic": "#616B52",
-    "accent": "#2A63D6",
-    "accent-ink": "#173A82",
-    "good": "#22B23E",
-    "good-ink": "#0A4E1D",
-    "warn": "#E28C13",
-    "warn-ink": "#5E3704",
-    "bad": "#E23A5E",
-    "bad-ink": "#7E152C",
-    "stage-crisp": "#F9BFA2",
-    "stage-foggy": "#EEAE99",
-    "stage-buzzed": "#F0994F",
-    "stage-melting": "#C09189",
-    "stage-mush": "#9C8B92",
+    "necrotic": "#566647",
+    "accent": "#5931ED",
+    "accent-ink": "#3D19A9",
+    "good": "#1B8D54",
+    "good-ink": "#0A4C2E",
+    "warn": "#BF7008",
+    "warn-ink": "#623304",
+    "bad": "#D52050",
+    "bad-ink": "#821230",
+    "stage-crisp": "#F9A676",
+    "stage-foggy": "#D6A295",
+    "stage-buzzed": "#FB8823",
+    "stage-melting": "#AC7277",
+    "stage-mush": "#7D738C",
     "eye-iris": "#3E86C4",
     "eye-iris-deep": "#1B4D77",
-    "eye-pupil": "#17131F"
+    "eye-pupil": "#15111D"
   },
   "typography": {
     "display": "Bricolage Grotesque",
@@ -108,9 +109,9 @@
     "receipt-row": "Fila de recibo: razon a la izquierda en texto normal, valor con signo a la derecha en mono. Es la pantalla que hace creible el numero, no una vista de debug.",
     "blob": "Ilustracion propia dibujada en Canvas, sin assets. MODELADO, no plano y no 3D de stock: relleno solido del color de etapa, luego dos degradados radiales desde el punto de luz -clave y oclusion- que lo vuelven una esfera antes de dibujar un solo pliegue, y encima las crestas que lo vuelven un cerebro. Contorno fino (radius*0.048): con la forma ya descrita, un contorno pesado lo devuelve a pegatina recortada de un render. Once tintes, todos mezclados desde el token de etapa -se calienta hacia bad ANTES de oscurecer hacia ground-deep, porque mezclar directo al fondo desatura y la etapa ambar salia oliva-. Prohibido: volumen por degradado sobre un huevo liso, que es la version que ya se mato una vez.",
     "provenance-chip": "Todo dato que venga del report de Apple lleva un chip diminuto. Es obligatorio: son las unicas cifras cuya derivacion no podemos explicar.",
-    "focus": "Contorno de 2px en `accent` con 2px de separacion. Visible siempre. Sobre tema claro el azul da 5,45:1 contra blanco y 2,7:1 contra el campo, suficiente como componente.",
+    "focus": "Contorno de 2px en `accent` con 2px de separacion. Visible siempre. El acento es el violeta de Opal: 5,65:1 contra el viewport y 3,26:1 contra el campo, suficiente como componente no textual en las dos superficies.",
     "specular": "Blanco puro. Dos brillos, no uno: uno ancho y difuminado que dice que la superficie es curva, y uno pequeno y apretado dentro que dice que esta humeda -`gloss` aprieta el segundo, `sheen` lleva los dos-. Sin alpha SOLO en tres sitios de la cara -esclerotica, punto de luz de la pupila y el diente-, donde un blanco translucido se ensuciaria con el color del cuerpo que tiene debajo.",
-    "eyes": "El ojo es una esfera y el iris es un plato, no dos discos. Esclerotica con degradado radial hacia el lado de la luz; iris con degradado del claro al fondo mas el anillo limbal, que es la mitad de por que un ojo se lee como un ojo a tamano pequeno; pupila plana; rebote del iris al lado OPUESTO al punto de luz -la luz que atraveso y volvio a salir-; y sombra de la ceja dentro de la esclerotica, invisible hasta que falta. Es el unico azul del sistema y existe solo en la cara del personaje.",
+    "eyes": "El ojo es una esfera y el iris es un plato, no dos discos. Esclerotica con degradado radial hacia el lado de la luz; iris con degradado del claro al fondo mas el anillo limbal, que es la mitad de por que un ojo se lee como un ojo a tamano pequeno; pupila plana; rebote del iris al lado OPUESTO al punto de luz -la luz que atraveso y volvio a salir-; y sombra de la ceja dentro de la esclerotica, invisible hasta que falta. Es el unico azul del sistema y existe solo en la cara del personaje - y desde que el acento paso de azul a violeta eso es literalmente cierto, no una aspiracion.",
     "glasses": "Gafas redondas de alambre, y ahora un objeto de verdad: sombra del marco proyectada sobre el cerebro que tiene detras -lo unico que las pone DELANTE de la cara en vez de en su mismo plano-, tinte de cristal, canto superior iluminado en el aro, y dos rayas paralelas de reflejo: una raya sola se lee como un aranazo, dos paralelas se leen como cristal en cualquier medio. Se dibujan ENCIMA de los ojos y DEBAJO de las cejas. Son el elemento firma: si hay que sacrificar detalle por tamano, se sacrifican los reflejos, nunca el aro.",
     "hero-glow": "RETIRADO en tema claro. Un halo radial del color de etapa detras de la criatura leia como luz ambiente sobre noche indigo; sobre una banda casi blanca lee como una mancha. Lo que separa a la criatura de un fondo claro es la sombra proyectada y su propio contorno, no un resplandor.",
     "fold-density": "LA senal principal, no textura, y tiene dos mitades. La del CONTEO: los surcos por lado bajan 16/12/9/4/2 de crisp a mush, porque un cerebro que pierde sus circunvoluciones es la metafora que internet ya usa ('smooth brain'). La del MATERIAL: `turgor` baja de 1.00 a 0.22, asi que los que quedan tampoco sobresalen. Dieciseis pliegues aplastados se verian tan mal como dos pliegues erguidos. Por eso el umbral de nivel de detalle es 64 y no 96 - una miniatura sin surcos son cinco bultos identicos en cinco colores. Los surcos se excluyen de la CAJA de la cara (no de una elipse: una elipse de 0.95 radios cubria el 94% del cuerpo y dejaba tres lineas en toda la criatura).",
@@ -123,7 +124,9 @@
     "rim-light": "Solo en superficies oscuras. Sobre el viewport claro el borde frio desaparece -no hay nada mas oscuro detras contra lo que brillar- asi que su peso baja a cero y el trabajo de separar lo hace `contact-shadow`. La regla no es 'siempre borde': es 'el objeto se separa del fondo', y el medio cambia con el fondo.",
     "contact-shadow": "Dos formas, no una. Una poza ancha y difusa desplazada en contra de la luz, que dice donde se bloquea; y un nucleo pequeno y oscuro justo bajo los pies, que dice que los pies tocan. Sobre fondo claro esta es la pieza que hace que la criatura este apoyada y no pegada, y por eso sube de peso cuando el rim baja.",
     "shade-anchor": "Todo lo que oscurece apunta a `shade-anchor`, nunca al fondo. Mezclar hacia el fondo funciona solo mientras el fondo sea oscuro: al girar a tema claro esa misma mezcla ACLARA, y el contorno del personaje se habria borrado sin que ningun test lo notara. Un ancla de sombra explicita hace la derivacion independiente del tema.",
-    "semantic-ink": "Cada semantica tiene dos roles: el relleno saturado (`good`, `warn`, `bad`, `accent`) y la version legible como TEXTO (`*-ink`). Los -ink se dimensionan contra `ground`, que es la superficie mas OSCURA de las cuatro y por tanto el peor caso para texto oscuro - medirlos contra `panel` da un falso aprobado, y asi entraron los cuatro con 3,1-3,8:1. Todos pasan ahora >=4,8:1 sobre ground."
+    "semantic-ink": "Cada semantica tiene dos roles: el relleno saturado (`good`, `warn`, `bad`, `accent`) y la version legible como TEXTO (`*-ink`). Los -ink se dimensionan contra `ground`, que es la superficie mas OSCURA de las cuatro y por tanto el peor caso para texto oscuro - medirlos contra `panel` da un falso aprobado, y asi entraron los cuatro con 3,1-3,8:1. Todos pasan ahora >=4,8:1 sobre ground.",
+    "stage-tint": "La escalera de etapa no es un dimmer y tampoco es un arcoiris: es un VIAJE hacia la habitacion. `crisp` tiene el croma mas alto del recorrido (45) y su matiz esta a 114 grados del fondo - tiene color propio, y esa distancia es lo que se lee como superior. `mush` tiene el croma mas bajo de todos (15) y su matiz ya rotó DENTRO del fondo (5 grados de diferencia): no esta solo mas oscuro, dejo de ser un color y es un tono del campo en el que se esta disolviendo. `buzzed` queda fuera del recorrido a proposito y debe superar en croma incluso a crisp (77 contra 45), igual que `gloss` y `turgor` rompen la escalera a proposito. Ninguna pareja de etapas baja de dE 15. Todo esto lo mide `scripts/check-palette.py`; no es una descripcion, es un contrato.",
+    "on-fill": "Texto que va ENCIMA de un relleno saturado - un pill lleno, el CTA, la barra. Blanco puro y token propio, no `viewport` prestado: `viewport` es una SUPERFICIE, y usarla como tinta era pedirle a un color un papel que su nombre no dice. Con el violeta saturado ademas dejo de ser inofensivo, porque un casi-blanco teñido sobre un relleno de color se lee lavado - el detector de impeccable lo marca como gray-on-color, y tiene razon."
   },
   "anti_slop": {
     "forbidden_patterns": [
@@ -145,14 +148,16 @@
       "Dejar que gloss baje de forma limpia de crisp a mush. Buzzed brilla mas que foggy a proposito: si la escalera se ordena, vuelve a ser un dimmer.",
       "Oscurecer mezclando hacia el color de fondo. Vale solo mientras el fondo sea oscuro; en claro aclara. Se oscurece hacia `shade-anchor`.",
       "Usar el mismo verde/ambar/rojo para un relleno y para texto sobre fondo claro. El relleno saturado da 1,7:1 como texto: hay un rol -ink por cada semantica.",
-      "Poner un halo claro detras del objeto sobre un fondo claro. Eso no es luz ambiente, es niebla; sobre claro se separa con sombra."
+      "Poner un halo claro detras del objeto sobre un fondo claro. Eso no es luz ambiente, es niebla; sobre claro se separa con sombra.",
+      "Usar un gris neutro teñido de violeta y llamarlo el violeta de Opal. Opal es croma, no un gris con matiz: por debajo de sat 30% en el campo la pantalla vuelve a ser gris.",
+      "Ordenar la escalera de color de crisp a mush en luminancia. Se ordena en CROMA y en rotacion de matiz hacia el fondo; en luminancia buzzed rompe el orden y debe romperlo."
     ]
   },
   "validation": {
     "max_fonts": 3,
     "max_radius_values": 3,
     "accepted_exceptions": {
-      "restricted_hues": "Aceptada por el usuario el 2026-09-07. Pidio explicitamente el indigo de Opal como referencia. El gate sigue reportando este hallazgo y NO se declara PASS limpio: se declara '1 hallazgo, aceptado'."
+      "restricted_hues": "Aceptada por el usuario el 2026-09-07 y reafirmada el 2026-09-09, cuando pidio explicitamente que el violeta se pareciera mas al de Opal. Ahora el hallazgo es mas fuerte que antes: `accent` ya no es azul sino violeta hue 253 con sat 84%, que es el centro de la banda prohibida. El gate lo sigue reportando y NO se declara PASS limpio: se declara '1 hallazgo, aceptado'."
     }
   }
 }

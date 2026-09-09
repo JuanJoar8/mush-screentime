@@ -57,6 +57,18 @@ jobs:
       - name: Extension plists are complete
         run: python3 scripts/check-plists.py
 
+      # A palette claim written in prose is not a palette claim. This measures the JSON
+      # itself: every -ink role against `ground` (the darkest surface, so the worst case
+      # for dark text), every saturated fill proved unreadable as text and readable as a
+      # graphical object, and the five stage tints proved to be five different colours
+      # rather than five positions of one dimmer. It also pins the two things the ladder
+      # has to SAY -- crisp owns the most chroma and sits far from the room's hue, mush
+      # owns the least and its hue has rotated into the room's -- because "the creature
+      # dissolves into the background" is a sentence anybody can type and nobody was
+      # checking. Verified to fail, at exit 2, on four separate regressions.
+      - name: The palette measures what brand.json says it does
+        run: python3 scripts/check-palette.py
+
       # The Screen Time frameworks are Swift-only, so the iOS SDK ships their full public
       # interface as text. Printing the enums we switch over is how we find out that a new
       # SDK added a case *without guessing its name* — the one rule this project cannot
