@@ -671,15 +671,85 @@
 
   function has(p, motif) { return p.motifs && p.motifs.indexOf(motif) >= 0; }
 
-  // A limb twice: the full-weight dark stroke, then a thinner lit stroke shifted toward
-  // the light. Two strokes turn a flat line into a cylinder, and it is the cheapest
-  // volume in the whole drawing.
-  function strokeLimb(ctx, build, pal, w) {
+  // Resample a polyline into `n` equal-length pieces, so a taper is spread by distance
+  // rather than by vertex. A limb whose elbow sits two thirds along would otherwise get
+  // two thirds of its thinning in the forearm and none in the upper arm.
+  function alongPoly(pts, n) {
+    var lens = [], total = 0, i;
+    for (i = 1; i < pts.length; i++) {
+      var dx = pts[i][0] - pts[i - 1][0], dy = pts[i][1] - pts[i - 1][1];
+      var L = Math.sqrt(dx * dx + dy * dy);
+      lens.push(L); total += L;
+    }
+    var out = [];
+    for (var k = 0; k <= n; k++) {
+      var d = total * k / n, acc = 0, j = 0;
+      while (j < lens.length - 1 && acc + lens[j] < d) { acc += lens[j]; j++; }
+      var f = lens[j] > 0 ? Math.min(1, (d - acc) / lens[j]) : 0;
+      out.push([pts[j][0] + (pts[j + 1][0] - pts[j][0]) * f,
+                pts[j][1] + (pts[j + 1][1] - pts[j][1]) * f]);
+    }
+    return out;
+  }
+
+  // A limb, tapered, and made of the same tissue as the body.
+  //
+  // Three things changed here, and all three are one complaint: the body was modelled and
+  // the limbs were not. They were constant-width strokes, identical across all five
+  // stages but for their angle, which made them read as clip art bolted onto a rendered
+  // head — the single most conspicuous unmodelled thing left in the drawing.
+  //
+  //   - Taper. A limb is thicker at the root than at the tip; constant width is a wire.
+  //   - It rots with the body. The dark stroke mixes toward `rotDeep`, so at mush the
+  //     arms are not a healthy creature's arms drawn at a sadder angle.
+  //   - Transmission at the tip, which is the physically correct half and the one that
+  //     sells it. Subsurface scattering is strongest where the body is *thinnest* — it is
+  //     why a hand held up to a lamp glows red at the fingers and stays opaque at the
+  //     palm — so the glow is gated on distance along the limb rather than sprinkled
+  //     evenly. Sprinkled evenly it is a coloured outline.
+  //
+  // The taper is inward only, so `REACH.limbCap` — half the round cap at the wrist — can
+  // only shrink, and the budget derived for the untapered limb still holds.
+  function strokeLimb(ctx, pts, pal, w, p) {
+    var n = 16, q = alongPoly(pts, n), i;
+    var nec = p ? p.necrosis : 0, tr = p ? p.translucency : 0;
+    var dark = mixRGB(pal.ink, pal.rotDeep, nec * 0.55);
     ctx.lineCap = "round"; ctx.lineJoin = "round";
-    build(0, 0);
-    ctx.strokeStyle = rgbCSS(pal.ink); ctx.lineWidth = w; ctx.stroke();
-    build(LIGHT.dx * w * 0.24, LIGHT.dy * w * 0.24);
-    ctx.strokeStyle = rgbCSS(pal.lit, 0.45); ctx.lineWidth = w * 0.34; ctx.stroke();
+
+    // 0.34 and no more: past about a third the wrist stops reading as a wrist and starts
+    // reading as a point, and the round cap that stands in for the hand goes with it.
+    function widthAt(u) { return w * (1 - 0.34 * u); }
+    function seg(i, ox, oy) {
+      ctx.beginPath();
+      ctx.moveTo(q[i][0] + ox, q[i][1] + oy);
+      ctx.lineTo(q[i + 1][0] + ox, q[i + 1][1] + oy);
+    }
+
+    for (i = 0; i < n; i++) {
+      var wd = widthAt((i + 0.5) / n);
+      seg(i, 0, 0);
+      ctx.strokeStyle = rgbCSS(dark); ctx.lineWidth = wd; ctx.stroke();
+    }
+    for (i = 0; i < n; i++) {
+      var wl = widthAt((i + 0.5) / n);
+      seg(i, LIGHT.dx * wl * 0.24, LIGHT.dy * wl * 0.24);
+      ctx.strokeStyle = rgbCSS(pal.lit, 0.45); ctx.lineWidth = wl * 0.34; ctx.stroke();
+    }
+    if (tr > 0.02) {
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      for (i = 0; i < n; i++) {
+        var u = (i + 0.5) / n;
+        // u^2.2 keeps it off the shoulder, where a limb is as thick as the body and
+        // transmits nothing at all.
+        var glow = Math.pow(u, 2.2) * tr;
+        if (glow < 0.01) continue;
+        seg(i, 0, 0);
+        ctx.strokeStyle = rgbCSS(pal.sub, glow * 0.42);
+        ctx.lineWidth = widthAt(u) * 0.72; ctx.stroke();
+      }
+      ctx.restore();
+    }
   }
 
   // The gyri, as ridges rather than as lines. The flat version stroked one thin line per
@@ -1016,8 +1086,11 @@
     ctx.beginPath(); ctx.ellipse(ex, eyeY, rx, ry, 0, 0, TAU);
     var sg = ctx.createRadialGradient(ex + LIGHT.dx * rx * 0.42, eyeY + LIGHT.dy * ry * 0.42, 0,
                                       ex + LIGHT.dx * rx * 0.42, eyeY + LIGHT.dy * ry * 0.42, rx * 1.5);
-    sg.addColorStop(0, rgbCSS(pal.shine));
-    sg.addColorStop(1, rgbCSS(mixRGB(pal.shine, pal.shade, 0.30)));
+    // A sclera that stays surgical white on a body that is coming apart is the detail
+    // that undoes every other one. It yellows and greys with the tissue around it.
+    sg.addColorStop(0, rgbCSS(mixRGB(pal.shine, pal.rot, p.necrosis * 0.30)));
+    sg.addColorStop(1, rgbCSS(mixRGB(mixRGB(pal.shine, pal.shade, 0.30), pal.rot,
+                                     p.necrosis * 0.45)));
     ctx.fillStyle = sg; ctx.fill();
 
     var gaze = p.jitter ? Math.sin(t * 5.3 + s) * rx * 0.14 : 0;
@@ -1289,23 +1362,31 @@
     var groundY = cy + bh * 0.84 + R * (0.36 - p.sag * 0.7) + R * 0.10;
     var slump = Math.max(0, 0.34 - p.sag * 0.4);
     var anchorRGB = hexRGB(tk("--color-shade-anchor"));
+    // The shadow of a translucent object is not neutral grey. Light crosses the body,
+    // picks up its colour and lands on the floor inside the shadow, which is why the
+    // shade under a hand on a lit table is warm and the shade under a stone is not. The
+    // outer, softer pool is where that shows; the contact core stays neutral, because at
+    // the point of contact nothing gets through.
+    //
+    // It is a one-line consequence of `translucency` and it does as much to place the
+    // creature in the room as the bounce light does.
+    var shadeRGB = mixRGB(anchorRGB, pal.sub, p.translucency * 0.34);
     softEllipse(ctx, cx + LIGHT.ax * R * 0.10, groundY, bw * 0.66, R * 0.095,
-                R * 0.095, anchorRGB, slump * 0.80);
+                R * 0.095, shadeRGB, slump * 0.80);
     ctx.beginPath();
     ctx.ellipse(cx + LIGHT.ax * R * 0.05, groundY, bw * 0.32, R * 0.040, 0, 0, TAU);
-    ctx.fillStyle = rgbCSS(anchorRGB, slump * 1.15); ctx.fill();
+    // And it hardens as the body dies: an opaque mass sits on the floor more heavily
+    // than a lit one, which is the whole reason a contact shadow is drawn separately.
+    ctx.fillStyle = rgbCSS(anchorRGB, slump * (1.15 + 0.30 * p.necrosis)); ctx.fill();
 
     // Legs. The foot is a kink in the same line, not an object.
     var hipY = cy + bh * 0.84, footY = hipY + R * (0.36 - p.sag * 0.7);
     var stance = bw * (0.30 + p.spread * 1.1);
     [-1, 1].forEach(function (s) {
       var x1 = cx + s * stance;
-      strokeLimb(ctx, function (ox, oy) {
-        ctx.beginPath();
-        ctx.moveTo(cx + s * bw * 0.20 + ox, hipY + oy);
-        ctx.lineTo(x1 + ox, footY + oy);
-        ctx.lineTo(x1 + s * R * 0.13 + ox, footY - R * 0.012 + oy);
-      }, pal, lw);
+      strokeLimb(ctx, [[cx + s * bw * 0.20, hipY],
+                       [x1, footY],
+                       [x1 + s * R * 0.13, footY - R * 0.012]], pal, lw, p);
     });
 
     // Arms, with three fingers fanned along the forearm's heading. A dot on the end of a
@@ -1322,10 +1403,7 @@
       var wrX = cx + s * bw * (1.18 - Math.abs(drop) * 0.13), wrY = shY + R * (0.16 + drop * 0.44 + sway);
       // No fingers. Three fanned digits made a wire limb read as a hand; on a stub this
       // thick the round cap already is a mitten, and the digits read as a rake.
-      strokeLimb(ctx, function (ox, oy) {
-        ctx.beginPath();
-        ctx.moveTo(shX + ox, shY + oy); ctx.lineTo(elX + ox, elY + oy); ctx.lineTo(wrX + ox, wrY + oy);
-      }, pal, lw);
+      strokeLimb(ctx, [[shX, shY], [elX, elY], [wrX, wrY]], pal, lw, p);
     });
 
     // Drips first, so the body paints over their shoulders and the seam never shows.

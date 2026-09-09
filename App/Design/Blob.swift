@@ -291,7 +291,7 @@ struct BlobView: View {
         // Same arithmetic the legs use, so the shadow cannot drift away from the feet.
         let groundY = center.y + bodyH * 0.84 + radius * (0.36 - p.sag * 0.7) + radius * 0.10
         drawShadow(&context, center: center, groundY: groundY, bodyW: bodyW,
-                   radius: radius, detail: detail)
+                   radius: radius, palette: palette, detail: detail)
         drawLegs(&context, center: center, bodyH: bodyH, bodyW: bodyW, radius: radius, palette: palette)
         drawArms(&context, center: center, bodyW: bodyW, bodyH: bodyH, radius: radius,
                  palette: palette, time: time)
@@ -327,7 +327,7 @@ struct BlobView: View {
     /// The pool is offset *away* from the light, like everything else in the drawing.
     private func drawShadow(
         _ context: inout GraphicsContext, center: CGPoint, groundY: CGFloat,
-        bodyW: CGFloat, radius: CGFloat, detail: Bool
+        bodyW: CGFloat, radius: CGFloat, palette: Palette, detail: Bool
     ) {
         let slump = 0.34 - Double(p.sag) * 0.4
         let offset = Light.awayX * radius * 0.10
@@ -336,23 +336,36 @@ struct BlobView: View {
             x: center.x - bodyW * 0.66 + offset, y: groundY - radius * 0.09,
             width: bodyW * 1.32, height: radius * 0.19
         )
+        // The shadow of a translucent object is not neutral grey. Light crosses the body,
+        // picks up its colour and lands on the floor inside the shadow, which is why the
+        // shade under a hand on a lit table is warm and the shade under a stone is not.
+        // The outer, softer pool is where that shows; the contact core stays neutral,
+        // because at the point of contact nothing gets through.
+        //
+        // A one-line consequence of `translucency`, and it does as much to place the
+        // creature in the room as the bounce light does.
+        let poolColor = Token.Color.shadeAnchor.mix(
+            with: palette.sub, by: Double(p.translucency) * 0.34)
         if detail {
             context.drawLayer { layer in
                 layer.addFilter(.blur(radius: radius * 0.095))
                 layer.fill(Path(ellipseIn: pool),
-                           with: .color(Token.Color.shadeAnchor.opacity(slump * 0.80)))
+                           with: .color(poolColor.opacity(slump * 0.80)))
             }
         } else {
             context.fill(Path(ellipseIn: pool),
-                         with: .color(Token.Color.shadeAnchor.opacity(slump * 0.60)))
+                         with: .color(poolColor.opacity(slump * 0.60)))
         }
 
         let contact = CGRect(
             x: center.x - bodyW * 0.32 + offset * 0.5, y: groundY - radius * 0.040,
             width: bodyW * 0.64, height: radius * 0.08
         )
+        // And it hardens as the body dies: an opaque mass sits on the floor more heavily
+        // than a lit one, which is the whole reason the contact core is drawn separately.
         context.fill(Path(ellipseIn: contact),
-                     with: .color(Token.Color.shadeAnchor.opacity(slump * 1.15)))
+                     with: .color(Token.Color.shadeAnchor.opacity(
+                        slump * (1.15 + 0.30 * Double(p.necrosis)))))
     }
 
     // MARK: Limbs
@@ -367,26 +380,104 @@ struct BlobView: View {
     /// anything and the limbs vanish from the widget.
     private func limbWidth(_ radius: CGFloat) -> CGFloat { max(radius * 0.075, 1.6) }
 
-    private func stroke(
-        _ context: inout GraphicsContext, _ path: Path, _ colour: Color, _ width: CGFloat
-    ) {
-        context.stroke(path, with: .color(colour),
-                       style: StrokeStyle(lineWidth: width, lineCap: .round, lineJoin: .round))
+    /// Resample a polyline into `count` equal-length pieces, so a taper is spread by
+    /// distance rather than by vertex. A limb whose elbow sits two thirds of the way along
+    /// would otherwise take two thirds of its thinning in the forearm and none in the
+    /// upper arm.
+    private func alongPoly(_ points: [CGPoint], _ count: Int) -> [CGPoint] {
+        var lengths: [CGFloat] = []
+        var total: CGFloat = 0
+        for i in 1..<points.count {
+            let dx = points[i].x - points[i - 1].x
+            let dy = points[i].y - points[i - 1].y
+            let length = sqrt(dx * dx + dy * dy)
+            lengths.append(length)
+            total += length
+        }
+
+        var out: [CGPoint] = []
+        for step in 0...count {
+            let target = total * CGFloat(step) / CGFloat(count)
+            var accumulated: CGFloat = 0
+            var segment = 0
+            while segment < lengths.count - 1 && accumulated + lengths[segment] < target {
+                accumulated += lengths[segment]
+                segment += 1
+            }
+            let fraction = lengths[segment] > 0
+                ? min(1, (target - accumulated) / lengths[segment]) : 0
+            out.append(CGPoint(
+                x: points[segment].x + (points[segment + 1].x - points[segment].x) * fraction,
+                y: points[segment].y + (points[segment + 1].y - points[segment].y) * fraction
+            ))
+        }
+        return out
     }
 
-    /// A limb, twice: the full-weight dark stroke, then a thinner lit stroke shifted
-    /// toward the light. Two strokes turn a flat line into a cylinder, and it is the
-    /// cheapest volume in the whole drawing.
+    /// A limb, tapered, and made of the same tissue as the body.
+    ///
+    /// Three things landed here at once, and all three are one complaint: the body was
+    /// modelled and the limbs were not. They were constant-width strokes, identical across
+    /// all five stages but for their angle, which made them read as clip art bolted onto a
+    /// rendered head - the most conspicuous unmodelled thing left in the drawing.
+    ///
+    /// - Taper. A limb is thicker at the root than at the tip; constant width is a wire.
+    /// - It rots with the body. The dark stroke mixes toward `rotDeep`, so at `mush` the
+    ///   arms are not a healthy creature's arms drawn at a sadder angle.
+    /// - Transmission at the tip, which is the physically correct half and the one that
+    ///   sells it. Subsurface scattering is strongest where the body is *thinnest* - it is
+    ///   why a hand held up to a lamp glows red at the fingers and stays opaque at the palm
+    ///   - so the glow is gated on distance along the limb rather than sprinkled evenly.
+    ///   Sprinkled evenly it is a coloured outline.
+    ///
+    /// The taper is inward only, so `Reach.limbCap` - half the round cap standing in for
+    /// the hand - can only shrink, and the budget derived for the untapered limb holds.
     private func strokeLimb(
-        _ context: inout GraphicsContext, _ path: Path, _ palette: Palette, _ width: CGFloat
+        _ context: inout GraphicsContext, _ points: [CGPoint],
+        _ palette: Palette, _ width: CGFloat
     ) {
-        stroke(&context, path, palette.ink, width)
+        let count = 16
+        let q = alongPoly(points, count)
+        let dark = palette.ink.mix(with: palette.rotDeep, by: Double(p.necrosis) * 0.55)
+
+        // 0.34 and no more: past about a third the wrist stops reading as a wrist and
+        // starts reading as a point, and the round cap that stands in for the hand with it.
+        func widthAt(_ u: Double) -> CGFloat { width * CGFloat(1 - 0.34 * u) }
+        func segment(_ i: Int) -> Path {
+            var path = Path()
+            path.move(to: q[i])
+            path.addLine(to: q[i + 1])
+            return path
+        }
+        func style(_ w: CGFloat) -> StrokeStyle {
+            StrokeStyle(lineWidth: w, lineCap: .round, lineJoin: .round)
+        }
+
+        for i in 0..<count {
+            context.stroke(segment(i), with: .color(dark),
+                           style: style(widthAt((Double(i) + 0.5) / Double(count))))
+        }
+        for i in 0..<count {
+            let w = widthAt((Double(i) + 0.5) / Double(count))
+            context.drawLayer { layer in
+                layer.translateBy(x: Light.dx * w * 0.24, y: Light.dy * w * 0.24)
+                layer.stroke(segment(i), with: .color(palette.lit.opacity(0.45)),
+                             style: style(w * 0.34))
+            }
+        }
+
+        guard p.translucency > 0.02 else { return }
         context.drawLayer { layer in
-            layer.translateBy(x: Light.dx * width * 0.24, y: Light.dy * width * 0.24)
-            layer.stroke(
-                path, with: .color(palette.lit.opacity(0.45)),
-                style: StrokeStyle(lineWidth: width * 0.34, lineCap: .round, lineJoin: .round)
-            )
+            layer.blendMode = .plusLighter
+            for i in 0..<count {
+                let u = (Double(i) + 0.5) / Double(count)
+                // u^2.2 keeps it off the shoulder, where a limb is as thick as the body
+                // and transmits nothing at all.
+                let glow = pow(u, 2.2) * Double(p.translucency)
+                if glow < 0.01 { continue }
+                layer.stroke(segment(i), with: .color(palette.sub.opacity(glow * 0.42)),
+                             style: style(widthAt(u) * 0.72))
+            }
         }
     }
 
@@ -403,13 +494,13 @@ struct BlobView: View {
             let x0 = center.x + side * bodyW * 0.20
             let x1 = center.x + side * spread
 
-            var leg = Path()
-            leg.move(to: CGPoint(x: x0, y: hipY))
-            leg.addLine(to: CGPoint(x: x1, y: footY))
             // The foot is a kink in the same line, not an object. Outward, so the stance
             // reads as planted rather than pigeon-toed.
-            leg.addLine(to: CGPoint(x: x1 + side * radius * 0.13, y: footY - radius * 0.012))
-            strokeLimb(&context, leg, palette, width)
+            strokeLimb(&context, [
+                CGPoint(x: x0, y: hipY),
+                CGPoint(x: x1, y: footY),
+                CGPoint(x: x1 + side * radius * 0.13, y: footY - radius * 0.012)
+            ], palette, width)
         }
     }
 
@@ -435,11 +526,7 @@ struct BlobView: View {
                 y: shoulder.y + radius * (0.16 + drop * 0.44 + sway)
             )
 
-            var arm = Path()
-            arm.move(to: shoulder)
-            arm.addLine(to: elbow)
-            arm.addLine(to: wrist)
-            strokeLimb(&context, arm, palette, width)
+            strokeLimb(&context, [shoulder, elbow, wrist], palette, width)
         }
     }
 
@@ -1285,8 +1372,16 @@ struct BlobView: View {
         let sclera = CGRect(x: ex - rx, y: eyeY - ry, width: rx * 2, height: ry * 2)
         // An eyeball is a sphere, not a white disc: brightest where the light hits it, and
         // picking up the body's own shade around the rim.
+        //
+        // And it yellows with the tissue around it. A sclera that stays surgical white on
+        // a body that is coming apart is the one detail that undoes every other one.
+        let n = Double(p.necrosis)
         context.fill(Path(ellipseIn: sclera), with: .radialGradient(
-            Gradient(colors: [palette.shine, palette.shine.mix(with: palette.shade, by: 0.30)]),
+            Gradient(colors: [
+                palette.shine.mix(with: palette.rot, by: n * 0.30),
+                palette.shine.mix(with: palette.shade, by: 0.30)
+                    .mix(with: palette.rot, by: n * 0.45)
+            ]),
             center: CGPoint(x: ex + Light.dx * rx * 0.42, y: eyeY + Light.dy * ry * 0.42),
             startRadius: 0, endRadius: rx * 1.5
         ))

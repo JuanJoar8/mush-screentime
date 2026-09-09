@@ -111,6 +111,34 @@ above it read as *the same creature, brighter*. Neither is what the product is a
   being wet. A ramp straight to the bottom would say the opposite, so
   `rotAndVitalityAreSeparateReadings` asserts the dip.
 
+**A second pass on 2026-09-09 took the material out to the parts that were still flat.**
+Three axes on the body only left the body modelled and everything hanging off it not.
+
+- **The limbs were the most conspicuous unmodelled thing left** — four constant-width
+  strokes, identical across all five stages but for their angle, which read as clip art
+  bolted onto a rendered head. They now taper (a limb is thicker at the root; constant
+  width is a wire), they rot with the body, and they **transmit at the tip**. That last
+  one is the physically correct half and the one that sells it: subsurface scattering is
+  strongest where the body is *thinnest*, which is why a hand held to a lamp glows red at
+  the fingers and stays opaque at the palm. The glow is gated on distance along the limb,
+  `u^2.2`, so it stays off the shoulder. Sprinkled evenly it is a coloured outline.
+- **The cast shadow is not neutral grey under a translucent body.** Light crosses the
+  body, picks up its colour and lands on the floor inside the shadow — the reason shade
+  under a hand on a lit table is warm and shade under a stone is not. The soft outer pool
+  carries it; the contact core stays neutral, because nothing gets through at the point of
+  contact. The core also hardens with necrosis: an opaque mass sits more heavily than a
+  lit one.
+- **The sclera yellows.** A surgical-white eye on a body that is coming apart is the one
+  detail that undoes every other one.
+
+The taper is inward only, so `Reach.limbCap` can only shrink. `check-fit.js` measured the
+prediction rather than taking it: the tightest margin stayed at 4.5px and the horizontal
+extents *contracted* — `mush` went from 71.4→370.0 to 72.5→368.9.
+
+Two things were deleted rather than left beside the new ones, per housekeeping rule 2: the
+old two-stroke `stroke(_:_:_:_:)` helper, whose only caller was the untapered limb, and the
+doc comment describing that drawing.
+
 **The silhouette erosion is subtractive by construction, and that is a hard constraint
 rather than a style choice.** `Reach` is derived from the un-eroded curve, so a body that
 can only shrink cannot push the drawing past its canvas — no rederivation, no fit risk.
